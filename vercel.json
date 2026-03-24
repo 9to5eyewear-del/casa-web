@@ -1,0 +1,9 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "routes": [
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/policy", "dest": "/policy.html" },
+    { "src": "/accessibility", "dest": "/accessibility.html" }
+  ]
+}
