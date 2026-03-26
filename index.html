@@ -155,6 +155,255 @@
       .a11y-contrast a { color: #7dd3fc !important; text-decoration: underline !important; }
       .a11y-links a { text-decoration: underline !important; }
       .a11y-no-animations *, .a11y-no-animations *::before, .a11y-no-animations *::after { animation: none !important; transition: none !important; }
+
+      /* ── Service Modals ── */
+      .service-modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 900;
+        background: rgba(20,22,20,0);
+        backdrop-filter: blur(0px);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        pointer-events: none;
+        transition: background 0.55s ease, backdrop-filter 0.55s ease;
+      }
+      .service-modal-overlay.open {
+        background: rgba(20,22,20,0.6);
+        backdrop-filter: blur(8px);
+        pointer-events: all;
+      }
+      .service-modal {
+        background: #faf9f6;
+        width: 100%;
+        max-width: 960px;
+        max-height: 92vh;
+        overflow-y: auto;
+        border-radius: 4px 4px 0 0;
+        transform: translateY(100%);
+        transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative;
+      }
+      @media (min-width: 768px) {
+        .service-modal-overlay { align-items: center; padding: 2rem; }
+        .service-modal { border-radius: 4px; transform: translateY(40px); opacity: 0; transition: transform 0.65s cubic-bezier(0.16,1,0.3,1), opacity 0.55s ease; }
+      }
+      .service-modal-overlay.open .service-modal {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      .modal-hero {
+        position: relative;
+        height: 300px;
+        overflow: hidden;
+      }
+      @media (min-width: 768px) { .modal-hero { height: 380px; } }
+      .modal-hero img {
+        width: 100%; height: 100%; object-fit: cover;
+        transform: scale(1.08);
+        transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .service-modal-overlay.open .modal-hero img { transform: scale(1); }
+      .modal-hero-overlay {
+        position: absolute; inset: 0;
+        background: linear-gradient(to top, rgba(15,17,15,0.7) 0%, transparent 55%);
+      }
+      .modal-hero-text {
+        position: absolute;
+        bottom: 0; right: 0; left: 0;
+        padding: 2rem;
+        color: white;
+        transform: translateY(12px);
+        opacity: 0;
+        transition: transform 0.7s 0.2s cubic-bezier(0.16,1,0.3,1), opacity 0.6s 0.2s;
+      }
+      .service-modal-overlay.open .modal-hero-text { transform: translateY(0); opacity: 1; }
+      .modal-body { padding: 2.5rem 2rem; }
+      @media (min-width: 768px) { .modal-body { padding: 3rem; } }
+      .modal-features {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+        margin: 2rem 0;
+      }
+      .modal-feature-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        opacity: 0;
+        transform: translateY(14px);
+        transition: opacity 0.5s, transform 0.5s cubic-bezier(0.16,1,0.3,1);
+      }
+      .service-modal-overlay.open .modal-feature-item { opacity: 1; transform: translateY(0); }
+      .modal-feature-item:nth-child(1) { transition-delay: 0.25s; }
+      .modal-feature-item:nth-child(2) { transition-delay: 0.33s; }
+      .modal-feature-item:nth-child(3) { transition-delay: 0.41s; }
+      .modal-feature-item:nth-child(4) { transition-delay: 0.49s; }
+      .modal-feature-item:nth-child(5) { transition-delay: 0.57s; }
+      .modal-feature-item:nth-child(6) { transition-delay: 0.65s; }
+      .modal-feature-dot {
+        width: 5px; height: 5px;
+        border-radius: 50%;
+        background: #625e51;
+        margin-top: 0.5rem;
+        flex-shrink: 0;
+      }
+      .modal-close-btn {
+        position: absolute;
+        top: 1rem; left: 1rem;
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.2s;
+        z-index: 10;
+      }
+      .modal-close-btn:hover { background: rgba(255,255,255,0.35); transform: scale(1.08); }
+      .modal-tag {
+        display: inline-block;
+        font-size: 0.65rem;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.75);
+        margin-bottom: 0.5rem;
+        border: 1px solid rgba(255,255,255,0.35);
+        padding: 0.2rem 0.6rem;
+        border-radius: 2px;
+      }
+      .modal-cta-bar {
+        border-top: 1px solid rgba(98,94,81,0.12);
+        margin-top: 2rem;
+        padding-top: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        opacity: 0;
+        transition: opacity 0.6s 0.6s;
+      }
+      .service-modal-overlay.open .modal-cta-bar { opacity: 1; }
+
+      /* ── Why Section ── */
+      .why-section { background: #ede9e2; }
+      .features-row {
+        display: flex;
+        flex-direction: row;
+        min-height: 360px;
+        gap: 3px;
+      }
+      .feature-card {
+        position: relative;
+        flex: 1;
+        overflow: hidden;
+        background: #faf9f6;
+        cursor: pointer;
+        transition: flex 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .feature-card.active { flex: 3.8; }
+
+      @media (max-width: 767px) {
+        .features-row { flex-direction: column; min-height: unset; gap: 2px; }
+        .feature-card { flex: 1; min-height: 70px; transition: flex 0.65s cubic-bezier(0.4, 0, 0.2, 1); }
+        .feature-card.active { flex: 5; }
+      }
+
+      .feature-card-glow {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(98,94,81,0.05) 0%, transparent 65%);
+        opacity: 0;
+        transition: opacity 0.6s;
+      }
+      .feature-card.active .feature-card-glow { opacity: 1; }
+
+      .feature-card-content {
+        position: relative;
+        z-index: 1;
+        padding: 2rem 1.75rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        height: 100%;
+      }
+      .feature-num {
+        position: absolute;
+        top: 1rem;
+        right: 1.25rem;
+        font-size: 5.5rem;
+        line-height: 1;
+        font-weight: 100;
+        color: rgba(98,94,81,0.07);
+        user-select: none;
+        transition: color 0.6s, transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .feature-card.active .feature-num {
+        color: rgba(98,94,81,0.13);
+        transform: scale(1.08) translateY(-4px);
+      }
+      .feature-icon-ms {
+        font-size: 1.7rem !important;
+        color: #625e51;
+        margin-bottom: 0.7rem;
+        display: block;
+        transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .feature-card.active .feature-icon-ms { transform: scale(1.25); }
+      .feature-label {
+        font-size: 0.7rem;
+        font-weight: 500;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        margin-bottom: 0;
+        transition: margin-bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .feature-card.active .feature-label { margin-bottom: 0.6rem; }
+      .feature-body {
+        font-size: 0.82rem;
+        color: #5c605c;
+        line-height: 1.75;
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: max-height 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+                    opacity 0.45s 0.18s;
+      }
+      .feature-card.active .feature-body { max-height: 90px; opacity: 1; }
+      .feature-progress-wrap {
+        margin-top: 1.25rem;
+        height: 1px;
+        background: rgba(98,94,81,0.14);
+        overflow: hidden;
+        opacity: 0;
+        transition: opacity 0.35s;
+      }
+      .feature-card.active .feature-progress-wrap { opacity: 1; }
+      .feature-progress-bar {
+        height: 100%;
+        width: 0%;
+        background: #625e51;
+      }
+
+      /* Divider line on left side (desktop) */
+      .feature-card + .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 10%;
+        bottom: 10%;
+        left: 0;
+        width: 1px;
+        background: rgba(98,94,81,0.12);
+        z-index: 2;
+      }
+      @media (max-width: 767px) {
+        .feature-card + .feature-card::before {
+          top: 0; bottom: unset; left: 10%; right: 10%; width: unset; height: 1px;
+        }
+      }
     </style>
 </head>
 <body class="bg-surface text-on-surface selection:bg-primary-container selection:text-on-primary-container">
@@ -237,7 +486,7 @@
 </div>
 <h3 class="font-headline text-3xl mb-6 transform group-hover:-translate-y-2 transition-transform duration-500">התארגנות כלה</h3>
 <p class="text-on-surface-variant font-light mb-8 leading-relaxed opacity-80">חלל מעוצב המשלב אור טבעי רך, פרטיות מוחלטת ואווירה מרגיעה ליום המיוחד שלך. מקום בו כל פרט קטן נבחר כדי להעצים את היופי והרוגע של רגעי ההתחלה.</p>
-<a class="inline-block border-b border-primary pb-1 text-xs tracking-widest uppercase hover:px-4 transition-all duration-300" href="#">Discover More</a>
+<button class="inline-block border-b border-primary pb-1 text-xs tracking-widest uppercase hover:px-4 transition-all duration-300 bg-transparent cursor-pointer" onclick="openServiceModal('bridal')">גלי עוד</button>
 </div>
 </div>
 <!-- Service 2 -->
@@ -249,7 +498,7 @@
 </div>
 <h3 class="font-headline text-3xl mb-6 transform group-hover:-translate-y-2 transition-transform duration-500">הפקות צילום</h3>
 <p class="text-on-surface-variant font-light mb-8 leading-relaxed opacity-80">לוקיישן פוטוגני בעל אופי מובהק, אידיאלי לצילומי אופנה, תוכן וקמפיינים. חללים רחבי ידיים עם טקסטורות עשירות המעניקים עומק ויזואלי לכל פריים.</p>
-<a class="inline-block border-b border-primary pb-1 text-xs tracking-widest uppercase hover:px-4 transition-all duration-300" href="#">View Portfolio</a>
+<button class="inline-block border-b border-primary pb-1 text-xs tracking-widest uppercase hover:px-4 transition-all duration-300 bg-transparent cursor-pointer" onclick="openServiceModal('production')">צפה בפורטפוליו</button>
 </div>
 </div>
 </div>
@@ -297,32 +546,53 @@
 </div>
 </div>
 </section>
-<section class="py-32 bg-surface-container">
-<div class="max-w-7xl mx-auto px-6 text-center">
-<h2 class="font-headline text-4xl md:text-5xl mb-20 reveal">למה קאזה מנצ'יני?</h2>
-<div class="grid grid-cols-2 md:grid-cols-4 gap-y-16 gap-x-8">
-<div class="flex flex-col items-center reveal" style="transition-delay: 0.1s">
-<span class="material-symbols-outlined text-4xl mb-6 text-primary hover:rotate-12 transition-transform" data-icon="light_mode">light_mode</span>
-<h4 class="font-label text-sm tracking-widest uppercase mb-3">אור טבעי</h4>
-<p class="text-xs text-on-surface-variant max-w-[150px]">מערכות תאורה טבעית לתמונות מושלמות</p>
-</div>
-<div class="flex flex-col items-center reveal" style="transition-delay: 0.2s">
-<span class="material-symbols-outlined text-4xl mb-6 text-primary hover:rotate-12 transition-transform" data-icon="visibility_off">visibility_off</span>
-<h4 class="font-label text-sm tracking-widest uppercase mb-3">פרטיות</h4>
-<p class="text-xs text-on-surface-variant max-w-[150px]">מרחב אינטימי ושקט המוקדש רק לכם</p>
-</div>
-<div class="flex flex-col items-center reveal" style="transition-delay: 0.3s">
-<span class="material-symbols-outlined text-4xl mb-6 text-primary hover:rotate-12 transition-transform" data-icon="auto_awesome">auto_awesome</span>
-<h4 class="font-label text-sm tracking-widest uppercase mb-3">עיצוב</h4>
-<p class="text-xs text-on-surface-variant max-w-[150px]">אסתטיקה אוצרותית בכל פינה ופינה</p>
-</div>
-<div class="flex flex-col items-center reveal" style="transition-delay: 0.4s">
-<span class="material-symbols-outlined text-4xl mb-6 text-primary hover:rotate-12 transition-transform" data-icon="spa">spa</span>
-<h4 class="font-label text-sm tracking-widest uppercase mb-3">אווירה</h4>
-<p class="text-xs text-on-surface-variant max-w-[150px]">חוויה של רוגע ויוקרה בלב העיר</p>
-</div>
-</div>
-</div>
+<section class="why-section py-24 overflow-hidden">
+  <div class="max-w-5xl mx-auto px-6 mb-14 text-center reveal">
+    <span class="block text-xs tracking-[0.4em] uppercase text-primary/50 mb-5">הייחוד שלנו</span>
+    <h2 class="font-headline text-5xl md:text-6xl font-light">למה קאזה מנצ'יני?</h2>
+  </div>
+  <div class="features-row px-3 md:px-8" id="featuresRow">
+    <div class="feature-card active" data-idx="0">
+      <div class="feature-card-glow"></div>
+      <div class="feature-card-content">
+        <div class="feature-num">01</div>
+        <span class="material-symbols-outlined feature-icon-ms">light_mode</span>
+        <h4 class="feature-label">אור טבעי</h4>
+        <p class="feature-body">מערכות תאורה טבעית לתמונות מושלמות בכל שעה ביום</p>
+        <div class="feature-progress-wrap"><div class="feature-progress-bar"></div></div>
+      </div>
+    </div>
+    <div class="feature-card" data-idx="1">
+      <div class="feature-card-glow"></div>
+      <div class="feature-card-content">
+        <div class="feature-num">02</div>
+        <span class="material-symbols-outlined feature-icon-ms">visibility_off</span>
+        <h4 class="feature-label">פרטיות</h4>
+        <p class="feature-body">מרחב אינטימי ושקט המוקדש רק לכם, ללא הפרעות</p>
+        <div class="feature-progress-wrap"><div class="feature-progress-bar"></div></div>
+      </div>
+    </div>
+    <div class="feature-card" data-idx="2">
+      <div class="feature-card-glow"></div>
+      <div class="feature-card-content">
+        <div class="feature-num">03</div>
+        <span class="material-symbols-outlined feature-icon-ms">auto_awesome</span>
+        <h4 class="feature-label">עיצוב</h4>
+        <p class="feature-body">אסתטיקה אוצרותית בכל פינה ופינה, עד לפרט האחרון</p>
+        <div class="feature-progress-wrap"><div class="feature-progress-bar"></div></div>
+      </div>
+    </div>
+    <div class="feature-card" data-idx="3">
+      <div class="feature-card-glow"></div>
+      <div class="feature-card-content">
+        <div class="feature-num">04</div>
+        <span class="material-symbols-outlined feature-icon-ms">spa</span>
+        <h4 class="feature-label">אווירה</h4>
+        <p class="feature-body">חוויה של רוגע ויוקרה בלב העיר, מהרגע הראשון</p>
+        <div class="feature-progress-wrap"><div class="feature-progress-bar"></div></div>
+      </div>
+    </div>
+  </div>
 </section>
 <section class="py-32 relative overflow-hidden text-center bg-primary" id="booking">
 <div class="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
@@ -510,5 +780,144 @@
     if (a11yContrast) a11yContrast.checked = stored.contrast;
     if (a11yLinks) a11yLinks.checked = stored.links;
     if (a11yAnimations) a11yAnimations.checked = stored.animations;
+
+    // ── Service Modals ──
+    function openServiceModal(type) {
+      const overlay = document.getElementById('serviceModalOverlay');
+      const bridal = document.getElementById('modalBridal');
+      const production = document.getElementById('modalProduction');
+      bridal.style.display = 'none';
+      production.style.display = 'none';
+      const target = type === 'bridal' ? bridal : production;
+      target.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('open')));
+    }
+    function closeServiceModal() {
+      const overlay = document.getElementById('serviceModalOverlay');
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+      setTimeout(() => {
+        document.getElementById('modalBridal').style.display = 'none';
+        document.getElementById('modalProduction').style.display = 'none';
+      }, 700);
+    }
+    function handleOverlayClick(e) {
+      if (e.target === document.getElementById('serviceModalOverlay')) closeServiceModal();
+    }
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeServiceModal(); });
+
+    // ── Features Accordion ──
+    (function () {
+      const cards = Array.from(document.querySelectorAll('#featuresRow .feature-card'));
+      if (!cards.length) return;
+      const DURATION = 4800;
+      let current = 0;
+      let timer = null;
+      let paused = false;
+
+      function activate(idx) {
+        cards.forEach((c) => {
+          c.classList.remove('active');
+          const bar = c.querySelector('.feature-progress-bar');
+          if (bar) { bar.style.transition = 'none'; bar.style.width = '0%'; }
+        });
+        cards[idx].classList.add('active');
+        current = idx;
+        const bar = cards[idx].querySelector('.feature-progress-bar');
+        if (bar) {
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            bar.style.transition = `width ${DURATION}ms linear`;
+            bar.style.width = '100%';
+          }));
+        }
+      }
+
+      function startTimer() {
+        clearInterval(timer);
+        timer = setInterval(() => {
+          if (!paused) activate((current + 1) % cards.length);
+        }, DURATION);
+      }
+
+      cards.forEach((card, idx) => {
+        card.addEventListener('click', () => { activate(idx); startTimer(); });
+        card.addEventListener('mouseenter', () => { paused = true; });
+        card.addEventListener('mouseleave', () => { paused = false; });
+      });
+
+      activate(0);
+      startTimer();
+    })();
 </script>
+<!-- ── Service Modals ── -->
+<div class="service-modal-overlay" id="serviceModalOverlay" onclick="handleOverlayClick(event)">
+  <!-- Bridal Modal -->
+  <div class="service-modal" id="modalBridal" style="display:none">
+    <div class="modal-hero">
+      <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCt6Qlr_4AphVwmzsaCpaVSw6nZ6TlmyU1_wvvzPNPYPaGOM3dBP7fhxD2_Tumn8esz4jPw4Or1A4R2771TgZ6JldNQQh6hxke_Lj_UgtKhisZdsXqPcspEjFyXSaWI0sPRHUFjDKNSpNyl8LZ9GxFJM5qhfu6vIh7BBkPXDp0uz9Q9EKQ0BCNS8yObuFkOUz6pzrYMvGL-qurimP1vDBHSFmxgNpdaYqWtUJC_2R7ZzY6CM-DC3RLdE9Y7mH56RO6UZ3IuzFRKhng" alt="התארגנות כלה"/>
+      <div class="modal-hero-overlay"></div>
+      <button class="modal-close-btn" onclick="closeServiceModal()"><span class="material-symbols-outlined" style="font-size:18px">close</span></button>
+      <div class="modal-hero-text">
+        <span class="modal-tag">חבילת כלה</span>
+        <h2 class="font-headline text-3xl md:text-4xl font-light">התארגנות כלה</h2>
+        <p style="font-size:0.85rem;color:rgba(255,255,255,0.75);margin-top:0.4rem;">חלל פרטי ומעוצב, מותאם ליום הגדול שלך</p>
+      </div>
+    </div>
+    <div class="modal-body">
+      <p class="text-on-surface-variant leading-relaxed font-light" style="font-size:0.92rem">
+        קאזה מנצ'יני מציעה לך חוויית התארגנות שכולה שקט, אסתטיקה ונינוחות. חדר כלות מעוצב עם קשב לכל פרט — מהאור הרך שנוגע בשמלה, ועד לניחוח שמולא בחלל לפני הגעתך.
+      </p>
+      <div class="modal-features">
+        <div class="modal-feature-item"><div class="modal-feature-dot"></div><div><p style="font-size:0.8rem;font-weight:500;margin-bottom:0.1rem">אור טבעי מושלם</p><p style="font-size:0.72rem;color:#5c605c">חלון גדול הפונה לחצר הפרטית</p></div></div>
+        <div class="modal-feature-item"><div class="modal-feature-dot"></div><div><p style="font-size:0.8rem;font-weight:500;margin-bottom:0.1rem">פרטיות מוחלטת</p><p style="font-size:0.72rem;color:#5c605c">הכניסה הפרטית לכן בלבד</p></div></div>
+        <div class="modal-feature-item"><div class="modal-feature-dot"></div><div><p style="font-size:0.8rem;font-weight:500;margin-bottom:0.1rem">שולחן איפור מקצועי</p><p style="font-size:0.72rem;color:#5c605c">מואר ומוסב למספר מאפרות</p></div></div>
+        <div class="modal-feature-item"><div class="modal-feature-dot"></div><div><p style="font-size:0.8rem;font-weight:500;margin-bottom:0.1rem">סלון ישיבה</p><p style="font-size:0.72rem;color:#5c605c">לאמא, חברות והרגעים הבלתי נשכחים</p></div></div>
+        <div class="modal-feature-item"><div class="modal-feature-dot"></div><div><p style="font-size:0.8rem;font-weight:500;margin-bottom:0.1rem">מקלחת ואזור החלפת שמלה</p><p style="font-size:0.72rem;color:#5c605c">מרחב נוחות מלא</p></div></div>
+        <div class="modal-feature-item"><div class="modal-feature-dot"></div><div><p style="font-size:0.8rem;font-weight:500;margin-bottom:0.1rem">קייטרינג קליל</p><p style="font-size:0.72rem;color:#5c605c">לחימום ותוספות לבקשתך</p></div></div>
+      </div>
+      <div class="modal-cta-bar">
+        <div>
+          <p style="font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#777c77;margin-bottom:0.2rem">מתאים לצוות עד</p>
+          <p class="font-headline" style="font-size:1.5rem;font-weight:300">10 איש</p>
+        </div>
+        <a href="#booking" onclick="closeServiceModal()" class="bg-primary text-on-primary px-8 py-3 text-xs tracking-widest uppercase transition-all hover:opacity-80" style="text-decoration:none">לתיאום</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Production Modal -->
+  <div class="service-modal" id="modalProduction" style="display:none">
+    <div class="modal-hero">
+      <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuALSvAjQ23Jx6JwcDNgfDEM3lCsvW2N7FdS-1R82TFUPHt_xbekR8bB5o05vYUCtMYbnQqsDOczBB9KcW8-ehXXLIjd1bznk465n1AHkqEMDZcEZ4Ol0xxCb0YohwHTgycGVevsClMKY68An3MHD1C98MOvPxLGPwa0cTRF2UVbnGwmA_d8EUjnRDp9UOufBUdW0mbZFCPJRHAp19vyZsWhwQzIrrd6YTyykmWFc-cElnd89NYiz22RD1DvJRQlZRLeKEVuJiIRZZ0" alt="הפקות צילום"/>
+      <div class="modal-hero-overlay"></div>
+      <button class="modal-close-btn" onclick="closeServiceModal()"><span class="material-symbols-outlined" style="font-size:18px">close</span></button>
+      <div class="modal-hero-text">
+        <span class="modal-tag">לוקיישן</span>
+        <h2 class="font-headline text-3xl md:text-4xl font-light">הפקות צילום</h2>
+        <p style="font-size:0.85rem;color:rgba(255,255,255,0.75);margin-top:0.4rem;">מרחב יוקרתי שנולד כדי להיצלם</p>
+      </div>
+    </div>
+    <div class="modal-body">
+      <p class="text-on-surface-variant leading-relaxed font-light" style="font-size:0.92rem">
+        חלל עם אופי — קירות טיח איטלקי, ריצוף אבן, עמודים קלאסיים ואור שפוסע בחדרים כמו ציור. קאזה מנצ'יני הוא הלוקיישן שמצלמים בוחרים כשהם רוצים שהמקום יהיה חלק מהסיפור.
+      </p>
+      <div class="modal-features">
+        <div class="modal-feature-item"><div class="modal-feature-dot"></div><div><p style="font-size:0.8rem;font-weight:500;margin-bottom:0.1rem">חדרים מגוונים</p><p style="font-size:0.72rem;color:#5c605c">כל חלל עם אופי ואסתטיקה ייחודיים</p></div></div>
+        <div class="modal-feature-item"><div class="modal-feature-dot"></div><div><p style="font-size:0.8rem;font-weight:500;margin-bottom:0.1rem">אור טבעי</p><p style="font-size:0.72rem;color:#5c605c">חלונות גדולים בכל חדר</p></div></div>
+        <div class="modal-feature-item"><div class="modal-feature-dot"></div><div><p style="font-size:0.8rem;font-weight:500;margin-bottom:0.1rem">חצר פרטית</p><p style="font-size:0.72rem;color:#5c605c">צילומי חוץ ללא שכנים ורעש</p></div></div>
+        <div class="modal-feature-item"><div class="modal-feature-dot"></div><div><p style="font-size:0.8rem;font-weight:500;margin-bottom:0.1rem">גישה נוחה + חניה</p><p style="font-size:0.72rem;color:#5c605c">ללא דאגות לוגיסטיות לצוות</p></div></div>
+        <div class="modal-feature-item"><div class="modal-feature-dot"></div><div><p style="font-size:0.8rem;font-weight:500;margin-bottom:0.1rem">מתאים לצוותים גדולים</p><p style="font-size:0.72rem;color:#5c605c">שטח רחב ידיים לכל הציוד</p></div></div>
+        <div class="modal-feature-item"><div class="modal-feature-dot"></div><div><p style="font-size:0.8rem;font-weight:500;margin-bottom:0.1rem">קמפיינים, אופנה, רילס</p><p style="font-size:0.72rem;color:#5c605c">כבר שימש עשרות הפקות מצליחות</p></div></div>
+      </div>
+      <div class="modal-cta-bar">
+        <div>
+          <p style="font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#777c77;margin-bottom:0.2rem">שכירה מ-</p>
+          <p class="font-headline" style="font-size:1.5rem;font-weight:300">חצי יום</p>
+        </div>
+        <a href="#booking" onclick="closeServiceModal()" class="bg-primary text-on-primary px-8 py-3 text-xs tracking-widest uppercase transition-all hover:opacity-80" style="text-decoration:none">לתיאום הפקה</a>
+      </div>
+    </div>
+  </div>
+</div>
 </body></html>
