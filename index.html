@@ -288,122 +288,173 @@
       }
       .service-modal-overlay.open .modal-cta-bar { opacity: 1; }
 
-      /* ── Why Section ── */
-      .why-section { background: #ede9e2; }
-      .features-row {
-        display: flex;
-        flex-direction: row;
-        min-height: 360px;
-        gap: 3px;
+      /* ── Why Section v2 ── */
+      .why-spacer { height: 5rem; background: #faf9f6; }
+      .why-v2 {
+        display: grid;
+        grid-template-columns: 55% 45%;
+        min-height: 580px;
+        background: #f5f1ea;
       }
-      .feature-card {
-        position: relative;
-        flex: 1;
-        overflow: hidden;
-        background: #faf9f6;
-        cursor: pointer;
-        transition: flex 0.75s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      .feature-card.active { flex: 3.8; }
-
       @media (max-width: 767px) {
-        .features-row { flex-direction: column; min-height: unset; gap: 2px; }
-        .feature-card { flex: 1; min-height: 70px; transition: flex 0.65s cubic-bezier(0.4, 0, 0.2, 1); }
-        .feature-card.active { flex: 5; }
+        .why-v2 { grid-template-columns: 1fr; }
+        .why-gallery-wrap { height: 280px; order: -1; }
       }
 
-      .feature-card-glow {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(135deg, rgba(98,94,81,0.05) 0%, transparent 65%);
-        opacity: 0;
-        transition: opacity 0.6s;
-      }
-      .feature-card.active .feature-card-glow { opacity: 1; }
-
-      .feature-card-content {
-        position: relative;
-        z-index: 1;
-        padding: 2rem 1.75rem;
+      /* Left panel */
+      .why-left {
+        padding: 4rem 3.5rem;
         display: flex;
         flex-direction: column;
-        justify-content: flex-end;
-        height: 100%;
+        justify-content: center;
       }
-      .feature-num {
-        position: absolute;
-        top: 1rem;
-        right: 1.25rem;
-        font-size: 5.5rem;
-        line-height: 1;
-        font-weight: 100;
-        color: rgba(98,94,81,0.07);
-        user-select: none;
-        transition: color 0.6s, transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      .feature-card.active .feature-num {
-        color: rgba(98,94,81,0.13);
-        transform: scale(1.08) translateY(-4px);
-      }
-      .feature-icon-ms {
-        font-size: 1.7rem !important;
-        color: #625e51;
-        margin-bottom: 0.7rem;
+      @media (max-width: 767px) { .why-left { padding: 2.5rem 1.5rem; } }
+      .why-eyebrow {
         display: block;
-        transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
-      }
-      .feature-card.active .feature-icon-ms { transform: scale(1.25); }
-      .feature-label {
-        font-size: 0.7rem;
-        font-weight: 500;
-        letter-spacing: 0.2em;
+        font-size: 0.65rem;
+        letter-spacing: 0.35em;
         text-transform: uppercase;
-        margin-bottom: 0;
-        transition: margin-bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        color: rgba(98,94,81,0.5);
+        margin-bottom: 0.75rem;
       }
-      .feature-card.active .feature-label { margin-bottom: 0.6rem; }
-      .feature-body {
-        font-size: 0.82rem;
-        color: #5c605c;
-        line-height: 1.75;
-        max-height: 0;
-        overflow: hidden;
-        opacity: 0;
-        transition: max-height 0.65s cubic-bezier(0.4, 0, 0.2, 1),
-                    opacity 0.45s 0.18s;
-      }
-      .feature-card.active .feature-body { max-height: 90px; opacity: 1; }
-      .feature-progress-wrap {
-        margin-top: 1.25rem;
-        height: 1px;
-        background: rgba(98,94,81,0.14);
-        overflow: hidden;
-        opacity: 0;
-        transition: opacity 0.35s;
-      }
-      .feature-card.active .feature-progress-wrap { opacity: 1; }
-      .feature-progress-bar {
-        height: 100%;
-        width: 0%;
-        background: #625e51;
+      .why-title {
+        font-size: clamp(1.7rem, 2.8vw, 2.5rem);
+        font-weight: 300;
+        line-height: 1.2;
+        color: #2f3430;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid rgba(98,94,81,0.15);
       }
 
-      /* Divider line on left side (desktop) */
-      .feature-card + .feature-card::before {
-        content: '';
+      /* Sliding window card */
+      .why-window {
+        position: relative;
+        background: #faf9f6;
+        border: 1px solid rgba(98,94,81,0.12);
+        min-height: 240px;
+        overflow: hidden;
+      }
+      .why-slide {
         position: absolute;
-        top: 10%;
-        bottom: 10%;
-        left: 0;
-        width: 1px;
-        background: rgba(98,94,81,0.12);
-        z-index: 2;
+        inset: 0;
+        padding: 1.75rem 2rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        opacity: 0;
+        transform: translateX(-20px);
+        transition: opacity 0.5s ease, transform 0.55s cubic-bezier(0.16,1,0.3,1);
+        pointer-events: none;
       }
-      @media (max-width: 767px) {
-        .feature-card + .feature-card::before {
-          top: 0; bottom: unset; left: 10%; right: 10%; width: unset; height: 1px;
-        }
+      .why-slide.active {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: all;
       }
+      .why-slide.exit {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      .why-slide-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+      }
+      .why-slide-icon {
+        font-size: 1.5rem !important;
+        color: #625e51;
+      }
+      .why-slide-num {
+        font-size: 3.5rem;
+        font-weight: 100;
+        line-height: 1;
+        color: rgba(98,94,81,0.1);
+        user-select: none;
+      }
+      .why-slide-title {
+        font-size: 1.3rem;
+        font-weight: 400;
+        color: #2f3430;
+        letter-spacing: 0.03em;
+        margin-bottom: 0.6rem;
+      }
+      .why-slide-body {
+        font-size: 0.86rem;
+        line-height: 1.85;
+        color: #5c605c;
+        font-weight: 300;
+        flex: 1;
+      }
+      .why-slide-bar {
+        margin-top: 1.25rem;
+        height: 2px;
+        background: rgba(98,94,81,0.1);
+        overflow: hidden;
+      }
+      .why-slide-bar-fill {
+        height: 100%;
+        background: #625e51;
+        width: 0%;
+      }
+
+      /* Navigation */
+      .why-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 1.1rem;
+      }
+      .why-step-dots { display: flex; gap: 0.35rem; align-items: center; }
+      .why-step-dot {
+        height: 2px; width: 18px;
+        background: rgba(98,94,81,0.2);
+        border: none; padding: 0; cursor: pointer;
+        transition: background 0.3s, width 0.3s;
+      }
+      .why-step-dot.active { background: #625e51; width: 34px; }
+      .why-arrows { display: flex; gap: 0.4rem; }
+      .why-arrow {
+        width: 33px; height: 33px;
+        border: 1px solid rgba(98,94,81,0.22);
+        background: transparent;
+        color: #625e51;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.25s;
+      }
+      .why-arrow:hover { background: rgba(98,94,81,0.07); border-color: rgba(98,94,81,0.45); }
+      .why-arrow .material-symbols-outlined { font-size: 1rem !important; }
+
+      /* Right gallery – horizontal RTL slide */
+      .why-gallery-wrap { position: relative; overflow: hidden; }
+      .why-gallery-track {
+        display: flex;
+        height: 100%;
+        direction: ltr;
+        transition: transform 0.85s cubic-bezier(0.77, 0, 0.18, 1);
+      }
+      .why-gallery-slide {
+        flex: 0 0 100%;
+        height: 100%;
+        position: relative;
+      }
+      .why-gallery-slide img {
+        width: 100%; height: 100%; object-fit: cover;
+      }
+      .why-gallery-dots {
+        position: absolute; bottom: 1.25rem; left: 0; right: 0;
+        display: flex; justify-content: center; gap: 0.4rem; z-index: 10;
+      }
+      .why-dot {
+        width: 18px; height: 2px;
+        background: rgba(255,255,255,0.38);
+        cursor: pointer;
+        transition: background 0.3s, width 0.3s;
+        border: none; padding: 0;
+      }
+      .why-dot.active { background: rgba(255,255,255,0.9); width: 34px; }
     </style>
 </head>
 <body class="bg-surface text-on-surface selection:bg-primary-container selection:text-on-primary-container">
@@ -443,8 +494,10 @@
 </button>
 <section class="relative h-screen flex items-center justify-center overflow-hidden">
 <div class="absolute inset-0 z-0">
-<img alt="Casa Mancini Exterior" class="w-full h-full object-cover animate-gentle-zoom scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTH9_UbRgCyE5MS3pfe4xRVVrlqTFewKS2v284VUAXIefb4UyzERTHAkC3zAN0TBKG0EtPO1r_2iSAGbPyAzTZZ9P_6zsvrNeJjUPa3ghiiBnczkm-jEgEgk7NYAlwa6o5LAcHfp78ROWGo_TOn02_ZdAfGgkBj9_nijarI7y9zy0iVYjGVElFeU2Lz2gBtbtb6seOMDd_Dpgl4ngPa_I-JaNdOXKeHVsKnpEkP8GQFzYUkMEdjE-JAlxwccSq9NV352t8JDpeFjw"/>
-<div class="absolute inset-0 bg-black/20 backdrop-grayscale-[20%] transition-all duration-1000"></div>
+<video autoplay muted loop playsinline class="w-full h-full object-cover">
+  <source src="hero-video.mp4" type="video/mp4"/>
+</video>
+<div class="absolute inset-0 bg-black/30 transition-all duration-1000"></div>
 </div>
 <div class="relative z-10 text-center px-6 animate-fade-up">
 <h1 class="font-headline text-5xl md:text-8xl text-white/95 tracking-[0.2em] font-light mb-3 opacity-0 animate-[fade-up_1s_ease-out_0.2s_forwards]">CASA MANCINI</h1>
@@ -454,6 +507,93 @@
 <span class="material-symbols-outlined">expand_more</span>
 </div>
 </section>
+
+<!-- ── Spacer between hero and why section ── -->
+<div class="why-spacer"></div>
+
+<!-- ── Why Section ── -->
+<section class="why-v2" id="why-section">
+  <!-- Left: Sliding window UX -->
+  <div class="why-left">
+    <h2 class="why-title">הייחוד שלנו</h2>
+
+    <!-- Single window card with sliding panels -->
+    <div class="why-window" id="whyWindow">
+      <div class="why-slide active" data-wslide="0">
+        <div>
+          <div class="why-slide-top">
+            <span class="material-symbols-outlined why-slide-icon">light_mode</span>
+            <span class="why-slide-num">01</span>
+          </div>
+          <h3 class="why-slide-title">אור טבעי</h3>
+          <p class="why-slide-body">חלונות גדולים שמכניסים אור רך ומחמיא לאורך כל היום. פוטוגניות ללא מאמץ — בין אם מדובר בצילומי כלה או בהפקת תוכן יוקרתי.</p>
+        </div>
+        <div class="why-slide-bar"><div class="why-slide-bar-fill"></div></div>
+      </div>
+      <div class="why-slide" data-wslide="1">
+        <div>
+          <div class="why-slide-top">
+            <span class="material-symbols-outlined why-slide-icon">visibility_off</span>
+            <span class="why-slide-num">02</span>
+          </div>
+          <h3 class="why-slide-title">פרטיות</h3>
+          <p class="why-slide-body">כניסה פרטית, חצר מוקפת חומה, ואפס שכנים. רק את, הצוות שלך, והרגעים שאת רוצה לשמור לעצמך — ללא הפרעות.</p>
+        </div>
+        <div class="why-slide-bar"><div class="why-slide-bar-fill"></div></div>
+      </div>
+      <div class="why-slide" data-wslide="2">
+        <div>
+          <div class="why-slide-top">
+            <span class="material-symbols-outlined why-slide-icon">auto_awesome</span>
+            <span class="why-slide-num">03</span>
+          </div>
+          <h3 class="why-slide-title">עיצוב</h3>
+          <p class="why-slide-body">טיח איטלקי, ריצוף אבן ופרטים אוצרותיים שנבחרו בקפידה. כל פינה מדברת בשפה עיצובית עקבית של יוקרה שקטה.</p>
+        </div>
+        <div class="why-slide-bar"><div class="why-slide-bar-fill"></div></div>
+      </div>
+      <div class="why-slide" data-wslide="3">
+        <div>
+          <div class="why-slide-top">
+            <span class="material-symbols-outlined why-slide-icon">spa</span>
+            <span class="why-slide-num">04</span>
+          </div>
+          <h3 class="why-slide-title">אווירה</h3>
+          <p class="why-slide-body">שקט, ריח של פרחים ואור שקוע. קאזה מנצ'יני היא מקלט של רוגע בלב העיר — מהרגע שנכנסים בדלת.</p>
+        </div>
+        <div class="why-slide-bar"><div class="why-slide-bar-fill"></div></div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="why-nav">
+      <div class="why-step-dots" id="whyStepDots"></div>
+      <div class="why-arrows">
+        <button class="why-arrow" id="whyPrev" aria-label="הקודם">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+        <button class="why-arrow" id="whyNext" aria-label="הבא">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Auto-rotating gallery with local images (horizontal slide) -->
+  <div class="why-gallery-wrap">
+    <div class="why-gallery-track" id="whyGalleryTrack">
+      <div class="why-gallery-slide"><img src="casa pic bride/1855.jpg" alt="קאזה מנצ'יני"/></div>
+      <div class="why-gallery-slide"><img src="casa pic bride/BIAN7163.jpg" alt="קאזה מנצ'יני"/></div>
+      <div class="why-gallery-slide"><img src="casa pic bride/DSC03936.jpg" alt="קאזה מנצ'יני"/></div>
+      <div class="why-gallery-slide"><img src="casa pic bride/DSC03990.jpg" alt="קאזה מנצ'יני"/></div>
+      <div class="why-gallery-slide"><img src="casa pic bride/DSC06455.jpg" alt="קאזה מנצ'יני"/></div>
+      <div class="why-gallery-slide"><img src="casa pic bride/DSC07958.jpg" alt="קאזה מנצ'יני"/></div>
+      <div class="why-gallery-slide"><img src="casa pic bride/SNI06536.jpg" alt="קאזה מנצ'יני"/></div>
+    </div>
+    <div class="why-gallery-dots" id="whyDots"></div>
+  </div>
+</section>
+
 <section class="py-16 md:py-32 px-4 md:px-24 bg-surface max-w-7xl mx-auto" id="about">
 <div class="grid grid-cols-2 gap-4 md:gap-20 items-center">
 <div class="order-1">
@@ -545,54 +685,6 @@
 </div>
 </div>
 </div>
-</section>
-<section class="why-section py-24 overflow-hidden">
-  <div class="max-w-5xl mx-auto px-6 mb-14 text-center reveal">
-    <span class="block text-xs tracking-[0.4em] uppercase text-primary/50 mb-5">הייחוד שלנו</span>
-    <h2 class="font-headline text-5xl md:text-6xl font-light">למה קאזה מנצ'יני?</h2>
-  </div>
-  <div class="features-row px-3 md:px-8" id="featuresRow">
-    <div class="feature-card active" data-idx="0">
-      <div class="feature-card-glow"></div>
-      <div class="feature-card-content">
-        <div class="feature-num">01</div>
-        <span class="material-symbols-outlined feature-icon-ms">light_mode</span>
-        <h4 class="feature-label">אור טבעי</h4>
-        <p class="feature-body">מערכות תאורה טבעית לתמונות מושלמות בכל שעה ביום</p>
-        <div class="feature-progress-wrap"><div class="feature-progress-bar"></div></div>
-      </div>
-    </div>
-    <div class="feature-card" data-idx="1">
-      <div class="feature-card-glow"></div>
-      <div class="feature-card-content">
-        <div class="feature-num">02</div>
-        <span class="material-symbols-outlined feature-icon-ms">visibility_off</span>
-        <h4 class="feature-label">פרטיות</h4>
-        <p class="feature-body">מרחב אינטימי ושקט המוקדש רק לכם, ללא הפרעות</p>
-        <div class="feature-progress-wrap"><div class="feature-progress-bar"></div></div>
-      </div>
-    </div>
-    <div class="feature-card" data-idx="2">
-      <div class="feature-card-glow"></div>
-      <div class="feature-card-content">
-        <div class="feature-num">03</div>
-        <span class="material-symbols-outlined feature-icon-ms">auto_awesome</span>
-        <h4 class="feature-label">עיצוב</h4>
-        <p class="feature-body">אסתטיקה אוצרותית בכל פינה ופינה, עד לפרט האחרון</p>
-        <div class="feature-progress-wrap"><div class="feature-progress-bar"></div></div>
-      </div>
-    </div>
-    <div class="feature-card" data-idx="3">
-      <div class="feature-card-glow"></div>
-      <div class="feature-card-content">
-        <div class="feature-num">04</div>
-        <span class="material-symbols-outlined feature-icon-ms">spa</span>
-        <h4 class="feature-label">אווירה</h4>
-        <p class="feature-body">חוויה של רוגע ויוקרה בלב העיר, מהרגע הראשון</p>
-        <div class="feature-progress-wrap"><div class="feature-progress-bar"></div></div>
-      </div>
-    </div>
-  </div>
 </section>
 <section class="py-32 relative overflow-hidden text-center bg-primary" id="booking">
 <div class="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
@@ -807,47 +899,94 @@
     }
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeServiceModal(); });
 
-    // ── Features Accordion ──
+    // ── Why Section: Sliding Window + Gallery ──
     (function () {
-      const cards = Array.from(document.querySelectorAll('#featuresRow .feature-card'));
-      if (!cards.length) return;
-      const DURATION = 4800;
-      let current = 0;
-      let timer = null;
-      let paused = false;
+      const wSlides  = Array.from(document.querySelectorAll('#whyWindow .why-slide'));
+      const gSlides  = Array.from(document.querySelectorAll('.why-gallery-slide'));
+      const dotsWrap = document.getElementById('whyDots');
+      const stepWrap = document.getElementById('whyStepDots');
+      const prevBtn  = document.getElementById('whyPrev');
+      const nextBtn  = document.getElementById('whyNext');
+      if (!wSlides.length) return;
 
-      function activate(idx) {
-        cards.forEach((c) => {
-          c.classList.remove('active');
-          const bar = c.querySelector('.feature-progress-bar');
-          if (bar) { bar.style.transition = 'none'; bar.style.width = '0%'; }
-        });
-        cards[idx].classList.add('active');
-        current = idx;
-        const bar = cards[idx].querySelector('.feature-progress-bar');
+      const SLIDE_DURATION   = 5000;
+      const GALLERY_DURATION = 5000;
+      let wIdx = 0, gIdx = 0;
+      let wTimer = null, gTimer = null;
+
+      // Build step dots
+      wSlides.forEach((_, i) => {
+        const d = document.createElement('button');
+        d.className = 'why-step-dot' + (i === 0 ? ' active' : '');
+        d.addEventListener('click', () => { goWindow(i); restartWTimer(); });
+        stepWrap && stepWrap.appendChild(d);
+      });
+
+      const gTrack = document.getElementById('whyGalleryTrack');
+
+      // Build gallery dots
+      gSlides.forEach((_, i) => {
+        const d = document.createElement('button');
+        d.className = 'why-dot' + (i === 0 ? ' active' : '');
+        d.setAttribute('aria-label', 'תמונה ' + (i + 1));
+        d.addEventListener('click', () => { goGallery(i); restartGTimer(); });
+        dotsWrap && dotsWrap.appendChild(d);
+      });
+
+      function getStepDots() { return stepWrap ? Array.from(stepWrap.querySelectorAll('.why-step-dot')) : []; }
+      function getGDots()    { return dotsWrap ? Array.from(dotsWrap.querySelectorAll('.why-dot')) : []; }
+
+      function goWindow(idx, dir) {
+        const cur = wSlides[wIdx];
+        cur.classList.remove('active');
+        cur.classList.add('exit');
+        setTimeout(() => cur.classList.remove('exit'), 550);
+
+        wIdx = (idx + wSlides.length) % wSlides.length;
+        const next = wSlides[wIdx];
+        next.style.transform = dir === 'prev' ? 'translateX(20px)' : 'translateX(-20px)';
+        next.style.opacity = '0';
+        next.classList.add('active');
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          next.style.transform = '';
+          next.style.opacity = '';
+        }));
+
+        // Progress bar
+        const bar = next.querySelector('.why-slide-bar-fill');
         if (bar) {
+          bar.style.transition = 'none'; bar.style.width = '0%';
           requestAnimationFrame(() => requestAnimationFrame(() => {
-            bar.style.transition = `width ${DURATION}ms linear`;
+            bar.style.transition = `width ${SLIDE_DURATION}ms linear`;
             bar.style.width = '100%';
           }));
         }
+
+        getStepDots().forEach((d, i) => d.classList.toggle('active', i === wIdx));
       }
 
-      function startTimer() {
-        clearInterval(timer);
-        timer = setInterval(() => {
-          if (!paused) activate((current + 1) % cards.length);
-        }, DURATION);
+      function goGallery(idx) {
+        gIdx = (idx + gSlides.length) % gSlides.length;
+        if (gTrack) gTrack.style.transform = `translateX(-${gIdx * 100}%)`;
+        getGDots().forEach((d, i) => d.classList.toggle('active', i === gIdx));
       }
 
-      cards.forEach((card, idx) => {
-        card.addEventListener('click', () => { activate(idx); startTimer(); });
-        card.addEventListener('mouseenter', () => { paused = true; });
-        card.addEventListener('mouseleave', () => { paused = false; });
-      });
+      function restartWTimer() {
+        clearInterval(wTimer);
+        wTimer = setInterval(() => goWindow(wIdx + 1, 'next'), SLIDE_DURATION);
+      }
+      function restartGTimer() {
+        clearInterval(gTimer);
+        gTimer = setInterval(() => goGallery((gIdx + 1) % gSlides.length), GALLERY_DURATION);
+      }
 
-      activate(0);
-      startTimer();
+      prevBtn && prevBtn.addEventListener('click', () => { goWindow(wIdx - 1, 'prev'); restartWTimer(); });
+      nextBtn && nextBtn.addEventListener('click', () => { goWindow(wIdx + 1, 'next'); restartWTimer(); });
+
+      goWindow(0, 'next');
+      goGallery(0);
+      restartWTimer();
+      restartGTimer();
     })();
 </script>
 <!-- ── Service Modals ── -->
