@@ -543,6 +543,12 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
   line-height: 1.4;
 }
 
+/* ── Accessibility classes ── */
+.a11y-contrast { background: #000 !important; color: #fff !important; }
+.a11y-contrast a { color: #7dd3fc !important; text-decoration: underline !important; }
+.a11y-links a { text-decoration: underline !important; }
+.a11y-no-animations *, .a11y-no-animations *::before, .a11y-no-animations *::after { animation: none !important; transition: none !important; }
+
 /* ── Char counter ── */
 .char-count {
   text-align: left;
@@ -832,6 +838,78 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
   </div>
 
 </div><!-- /page -->
+
+<!-- ── Footer ── -->
+<footer class="w-full pt-16 pb-10 mt-10 bg-stone-100 flex flex-col items-center gap-8 border-t border-stone-200/50"
+        style="font-family:'Heebo',sans-serif;">
+  <img src="LOGO black .png" alt="Casa Mancini"
+       style="height:60px;width:auto;object-fit:contain;opacity:0.7;pointer-events:none;user-select:none;"/>
+  <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:2rem;">
+    <a href="policy.html"
+       style="font-size:0.68rem;letter-spacing:0.15em;text-transform:uppercase;color:#44403c;text-decoration:none;transition:color 0.2s;"
+       onmouseover="this.style.color='#625e51'" onmouseout="this.style.color='#44403c'">מדיניות שימוש באתר</a>
+    <a href="accessibility.html"
+       style="font-size:0.68rem;letter-spacing:0.15em;text-transform:uppercase;color:#44403c;text-decoration:none;transition:color 0.2s;"
+       onmouseover="this.style.color='#625e51'" onmouseout="this.style.color='#44403c'">נגישות</a>
+  </div>
+  <div style="font-size:0.68rem;letter-spacing:0.1em;color:#78716c;text-align:center;line-height:1.8;">
+    © 2024 CASA MANCINI. ALL RIGHTS RESERVED.<br/>
+    מעוצב באהבה עבור רגעים של יופי.
+  </div>
+</footer>
+
+<!-- ── Accessibility button (fixed, same as main site) ── -->
+<button type="button" id="accessibility-btn"
+        style="position:fixed;left:2rem;top:50%;transform:translateY(-50%);z-index:40;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff;color:#1c1917;box-shadow:0 2px 8px rgba(0,0,0,0.15);border:none;cursor:pointer;transition:box-shadow 0.2s;"
+        aria-label="הגדרות נגישות"
+        onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.2)'"
+        onmouseout="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)'">
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm9 7h-6v13h-2v-6h-2v6H9V9H3V7h18v2z"/>
+  </svg>
+</button>
+
+<!-- ── Accessibility modal ── -->
+<div id="accessibility-modal"
+     style="position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);"
+     role="dialog" aria-modal="true" aria-labelledby="accessibility-title">
+  <div style="background:#fff;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-width:400px;width:calc(100% - 2rem);margin:1rem;padding:1.5rem;font-family:'Heebo',sans-serif;direction:rtl;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+      <h2 id="accessibility-title" style="font-size:1.1rem;font-weight:700;color:#2f3430;">הגדרות נגישות</h2>
+      <button type="button" id="accessibility-close"
+              style="width:32px;height:32px;border-radius:50%;border:none;background:none;font-size:1.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#777c77;"
+              aria-label="סגור">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+        <label style="font-size:0.88rem;color:#2f3430;">גודל טקסט</label>
+        <div style="display:flex;gap:0.5rem;">
+          <button type="button" id="a11y-font-decrease"
+                  style="padding:0.25rem 0.75rem;font-size:0.82rem;border:1px solid #d6d3d1;border-radius:4px;background:#fff;cursor:pointer;font-family:'Heebo',sans-serif;"
+                  aria-label="הקטן טקסט">א-</button>
+          <button type="button" id="a11y-font-increase"
+                  style="padding:0.25rem 0.75rem;font-size:0.82rem;border:1px solid #d6d3d1;border-radius:4px;background:#fff;cursor:pointer;font-family:'Heebo',sans-serif;"
+                  aria-label="הגדל טקסט">א+</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+        <label for="a11y-contrast" style="font-size:0.88rem;color:#2f3430;">ניגודיות גבוהה</label>
+        <input type="checkbox" id="a11y-contrast" style="width:16px;height:16px;cursor:pointer;"/>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+        <label for="a11y-links" style="font-size:0.88rem;color:#2f3430;">הדגשת קישורים</label>
+        <input type="checkbox" id="a11y-links" style="width:16px;height:16px;cursor:pointer;"/>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
+        <label for="a11y-animations" style="font-size:0.88rem;color:#2f3430;">ביטול אנימציות</label>
+        <input type="checkbox" id="a11y-animations" style="width:16px;height:16px;cursor:pointer;"/>
+      </div>
+    </div>
+    <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid #e7e5e4;">
+      <a href="accessibility.html" style="font-size:0.82rem;color:#625e51;text-decoration:underline;">הצהרת נגישות מלאה</a>
+    </div>
+  </div>
+</div>
 
 <script>
 // ═══════════════════════════════
@@ -1244,6 +1322,59 @@ function restoreLocal() {
     }
   } catch(e) {}
 }
+
+// ═══════════════════════════════
+//  ACCESSIBILITY
+// ═══════════════════════════════
+(function() {
+  const modal   = document.getElementById('accessibility-modal');
+  const openBtn = document.getElementById('accessibility-btn');
+  const closeBtn= document.getElementById('accessibility-close');
+
+  function openA11y()  { modal.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+  function closeA11y() { modal.style.display = 'none'; document.body.style.overflow = ''; }
+
+  openBtn.addEventListener('click', openA11y);
+  closeBtn.addEventListener('click', closeA11y);
+  modal.addEventListener('click', e => { if (e.target === modal) closeA11y(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeA11y(); });
+
+  // Restore saved settings
+  const stored = JSON.parse(localStorage.getItem('a11y') || '{}');
+  if (stored.fontSize) document.documentElement.style.fontSize = stored.fontSize + 'px';
+  if (stored.contrast)  document.body.classList.add('a11y-contrast');
+  if (stored.links)     document.body.classList.add('a11y-links');
+  if (stored.animations)document.body.classList.add('a11y-no-animations');
+
+  document.getElementById('a11y-contrast').checked  = !!stored.contrast;
+  document.getElementById('a11y-links').checked     = !!stored.links;
+  document.getElementById('a11y-animations').checked= !!stored.animations;
+
+  document.getElementById('a11y-font-increase').addEventListener('click', () => {
+    const cur = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const nxt = Math.min(cur + 2, 24);
+    document.documentElement.style.fontSize = nxt + 'px';
+    stored.fontSize = nxt; localStorage.setItem('a11y', JSON.stringify(stored));
+  });
+  document.getElementById('a11y-font-decrease').addEventListener('click', () => {
+    const cur = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const nxt = Math.max(cur - 2, 12);
+    document.documentElement.style.fontSize = nxt + 'px';
+    stored.fontSize = nxt; localStorage.setItem('a11y', JSON.stringify(stored));
+  });
+  document.getElementById('a11y-contrast').addEventListener('change', e => {
+    document.body.classList.toggle('a11y-contrast', e.target.checked);
+    stored.contrast = e.target.checked; localStorage.setItem('a11y', JSON.stringify(stored));
+  });
+  document.getElementById('a11y-links').addEventListener('change', e => {
+    document.body.classList.toggle('a11y-links', e.target.checked);
+    stored.links = e.target.checked; localStorage.setItem('a11y', JSON.stringify(stored));
+  });
+  document.getElementById('a11y-animations').addEventListener('change', e => {
+    document.body.classList.toggle('a11y-no-animations', e.target.checked);
+    stored.animations = e.target.checked; localStorage.setItem('a11y', JSON.stringify(stored));
+  });
+})();
 </script>
 </body>
 </html>
