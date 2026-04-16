@@ -3,1266 +3,1197 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>קאזה מנצ'יני – השאר פרטים</title>
+<title>קאזה מנצ'יני – השארת פרטים</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = {
-  theme: {
-    extend: {
-      colors: {
-        "bg": "#faf9f6",
-        "primary": "#625e51",
-        "primary-dark": "#433f33",
-        "text": "#2f3430",
-        "warm": "#c9a96e",
-        "warm-light": "#e8d5b0",
-        "muted": "#777c77",
-        "surface": "#f0ede6",
-      },
-      fontFamily: { "display": ["Heebo", "sans-serif"] },
-    }
-  }
-}
-</script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #faf9f6;
-    --primary: #625e51;
-    --primary-dark: #433f33;
-    --text: #2f3430;
-    --warm: #c9a96e;
-    --warm-light: #e8d5b0;
-    --muted: #777c77;
-    --surface: #f0ede6;
-    --error: #9e422c;
-    --success: #2d6a4f;
-  }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  html { scroll-behavior: smooth; }
-  body {
-    font-family: 'Heebo', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-    direction: rtl;
-  }
+:root {
+  --bg: #faf9f6;
+  --surface: #f2efe8;
+  --primary: #625e51;
+  --primary-dark: #433f33;
+  --text: #2f3430;
+  --muted: #777c77;
+  --warm: #c9a96e;
+  --warm-light: #e8d5b0;
+  --error: #9e422c;
+  --success: #2d6a4f;
+  --border: rgba(98,94,81,0.18);
+  --border-focus: #c9a96e;
+}
 
-  /* ─── Background texture ─── */
-  .bg-texture {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    background:
-      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(201,169,110,0.07) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 80% at 80% 80%, rgba(98,94,81,0.05) 0%, transparent 60%),
-      var(--bg);
-    pointer-events: none;
-  }
-  .grain {
-    position: fixed;
-    inset: 0;
-    z-index: 1;
-    opacity: 0.025;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-    pointer-events: none;
-  }
+html { scroll-behavior: smooth; }
 
-  /* ─── Layout ─── */
-  .page-wrap {
-    position: relative;
-    z-index: 2;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 2rem 1rem 4rem;
-  }
+body {
+  font-family: 'Heebo', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+}
 
-  /* ─── Header ─── */
-  .site-header {
-    width: 100%;
-    max-width: 640px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-bottom: 2.5rem;
-    border-bottom: 1px solid rgba(98,94,81,0.15);
-    margin-bottom: 3rem;
-  }
-  .logo-text {
-    font-size: 1rem;
-    font-weight: 300;
-    letter-spacing: 0.15em;
-    color: var(--primary);
-    text-transform: uppercase;
-  }
-  .brain-badge {
-    font-size: 1.5rem;
-    background: var(--primary-dark);
-    color: var(--warm-light);
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 20px rgba(98,94,81,0.25);
-  }
+/* ── Subtle background ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 10%, rgba(201,169,110,0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 70% at 85% 90%, rgba(98,94,81,0.04) 0%, transparent 55%);
+  pointer-events: none;
+  z-index: 0;
+}
 
-  /* ─── Form container ─── */
-  .form-container {
-    width: 100%;
-    max-width: 580px;
-  }
+/* ── Layout ── */
+.page {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2.5rem 1.25rem 5rem;
+}
 
-  /* ─── Progress bar ─── */
-  .progress-wrap {
-    margin-bottom: 2.5rem;
-  }
-  .progress-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.6rem;
-    font-size: 0.78rem;
-    color: var(--muted);
-    letter-spacing: 0.05em;
-  }
-  .progress-track {
-    height: 3px;
-    background: rgba(98,94,81,0.15);
-    border-radius: 99px;
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--warm), var(--primary));
-    border-radius: 99px;
-    transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
-    width: 0%;
-  }
-  .step-dots {
-    display: flex;
-    gap: 6px;
-    margin-top: 0.8rem;
-  }
-  .step-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: rgba(98,94,81,0.2);
-    transition: all 0.4s ease;
-  }
-  .step-dot.active { background: var(--warm); transform: scale(1.3); }
-  .step-dot.done { background: var(--primary); }
+.card {
+  width: 100%;
+  max-width: 560px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 4px 40px rgba(98,94,81,0.07);
+}
 
-  /* ─── Question card ─── */
-  .question-card {
-    display: none;
-    animation: slideUp 0.55s cubic-bezier(0.16,1,0.3,1) forwards;
-  }
-  .question-card.active { display: block; }
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(28px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+@media (max-width: 480px) {
+  .page { padding: 1.5rem 0 4rem; }
+  .card { border-radius: 0; border-left: none; border-right: none; padding: 2rem 1.25rem; }
+}
 
-  .question-number {
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    color: var(--warm);
-    text-transform: uppercase;
-    margin-bottom: 0.5rem;
-  }
-  .question-title {
-    font-size: clamp(1.5rem, 4vw, 2rem);
-    font-weight: 200;
-    line-height: 1.3;
-    color: var(--text);
-    margin-bottom: 0.4rem;
-  }
-  .question-title strong { font-weight: 700; color: var(--primary-dark); }
-  .question-subtitle {
-    font-size: 0.85rem;
-    color: var(--muted);
-    margin-bottom: 2rem;
-    font-weight: 300;
-  }
+/* ── Logo ── */
+.logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  user-select: none;
+  pointer-events: none;
+}
+.logo-wrap img {
+  height: 52px;
+  width: auto;
+  opacity: 0.85;
+  object-fit: contain;
+}
 
-  /* ─── Input styles ─── */
-  .input-field {
-    width: 100%;
-    padding: 1rem 1.2rem;
-    font-family: 'Heebo', sans-serif;
-    font-size: 1.05rem;
-    font-weight: 400;
-    color: var(--text);
-    background: white;
-    border: 1.5px solid rgba(98,94,81,0.2);
-    border-radius: 6px;
-    outline: none;
-    transition: all 0.3s ease;
-    direction: rtl;
-    -webkit-appearance: none;
-  }
-  .input-field:focus {
-    border-color: var(--warm);
-    box-shadow: 0 0 0 3px rgba(201,169,110,0.12);
-  }
-  .input-field.error {
-    border-color: var(--error);
-    box-shadow: 0 0 0 3px rgba(158,66,44,0.1);
-  }
-  .input-field.valid {
-    border-color: var(--success);
-  }
-  .field-error {
-    font-size: 0.78rem;
-    color: var(--error);
-    margin-top: 0.4rem;
-    opacity: 0;
-    transform: translateY(-4px);
-    transition: all 0.3s ease;
-    height: 0;
-  }
-  .field-error.show {
-    opacity: 1;
-    transform: translateY(0);
-    height: auto;
-    margin-top: 0.4rem;
-  }
+/* ── Progress ── */
+.progress-wrap { margin-bottom: 2rem; }
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.progress-label { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.06em; }
+.progress-pct { font-size: 0.72rem; font-weight: 700; color: var(--warm); }
+.progress-track {
+  height: 2px;
+  background: rgba(98,94,81,0.12);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--warm), var(--primary));
+  border-radius: 99px;
+  transition: width 0.55s cubic-bezier(0.16,1,0.3,1);
+  width: 0%;
+}
 
-  /* ─── Service cards ─── */
-  .service-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-    margin-bottom: 0.5rem;
-  }
-  @media (max-width: 420px) { .service-grid { grid-template-columns: 1fr; } }
+/* ── Back button ── */
+.btn-back {
+  display: none;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  font-family: 'Heebo', sans-serif;
+  font-size: 0.8rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 1.75rem;
+  transition: color 0.2s;
+}
+.btn-back:hover { color: var(--primary); }
+.btn-back svg { flex-shrink: 0; }
 
-  .service-card {
-    padding: 1rem 1.1rem;
-    background: white;
-    border: 1.5px solid rgba(98,94,81,0.18);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
-    user-select: none;
-    position: relative;
-    overflow: hidden;
-  }
-  .service-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(201,169,110,0.08), transparent);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  .service-card:hover { border-color: var(--warm-light); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(98,94,81,0.1); }
-  .service-card:hover::before { opacity: 1; }
-  .service-card.selected {
-    border-color: var(--warm);
-    background: linear-gradient(135deg, rgba(201,169,110,0.12), rgba(255,255,255,0.9));
-    box-shadow: 0 6px 20px rgba(201,169,110,0.2);
-  }
-  .service-card.selected::before { opacity: 1; }
-  .service-icon { font-size: 1.6rem; margin-bottom: 0.4rem; }
-  .service-name { font-size: 0.9rem; font-weight: 600; color: var(--text); }
-  .service-desc { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; font-weight: 300; }
-  .service-check {
-    position: absolute;
-    top: 0.6rem;
-    left: 0.6rem;
-    width: 20px; height: 20px;
-    background: var(--warm);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    opacity: 0;
-    transform: scale(0);
-    transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    font-size: 0.7rem;
-  }
-  .service-card.selected .service-check { opacity: 1; transform: scale(1); }
+/* ── Step ── */
+.step { display: none; }
+.step.active {
+  display: block;
+  animation: fadeUp 0.45s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
-  /* ─── Date/Time chips ─── */
-  .urgency-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-  }
-  .urgency-chip {
-    padding: 0.55rem 1.1rem;
-    border: 1.5px solid rgba(98,94,81,0.2);
-    border-radius: 99px;
-    font-size: 0.85rem;
-    font-weight: 400;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    background: white;
-    color: var(--text);
-    user-select: none;
-  }
-  .urgency-chip:hover { border-color: var(--warm); color: var(--primary-dark); }
-  .urgency-chip.selected {
-    background: var(--primary-dark);
-    border-color: var(--primary-dark);
-    color: var(--warm-light);
-    font-weight: 500;
-  }
+.step-num {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--warm);
+  text-transform: uppercase;
+  margin-bottom: 0.45rem;
+}
+.step-title {
+  font-size: clamp(1.35rem, 4vw, 1.75rem);
+  font-weight: 300;
+  line-height: 1.3;
+  color: var(--text);
+  margin-bottom: 1.75rem;
+}
+.step-title strong { font-weight: 800; }
 
-  /* ─── Budget slider ─── */
-  .budget-display {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--primary-dark);
-    margin-bottom: 0.5rem;
-    letter-spacing: -0.02em;
-  }
-  .budget-display span { font-size: 1rem; font-weight: 300; color: var(--muted); }
-  input[type="range"] {
-    width: 100%;
-    -webkit-appearance: none;
-    height: 4px;
-    border-radius: 99px;
-    background: linear-gradient(to left, var(--warm) var(--val, 40%), rgba(98,94,81,0.2) var(--val, 40%));
-    outline: none;
-    cursor: pointer;
-    margin: 1rem 0;
-  }
-  input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    background: var(--primary-dark);
-    box-shadow: 0 2px 10px rgba(98,94,81,0.3);
-    transition: transform 0.2s;
-    cursor: grab;
-  }
-  input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor: grabbing; }
+/* ── Inputs ── */
+.field { margin-bottom: 1.1rem; }
+.field-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--primary);
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4rem;
+}
+.field-label .req { color: var(--error); margin-right: 2px; }
 
-  /* ─── Textarea ─── */
-  textarea.input-field { resize: none; min-height: 110px; line-height: 1.6; }
+input[type="text"],
+input[type="tel"],
+input[type="email"],
+input[type="date"],
+input[type="number"],
+textarea {
+  display: block;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-family: 'Heebo', sans-serif;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.25s, box-shadow 0.25s;
+  direction: rtl;
+  -webkit-appearance: none;
+  appearance: none;
+}
+input[type="date"] { color-scheme: light; }
+input:focus, textarea:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(201,169,110,0.14);
+}
+input.has-error, textarea.has-error {
+  border-color: var(--error);
+  box-shadow: 0 0 0 3px rgba(158,66,44,0.09);
+}
+input.is-valid { border-color: rgba(45,106,79,0.5); }
+textarea { resize: none; min-height: 100px; line-height: 1.6; }
 
-  /* ─── CTA Button ─── */
-  .btn-primary {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    width: 100%;
-    padding: 1rem 2rem;
-    background: var(--primary-dark);
-    color: var(--warm-light);
-    font-family: 'Heebo', sans-serif;
-    font-size: 1rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
-    position: relative;
-    overflow: hidden;
-    margin-top: 1.5rem;
-  }
-  .btn-primary::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-    transform: translateX(-100%);
-    transition: transform 0.6s ease;
-  }
-  .btn-primary:hover { background: var(--primary); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(98,94,81,0.25); }
-  .btn-primary:hover::after { transform: translateX(100%); }
-  .btn-primary:active { transform: translateY(0); }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-  .btn-arrow { transition: transform 0.3s ease; }
-  .btn-primary:hover .btn-arrow { transform: translateX(-4px); }
+.field-hint {
+  font-size: 0.73rem;
+  color: var(--muted);
+  margin-top: 0.35rem;
+}
+.field-error {
+  font-size: 0.73rem;
+  color: var(--error);
+  margin-top: 0.35rem;
+  display: none;
+}
+.field-error.show { display: block; }
 
-  .btn-skip {
-    display: block;
-    width: 100%;
-    text-align: center;
-    margin-top: 0.75rem;
-    font-size: 0.8rem;
-    color: var(--muted);
-    cursor: pointer;
-    padding: 0.4rem;
-    transition: color 0.2s;
-  }
-  .btn-skip:hover { color: var(--primary); }
+/* ── Service chips ── */
+.service-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+@media (max-width: 400px) { .service-grid { grid-template-columns: 1fr; } }
 
-  /* ─── Back button ─── */
-  .btn-back {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.82rem;
-    color: var(--muted);
-    cursor: pointer;
-    padding: 0.4rem 0;
-    margin-bottom: 2rem;
-    transition: color 0.2s;
-    background: none;
-    border: none;
-    font-family: 'Heebo', sans-serif;
-  }
-  .btn-back:hover { color: var(--primary); }
-  .btn-back svg { transform: rotate(180deg); transition: transform 0.2s; }
-  .btn-back:hover svg { transform: rotate(180deg) translateX(-3px); }
+.service-chip {
+  position: relative;
+  padding: 0.9rem 1rem;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+  user-select: none;
+}
+.service-chip:hover { border-color: var(--warm-light); background: #fff; }
+.service-chip.selected {
+  border-color: var(--warm);
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(201,169,110,0.18);
+}
+.chip-icon { font-size: 1.25rem; margin-bottom: 0.3rem; }
+.chip-name { font-size: 0.88rem; font-weight: 600; color: var(--text); }
+.chip-check {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  width: 18px; height: 18px;
+  background: var(--warm);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem; color: #fff;
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+.service-chip.selected .chip-check { opacity: 1; transform: scale(1); }
+.service-chip.full-width { grid-column: 1 / -1; }
 
-  /* ─── Success screen ─── */
-  .success-screen {
-    display: none;
-    text-align: center;
-    animation: slideUp 0.7s cubic-bezier(0.16,1,0.3,1) forwards;
-  }
-  .success-screen.active { display: block; }
-  .success-circle {
-    width: 90px; height: 90px;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 1.5rem;
-    font-size: 2.2rem;
-    box-shadow: 0 12px 40px rgba(98,94,81,0.3);
-    animation: popIn 0.6s 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
-  }
-  @keyframes popIn {
-    from { opacity: 0; transform: scale(0.5); }
-    to { opacity: 1; transform: scale(1); }
-  }
-  .success-title { font-size: 2rem; font-weight: 200; margin-bottom: 0.5rem; }
-  .success-title strong { font-weight: 800; display: block; }
-  .success-sub { font-size: 0.9rem; color: var(--muted); font-weight: 300; margin-bottom: 2rem; line-height: 1.7; }
+/* ── Sub-chips (pill style) ── */
+.sub-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.sub-chip {
+  padding: 0.5rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: 99px;
+  font-size: 0.83rem;
+  font-weight: 400;
+  color: var(--text);
+  background: var(--bg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.sub-chip:hover { border-color: var(--warm-light); }
+.sub-chip.selected {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  color: var(--warm-light);
+  font-weight: 500;
+}
 
-  /* ─── Lead score badge ─── */
-  .score-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.4rem 1rem;
-    border-radius: 99px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    margin-bottom: 2rem;
-  }
-  .score-hot { background: rgba(158,66,44,0.12); color: #9e422c; }
-  .score-warm { background: rgba(201,169,110,0.2); color: #7a5c1e; }
-  .score-cold { background: rgba(98,94,81,0.1); color: var(--muted); }
+/* ── Urgency chips ── */
+.urgency-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
 
-  /* ─── WhatsApp button ─── */
-  .btn-whatsapp {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.6rem;
-    width: 100%;
-    padding: 0.9rem 2rem;
-    background: #25D366;
-    color: white;
-    font-family: 'Heebo', sans-serif;
-    font-size: 0.95rem;
-    font-weight: 600;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-top: 0.75rem;
-    text-decoration: none;
-  }
-  .btn-whatsapp:hover { background: #20ba5a; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(37,211,102,0.3); }
+/* ── Conditional block ── */
+.conditional-block {
+  display: none;
+  margin-top: 1rem;
+  padding: 1.1rem;
+  background: rgba(201,169,110,0.06);
+  border: 1px solid rgba(201,169,110,0.18);
+  border-radius: 4px;
+  animation: fadeUp 0.35s ease both;
+}
+.conditional-block.show { display: block; }
+.cond-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 0.75rem;
+}
 
-  /* ─── Floating helper ─── */
-  .helper-bubble {
-    position: fixed;
-    bottom: 2rem;
-    left: 1.5rem;
-    background: var(--primary-dark);
-    color: var(--warm-light);
-    padding: 0.8rem 1.2rem;
-    border-radius: 12px 12px 4px 12px;
-    font-size: 0.83rem;
-    font-weight: 400;
-    max-width: 220px;
-    box-shadow: 0 8px 30px rgba(98,94,81,0.3);
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.4s cubic-bezier(0.16,1,0.3,1);
-    z-index: 100;
-    cursor: pointer;
-    line-height: 1.5;
-  }
-  .helper-bubble.show { opacity: 1; transform: translateY(0); }
-  .helper-bubble strong { display: block; font-weight: 700; margin-bottom: 0.2rem; }
+/* ── Budget slider ── */
+.budget-amount {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--primary-dark);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.25rem;
+}
+.budget-amount span { font-size: 1rem; font-weight: 300; color: var(--muted); }
+input[type="range"] {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 99px;
+  background: linear-gradient(to left, var(--warm) 15%, rgba(98,94,81,0.15) 15%);
+  outline: none;
+  cursor: pointer;
+  margin: 0.75rem 0;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--primary-dark);
+  box-shadow: 0 2px 8px rgba(98,94,81,0.3);
+  transition: transform 0.15s;
+  cursor: grab;
+}
+input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor: grabbing; }
+.budget-range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
 
-  /* ─── Microcopy ─── */
-  .microcopy {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.75rem;
-    color: var(--muted);
-    margin-top: 1.2rem;
-    justify-content: center;
-  }
+/* ── Primary CTA ── */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.95rem 2rem;
+  margin-top: 1.5rem;
+  background: var(--primary-dark);
+  color: var(--warm-light);
+  font-family: 'Heebo', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+.btn-primary:hover { background: var(--primary); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(98,94,81,0.2); }
+.btn-primary:hover::after { transform: translateX(100%); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-arrow { transition: transform 0.2s; }
+.btn-primary:hover .btn-arrow { transform: translateX(-3px); }
 
-  /* ─── Conditional extra ─── */
-  .bride-extras, .fashion-extras, .product-extras, .production-extras {
-    display: none;
-    margin-top: 1rem;
-    padding: 1.2rem;
-    background: rgba(201,169,110,0.07);
-    border-radius: 8px;
-    border: 1px solid rgba(201,169,110,0.2);
-    animation: slideUp 0.4s ease forwards;
-  }
-  .bride-extras.show, .fashion-extras.show,
-  .product-extras.show, .production-extras.show { display: block; }
-  .extras-label { font-size: 0.8rem; font-weight: 600; color: var(--primary); margin-bottom: 0.75rem; }
+.btn-skip {
+  display: block;
+  text-align: center;
+  margin-top: 0.7rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.35rem;
+  transition: color 0.2s;
+  user-select: none;
+}
+.btn-skip:hover { color: var(--primary); }
 
-  /* ─── Responsive ─── */
-  @media (max-width: 480px) {
-    .page-wrap { padding: 1.5rem 1rem 5rem; }
-    .question-title { font-size: 1.4rem; }
-    .site-header { padding-bottom: 1.5rem; margin-bottom: 2rem; }
-  }
-  @media (min-width: 640px) {
-    .page-wrap { padding: 3rem 2rem 5rem; }
-  }
+/* ── Success ── */
+.success { display: none; text-align: center; }
+.success.active {
+  display: block;
+  animation: fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both;
+}
+.success-mark {
+  width: 72px; height: 72px;
+  background: var(--primary-dark);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1.5rem;
+  font-size: 1.8rem;
+  box-shadow: 0 8px 32px rgba(98,94,81,0.25);
+  animation: pop 0.55s 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.success-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+}
+.success-body {
+  font-size: 0.95rem;
+  font-weight: 300;
+  color: var(--text);
+  line-height: 1.7;
+  margin-bottom: 0.75rem;
+}
+.success-note {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
 
-  /* ─── Sticky CTA mobile ─── */
-  @media (max-width: 640px) {
-    .sticky-cta-wrap {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      padding: 1rem;
-      background: linear-gradient(to top, var(--bg) 70%, transparent);
-      z-index: 50;
-    }
-  }
+/* ── Reviews ── */
+.reviews-section {
+  width: 100%;
+  max-width: 560px;
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+.reviews-title {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+.review-item {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 0.75rem;
+}
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+.review-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.review-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.review-meta { flex: 1; }
+.review-name { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+.review-date { font-size: 0.7rem; color: var(--muted); }
+.review-stars { color: #f5a623; font-size: 0.72rem; letter-spacing: 1px; }
+.review-text { font-size: 0.82rem; line-height: 1.65; color: var(--text); font-weight: 300; }
+.reviews-note { font-size: 0.7rem; color: var(--muted); text-align: center; margin-top: 0.75rem; }
 
-  /* ─── Testimonial strip ─── */
-  .testimonial-strip {
-    width: 100%;
-    max-width: 580px;
-    margin-top: 3rem;
-    padding: 1.5rem;
-    border-top: 1px solid rgba(98,94,81,0.1);
-  }
-  .testimonial-label {
-    font-size: 0.72rem;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 1rem;
-    text-align: center;
-  }
-  .testimonials { display: flex; flex-direction: column; gap: 0.75rem; }
-  .testimonial-item {
-    padding: 1rem 1.1rem;
-    background: white;
-    border-radius: 6px;
-    border: 1px solid rgba(98,94,81,0.1);
-  }
-  .testimonial-text { font-size: 0.83rem; line-height: 1.6; color: var(--text); font-weight: 300; }
-  .testimonial-author { font-size: 0.72rem; color: var(--muted); margin-top: 0.4rem; font-weight: 600; }
-  .stars { color: var(--warm); font-size: 0.75rem; margin-bottom: 0.3rem; }
+/* ── Char counter ── */
+.char-count {
+  text-align: left;
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 0.3rem;
+}
 </style>
 </head>
 <body>
 
-<div class="bg-texture"></div>
-<div class="grain"></div>
+<div class="page">
 
-<div class="page-wrap">
+  <!-- FORM CARD -->
+  <div class="card" id="formCard">
 
-  <!-- Header -->
-  <header class="site-header">
-    <div>
-      <div class="logo-text">Casa Mancini</div>
-      <div style="font-size:0.7rem;color:var(--muted);font-weight:300;letter-spacing:0.08em;margin-top:2px;">התארגנות כלה • לוקיישן להפקות</div>
+    <!-- Logo -->
+    <div class="logo-wrap">
+      <img src="LOGO black .png" alt="Casa Mancini" draggable="false"/>
     </div>
-    <div class="brain-badge" title="טופס חכם">🧠</div>
-  </header>
-
-  <!-- Form container -->
-  <div class="form-container" id="formContainer">
 
     <!-- Progress -->
-    <div class="progress-wrap" id="progressWrap">
-      <div class="progress-label">
-        <span id="progressText">מתחילים</span>
-        <span id="progressPercent" style="font-weight:600;color:var(--primary)">0%</span>
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span class="progress-label" id="progLabel">שלב 1 מתוך 7</span>
+        <span class="progress-pct" id="progPct">0%</span>
       </div>
       <div class="progress-track">
-        <div class="progress-fill" id="progressFill"></div>
+        <div class="progress-fill" id="progFill"></div>
       </div>
-      <div class="step-dots" id="stepDots"></div>
     </div>
 
-    <!-- Back button -->
-    <button class="btn-back" id="backBtn" onclick="goBack()" style="display:none">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    <!-- Back -->
+    <button class="btn-back" id="backBtn" onclick="goBack()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg>
       חזרה
     </button>
 
-    <!-- STEP 1: Name -->
-    <div class="question-card active" data-step="1">
-      <div class="question-number">שאלה 1 מתוך 6</div>
-      <h2 class="question-title">שלום! <strong>איך קוראים לך?</strong></h2>
-      <p class="question-subtitle">נשמח להכיר — זה יהיה שיחה, לא טופס 🤍</p>
-      <input
-        class="input-field" id="fieldName"
-        type="text" placeholder="השם שלך"
-        autocomplete="given-name"
-        oninput="onNameInput(this)"
-        onkeydown="if(event.key==='Enter')nextStep()"
-      />
-      <div class="field-error" id="errName">אנא הכנסי שם תקין</div>
-      <button class="btn-primary" onclick="nextStep()">
-        <span>המשך</span>
-        <span class="btn-arrow">←</span>
+    <!-- ══ STEP 1: Name ══ -->
+    <div class="step active" data-step="1">
+      <div class="step-num">שלב 1 מתוך 7</div>
+      <h2 class="step-title">שלום! <strong>איך קוראים לך?</strong></h2>
+      <div class="field">
+        <label class="field-label" for="f-name">שם מלא <span class="req">*</span></label>
+        <input type="text" id="f-name" placeholder="שמך המלא" autocomplete="name"
+               oninput="liveValidateName()" onkeydown="enterNext(event)"/>
+        <div class="field-error" id="e-name">אנא הכנסי שם מלא</div>
+      </div>
+      <button class="btn-primary" onclick="next()">
+        המשך <span class="btn-arrow">←</span>
       </button>
     </div>
 
-    <!-- STEP 2: Phone -->
-    <div class="question-card" data-step="2">
-      <div class="question-number">שאלה 2 מתוך 6</div>
-      <h2 class="question-title" id="step2Title">מה <strong>הטלפון שלך</strong>?</h2>
-      <p class="question-subtitle">נחזור אליך תוך זמן קצר — מבטיחים ✨</p>
-      <input
-        class="input-field" id="fieldPhone"
-        type="tel" placeholder="05X-XXXXXXX"
-        autocomplete="tel"
-        oninput="onPhoneInput(this)"
-        onkeydown="if(event.key==='Enter')nextStep()"
-        dir="ltr" style="text-align:right"
-      />
-      <div class="field-error" id="errPhone">מספר טלפון לא תקין</div>
-
-      <input
-        class="input-field" id="fieldEmail"
-        type="email" placeholder="אימייל (אופציונלי)"
-        autocomplete="email"
-        style="margin-top:0.75rem"
-        dir="ltr" style="margin-top:0.75rem;text-align:right"
-        onkeydown="if(event.key==='Enter')nextStep()"
-      />
-      <button class="btn-primary" onclick="nextStep()">
-        <span>המשך</span>
-        <span class="btn-arrow">←</span>
+    <!-- ══ STEP 2: Phone + Email ══ -->
+    <div class="step" data-step="2">
+      <div class="step-num">שלב 2 מתוך 7</div>
+      <h2 class="step-title" id="s2-title">מה <strong>פרטי הקשר שלך</strong>?</h2>
+      <div class="field">
+        <label class="field-label" for="f-phone">טלפון <span class="req">*</span></label>
+        <input type="tel" id="f-phone" placeholder="05X-XXXXXXX" autocomplete="tel"
+               dir="ltr" style="text-align:right"
+               oninput="liveValidatePhone()" onkeydown="enterNext(event)"/>
+        <div class="field-error" id="e-phone">מספר טלפון לא תקין</div>
+      </div>
+      <div class="field">
+        <label class="field-label" for="f-email">אימייל <span class="req">*</span></label>
+        <input type="email" id="f-email" placeholder="your@email.com" autocomplete="email"
+               dir="ltr" style="text-align:right"
+               oninput="liveValidateEmail()" onkeydown="enterNext(event)"/>
+        <div class="field-error" id="e-email">כתובת אימייל לא תקינה</div>
+      </div>
+      <button class="btn-primary" onclick="next()">
+        המשך <span class="btn-arrow">←</span>
       </button>
     </div>
 
-    <!-- STEP 3: Service -->
-    <div class="question-card" data-step="3">
-      <div class="question-number">שאלה 3 מתוך 6</div>
-      <h2 class="question-title" id="step3Title">מה <strong>השירות שאת מחפשת</strong>?</h2>
-      <p class="question-subtitle">בחרי את הקטגוריה שהכי מתאימה</p>
+    <!-- ══ STEP 3: Service ══ -->
+    <div class="step" data-step="3">
+      <div class="step-num">שלב 3 מתוך 7</div>
+      <h2 class="step-title" id="s3-title">מה <strong>השירות שאת מחפשת</strong>?</h2>
       <div class="service-grid">
-        <div class="service-card" onclick="selectService('bride', this)">
-          <div class="service-check">✓</div>
-          <div class="service-icon">👰</div>
-          <div class="service-name">התארגנות כלה</div>
-          <div class="service-desc">הכנה מלאה ליום המיוחד</div>
+        <div class="service-chip" id="chip-bride" onclick="selectService('bride',this)">
+          <div class="chip-check">✓</div>
+          <div class="chip-icon">👰</div>
+          <div class="chip-name">התארגנות כלה</div>
         </div>
-        <div class="service-card" onclick="selectService('fashion', this)">
-          <div class="service-check">✓</div>
-          <div class="service-icon">📸</div>
-          <div class="service-name">צילום אופנה</div>
-          <div class="service-desc">לוקיישן ייחודי לצילומים</div>
+        <div class="service-chip" id="chip-fashion" onclick="selectService('fashion',this)">
+          <div class="chip-check">✓</div>
+          <div class="chip-icon">📸</div>
+          <div class="chip-name">צילום אופנה</div>
         </div>
-        <div class="service-card" onclick="selectService('product', this)">
-          <div class="service-check">✓</div>
-          <div class="service-icon">🛍️</div>
-          <div class="service-name">צילום מוצר</div>
-          <div class="service-desc">רקע מושלם לברנד שלך</div>
+        <div class="service-chip" id="chip-product" onclick="selectService('product',this)">
+          <div class="chip-check">✓</div>
+          <div class="chip-icon">🛍️</div>
+          <div class="chip-name">צילום מוצר</div>
         </div>
-        <div class="service-card" onclick="selectService('production', this)">
-          <div class="service-check">✓</div>
-          <div class="service-icon">🎬</div>
-          <div class="service-name">הפקות</div>
-          <div class="service-desc">מרחב לאירועים והפקות</div>
+        <div class="service-chip" id="chip-production" onclick="selectService('production',this)">
+          <div class="chip-check">✓</div>
+          <div class="chip-icon">🎬</div>
+          <div class="chip-name">הפקות</div>
         </div>
-        <div class="service-card" onclick="selectService('other', this)" style="grid-column:1/-1">
-          <div class="service-check">✓</div>
-          <div class="service-icon">💡</div>
-          <div class="service-name">אחר</div>
-          <div class="service-desc">ספרי לנו מה שעל הלב</div>
+        <div class="service-chip full-width" id="chip-other" onclick="selectService('other',this)">
+          <div class="chip-check">✓</div>
+          <div class="chip-icon">💡</div>
+          <div class="chip-name">אחר</div>
         </div>
       </div>
 
-      <!-- Conditional extras -->
-      <div class="bride-extras" id="brideExtras">
-        <div class="extras-label">👰 עוד פרטים על ההתארגנות</div>
-        <div class="urgency-grid">
-          <div class="urgency-chip" onclick="selectExtra('bride-size', 'עד 2 כלות', this)">עד 2 כלות</div>
-          <div class="urgency-chip" onclick="selectExtra('bride-size', '3-5 כלות', this)">3-5 כלות</div>
-          <div class="urgency-chip" onclick="selectExtra('bride-size', '6+ כלות', this)">6+ כלות</div>
+      <!-- Sub: Bride -->
+      <div class="conditional-block" id="sub-bride">
+        <div class="cond-label">סוג האירוע</div>
+        <div class="sub-chips" id="bride-sub-chips">
+          <div class="sub-chip" onclick="selectSubChip('bride','בוקר כלה',this)">בוקר כלה</div>
+          <div class="sub-chip" onclick="selectSubChip('bride','ציפוי גלימה',this)">ציפוי גלימה</div>
+          <div class="sub-chip" onclick="selectSubChip('bride','ארוחת בוקר',this)">ארוחת בוקר</div>
+          <div class="sub-chip" onclick="selectSubChip('bride','אחר',this)">אחר</div>
         </div>
-      </div>
-      <div class="fashion-extras" id="fashionExtras">
-        <div class="extras-label">📸 סוג הצילום</div>
-        <div class="urgency-grid">
-          <div class="urgency-chip" onclick="selectExtra('fashion-type', 'לוק בוק', this)">לוק בוק</div>
-          <div class="urgency-chip" onclick="selectExtra('fashion-type', 'אינסטגרם', this)">אינסטגרם</div>
-          <div class="urgency-chip" onclick="selectExtra('fashion-type', 'קמפיין', this)">קמפיין</div>
-          <div class="urgency-chip" onclick="selectExtra('fashion-type', 'אחר', this)">אחר</div>
-        </div>
-      </div>
-      <div class="product-extras" id="productExtras">
-        <div class="extras-label">🛍️ קטגוריית המוצר</div>
-        <div class="urgency-grid">
-          <div class="urgency-chip" onclick="selectExtra('product-cat', 'ביוטי/קוסמטיקה', this)">ביוטי/קוסמטיקה</div>
-          <div class="urgency-chip" onclick="selectExtra('product-cat', 'אופנה', this)">אופנה</div>
-          <div class="urgency-chip" onclick="selectExtra('product-cat', 'אוכל', this)">אוכל</div>
-          <div class="urgency-chip" onclick="selectExtra('product-cat', 'אחר', this)">אחר</div>
-        </div>
-      </div>
-      <div class="production-extras" id="productionExtras">
-        <div class="extras-label">🎬 סוג ההפקה</div>
-        <div class="urgency-grid">
-          <div class="urgency-chip" onclick="selectExtra('prod-type', 'אירוע פרטי', this)">אירוע פרטי</div>
-          <div class="urgency-chip" onclick="selectExtra('prod-type', 'קליפ/פרסומת', this)">קליפ/פרסומת</div>
-          <div class="urgency-chip" onclick="selectExtra('prod-type', 'workshop', this)">Workshop</div>
-          <div class="urgency-chip" onclick="selectExtra('prod-type', 'אחר', this)">אחר</div>
+        <div class="conditional-block" id="bride-other-block" style="margin-top:0.75rem">
+          <div class="field" style="margin-bottom:0">
+            <input type="text" id="bride-other-text" placeholder="אנא פרטי בקצרה"/>
+            <div class="field-error" id="e-bride-other">שדה חובה</div>
+          </div>
         </div>
       </div>
 
-      <button class="btn-primary" id="serviceNextBtn" onclick="nextStep()" disabled>
-        <span>המשך</span>
-        <span class="btn-arrow">←</span>
+      <!-- Sub: Fashion -->
+      <div class="conditional-block" id="sub-fashion">
+        <div class="cond-label">סוג הצילום</div>
+        <div class="sub-chips" id="fashion-sub-chips">
+          <div class="sub-chip" onclick="selectSubChip('fashion','לוק בוק',this)">לוק בוק</div>
+          <div class="sub-chip" onclick="selectSubChip('fashion','קמפיין',this)">קמפיין</div>
+          <div class="sub-chip" onclick="selectSubChip('fashion','אינסטגרם',this)">אינסטגרם</div>
+          <div class="sub-chip" onclick="selectSubChip('fashion','אחר',this)">אחר</div>
+        </div>
+        <div class="conditional-block" id="fashion-other-block" style="margin-top:0.75rem">
+          <div class="field" style="margin-bottom:0">
+            <input type="text" id="fashion-other-text" placeholder="אנא פרטי בקצרה"/>
+            <div class="field-error" id="e-fashion-other">שדה חובה</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub: Product -->
+      <div class="conditional-block" id="sub-product">
+        <div class="cond-label">קטגוריית המוצר</div>
+        <div class="sub-chips" id="product-sub-chips">
+          <div class="sub-chip" onclick="selectSubChip('product','ביוטי / קוסמטיקה',this)">ביוטי / קוסמטיקה</div>
+          <div class="sub-chip" onclick="selectSubChip('product','אופנה',this)">אופנה</div>
+          <div class="sub-chip" onclick="selectSubChip('product','אוכל ושתייה',this)">אוכל ושתייה</div>
+          <div class="sub-chip" onclick="selectSubChip('product','אחר',this)">אחר</div>
+        </div>
+        <div class="conditional-block" id="product-other-block" style="margin-top:0.75rem">
+          <div class="field" style="margin-bottom:0">
+            <input type="text" id="product-other-text" placeholder="אנא פרטי בקצרה"/>
+            <div class="field-error" id="e-product-other">שדה חובה</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub: Production -->
+      <div class="conditional-block" id="sub-production">
+        <div class="cond-label">סוג ההפקה</div>
+        <div class="sub-chips" id="production-sub-chips">
+          <div class="sub-chip" onclick="selectSubChip('production','אירוע פרטי',this)">אירוע פרטי</div>
+          <div class="sub-chip" onclick="selectSubChip('production','קליפ / פרסומת',this)">קליפ / פרסומת</div>
+          <div class="sub-chip" onclick="selectSubChip('production','Workshop',this)">Workshop</div>
+          <div class="sub-chip" onclick="selectSubChip('production','אחר',this)">אחר</div>
+        </div>
+        <div class="conditional-block" id="production-other-block" style="margin-top:0.75rem">
+          <div class="field" style="margin-bottom:0">
+            <input type="text" id="production-other-text" placeholder="אנא פרטי בקצרה"/>
+            <div class="field-error" id="e-production-other">שדה חובה</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Service "other" free text -->
+      <div class="conditional-block" id="sub-other">
+        <div class="field" style="margin-bottom:0">
+          <label class="field-label" for="service-other-text">פרטי בקצרה <span class="req">*</span></label>
+          <input type="text" id="service-other-text" placeholder="אנא פרטי בקצרה"/>
+          <div class="field-error" id="e-service-other">שדה חובה</div>
+        </div>
+      </div>
+
+      <div class="field-error show" id="e-service" style="margin-top:0.75rem;display:none">אנא בחרי שירות</div>
+      <button class="btn-primary" onclick="next()">
+        המשך <span class="btn-arrow">←</span>
       </button>
     </div>
 
-    <!-- STEP 4: Date -->
-    <div class="question-card" data-step="4">
-      <div class="question-number">שאלה 4 מתוך 6</div>
-      <h2 class="question-title">מתי <strong>תרצי שנגיע</strong>?</h2>
-      <p class="question-subtitle">בחרי תאריך או טווח — נבדוק זמינות</p>
-      <input
-        class="input-field" id="fieldDate"
-        type="date"
-        min=""
-        oninput="onDateInput(this)"
-      />
-      <div class="field-error" id="errDate">אנא בחרי תאריך עתידי</div>
-      <div style="margin-top:1rem">
-        <div class="question-subtitle" style="margin-bottom:0.6rem">...או בערך:</div>
-        <div class="urgency-grid" id="urgencyChips">
-          <div class="urgency-chip" onclick="selectUrgency('השבוע', this)">השבוע</div>
-          <div class="urgency-chip" onclick="selectUrgency('חודש הקרוב', this)">חודש הקרוב</div>
-          <div class="urgency-chip" onclick="selectUrgency('3 חודשים', this)">3 חודשים</div>
-          <div class="urgency-chip" onclick="selectUrgency('גמיש', this)">גמיש</div>
-        </div>
+    <!-- ══ STEP 4: Companions (bride only) ══ -->
+    <div class="step" data-step="4">
+      <div class="step-num">שלב 4 מתוך 7</div>
+      <h2 class="step-title"><strong>כמה מלוות</strong> מגיעות עם הכלה?</h2>
+      <div class="field">
+        <label class="field-label" for="f-companions">מספר מלוות <span class="req">*</span></label>
+        <input type="number" id="f-companions" placeholder="0" min="0" max="8"
+               oninput="liveValidateCompanions()" onkeydown="enterNext(event)"/>
+        <div class="field-hint">עד 8 מלוות. האירוח כולל כלה אחת + מלוות.</div>
+        <div class="field-error" id="e-companions">ניתן להזין עד 8 מלוות בלבד</div>
       </div>
-      <button class="btn-primary" onclick="nextStep()">
-        <span>המשך</span>
-        <span class="btn-arrow">←</span>
+      <button class="btn-primary" onclick="next()">
+        המשך <span class="btn-arrow">←</span>
       </button>
     </div>
 
-    <!-- STEP 5: Budget -->
-    <div class="question-card" data-step="5">
-      <div class="question-number">שאלה 5 מתוך 6</div>
-      <h2 class="question-title">מה <strong>התקציב המשוער</strong>?</h2>
-      <p class="question-subtitle">זה עוזר לנו להתאים את ההצעה הנכונה לך</p>
-      <div class="budget-display">
-        ₪<span id="budgetValue">2,000</span>
-        <span id="budgetSuffix"> ומעלה</span>
+    <!-- ══ STEP 5: Date ══ -->
+    <div class="step" data-step="5">
+      <div class="step-num" id="s5-num">שלב 5 מתוך 7</div>
+      <h2 class="step-title"><strong>תאריך האירוע</strong> המבוקש</h2>
+      <div class="field">
+        <label class="field-label" for="f-date">בחרי תאריך</label>
+        <input type="date" id="f-date" oninput="onDateInput(this)"/>
+        <div class="field-hint">בחרי תאריך או טווח משוער ונבדוק זמינות</div>
+        <div class="field-error" id="e-date">אנא בחרי תאריך עתידי</div>
       </div>
-      <input type="range" id="budgetRange"
+      <div class="field">
+        <label class="field-label">או בערך:</label>
+        <div class="urgency-chips">
+          <div class="sub-chip" onclick="selectUrgency('השבוע',this)">השבוע</div>
+          <div class="sub-chip" onclick="selectUrgency('חודש הקרוב',this)">חודש הקרוב</div>
+          <div class="sub-chip" onclick="selectUrgency('3 חודשים',this)">3 חודשים</div>
+          <div class="sub-chip" onclick="selectUrgency('גמיש',this)">גמיש</div>
+        </div>
+      </div>
+      <div class="field-error" id="e-date-req" style="margin-top:0.5rem">אנא בחרי תאריך או טווח</div>
+      <button class="btn-primary" onclick="next()">
+        המשך <span class="btn-arrow">←</span>
+      </button>
+    </div>
+
+    <!-- ══ STEP 6: Budget ══ -->
+    <div class="step" data-step="6">
+      <div class="step-num" id="s6-num">שלב 6 מתוך 7</div>
+      <h2 class="step-title"><strong>תקציב</strong> משוער</h2>
+      <div class="budget-amount">₪<span id="budget-val">2,000</span><span id="budget-sfx"> ומעלה</span></div>
+      <input type="range" id="budget-range"
         min="500" max="10000" step="250" value="2000"
-        oninput="updateBudget(this)"
-        style="--val:15%"
-      />
-      <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted)">
-        <span>₪500</span><span>₪10,000+</span>
-      </div>
-      <button class="btn-primary" onclick="nextStep()">
-        <span>המשך</span>
-        <span class="btn-arrow">←</span>
+        oninput="updateBudget(this)"/>
+      <div class="budget-range-labels"><span>₪500</span><span>₪10,000+</span></div>
+      <button class="btn-primary" onclick="next()">
+        המשך <span class="btn-arrow">←</span>
       </button>
-      <span class="btn-skip" onclick="skipBudget()">דלגי על השאלה הזו</span>
+      <span class="btn-skip" onclick="skipStep()">דלגי על שאלה זו</span>
     </div>
 
-    <!-- STEP 6: Notes -->
-    <div class="question-card" data-step="6">
-      <div class="question-number">שאלה 6 מתוך 6</div>
-      <h2 class="question-title">עוד <strong>משהו שנדע</strong>?</h2>
-      <p class="question-subtitle">רשמי כל פרט שחשוב לך — הכל עוזר לנו להתכונן</p>
-      <textarea class="input-field" id="fieldNotes"
-        placeholder="חשבי על זה כמו הודעה קצרה לחברה הכי טובה שלך... ✍️"
-        maxlength="500"
-      ></textarea>
-      <div style="text-align:left;font-size:0.72rem;color:var(--muted);margin-top:0.3rem">
-        <span id="noteCount">0</span>/500
+    <!-- ══ STEP 7: Notes ══ -->
+    <div class="step" data-step="7">
+      <div class="step-num" id="s7-num">שלב 7 מתוך 7</div>
+      <h2 class="step-title">עוד <strong>משהו שנדע</strong>?</h2>
+      <div class="field">
+        <label class="field-label" for="f-notes">הערות נוספות</label>
+        <textarea id="f-notes" placeholder="כל פרט שחשוב לך..." maxlength="500"
+                  oninput="document.getElementById('nc').textContent=this.value.length"></textarea>
+        <div class="char-count"><span id="nc">0</span>/500</div>
       </div>
-      <button class="btn-primary" id="submitBtn" onclick="submitForm()">
-        <span>שליחה ✨</span>
+      <button class="btn-primary" id="submit-btn" onclick="submitForm()">
+        שליחה
       </button>
-      <span class="btn-skip" onclick="submitForm()">דלגי וסיימי</span>
+      <span class="btn-skip" onclick="submitForm()">שלחי ללא הערות</span>
     </div>
 
-  </div><!-- /form-container -->
+  </div><!-- /card -->
 
-  <!-- SUCCESS SCREEN -->
-  <div class="form-container success-screen" id="successScreen">
-    <div class="success-circle">✓</div>
-    <div id="scoreBadge" class="score-badge score-hot">🔥 ליד חם — נחזור אליך מהר!</div>
-    <h2 class="success-title">
-      תודה <strong id="successName">!</strong>
-    </h2>
-    <p class="success-sub" id="successSub">
-      קיבלנו את הפנייה שלך ✨<br/>
-      הצוות של קאזה מנצ'יני יחזור אליך בהקדם האפשרי.<br/>
-      בינתיים — אפשר לכתוב לנו ישירות בוואטסאפ.
-    </p>
-    <a id="waBtn" href="#" class="btn-whatsapp" target="_blank">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-      דברי איתנו בוואטסאפ
-    </a>
-    <div class="microcopy" style="margin-top:1.5rem">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      הפרטים שלך מאובטחים ולא ישותפו
+  <!-- SUCCESS -->
+  <div class="card success" id="successCard">
+    <div class="logo-wrap">
+      <img src="LOGO black .png" alt="Casa Mancini" draggable="false"/>
+    </div>
+    <div class="success-mark">✓</div>
+    <div class="success-title">תודה!</div>
+    <p class="success-body">קיבלנו את הפנייה שלך, נחזור אלייך בהקדם.</p>
+    <p class="success-note">האירוח במקום הינו ללא לינה.</p>
+  </div>
+
+  <!-- REVIEWS (real Google reviews – manual update required) -->
+  <div class="reviews-section" id="reviewsSection">
+    <div class="reviews-title">מה אומרות הלקוחות</div>
+
+    <div class="review-item">
+      <div class="review-header">
+        <div class="review-avatar">מ</div>
+        <div class="review-meta">
+          <div class="review-name">מיכל כהן</div>
+          <div class="review-stars">★★★★★</div>
+          <div class="review-date">ינואר 2025</div>
+        </div>
+      </div>
+      <div class="review-text">מקום מדהים, אווירה יוקרתית ומרגיעה. הכנות לפני החתונה היו פשוט חלום. ממליצה בחום!</div>
+    </div>
+
+    <div class="review-item">
+      <div class="review-header">
+        <div class="review-avatar">ש</div>
+        <div class="review-meta">
+          <div class="review-name">שירה לוי</div>
+          <div class="review-stars">★★★★★</div>
+          <div class="review-date">מרץ 2025</div>
+        </div>
+      </div>
+      <div class="review-text">הגענו לצלם קולקציית קיץ וקיבלנו בדיוק מה שחלמנו עליו. האור, הסטייל, הכל. תודה!</div>
+    </div>
+
+    <div class="reviews-note">
+      ⚠️ להחלפה בביקורות אמיתיות מ-Google Reviews יש לעדכן את הקוד עם הביקורות הנכונות.
     </div>
   </div>
 
-  <!-- Testimonials -->
-  <div class="testimonial-strip" id="testimonialStrip">
-    <div class="testimonial-label">מה אומרות הלקוחות</div>
-    <div class="testimonials">
-      <div class="testimonial-item">
-        <div class="stars">★★★★★</div>
-        <div class="testimonial-text">"המקום הכי מרגיע ויפה שהייתי בו לפני החתונה. הכל היה מדויק ומושלם."</div>
-        <div class="testimonial-author">— שירה ל., כלה 2025</div>
-      </div>
-      <div class="testimonial-item">
-        <div class="stars">★★★★★</div>
-        <div class="testimonial-text">"צלמנו קולקציית קיץ שלמה — האווירה והאור פשוט מושלמים."</div>
-        <div class="testimonial-author">— מיכל ד., מעצבת אופנה</div>
-      </div>
-    </div>
-  </div>
-
-</div><!-- /page-wrap -->
-
-<!-- Floating helper bubble -->
-<div class="helper-bubble" id="helperBubble" onclick="openWhatsApp()">
-  <strong>💬 צריכה עזרה?</strong>
-  לחצי לשיחה ישירה בוואטסאפ
-</div>
+</div><!-- /page -->
 
 <script>
-// ─── State ───
-const state = {
-  currentStep: 1,
-  totalSteps: 6,
-  name: '', phone: '', email: '',
-  service: '', serviceExtra: '',
-  date: '', urgency: '',
+// ═══════════════════════════════
+//  STATE
+// ═══════════════════════════════
+const s = {
+  step: 1,
+  totalSteps: 7,
+  name:'', phone:'', email:'',
+  service:'', sub:'', subOtherText:'',
+  companions: null,
+  date:'', urgency:'',
   budget: 2000, budgetSkipped: false,
-  notes: '',
-  helperShown: false,
+  notes:'',
 };
 
-const WA_PHONE = '972546787179';
+const WEB3_KEY = '6aae6eda-4942-498e-879b-44b541f04334';
 
-// ─── Init ───
+// ═══════════════════════════════
+//  INIT
+// ═══════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  // Set min date to today
   const today = new Date().toISOString().split('T')[0];
-  document.getElementById('fieldDate').setAttribute('min', today);
-
-  // Build step dots
-  buildDots();
+  document.getElementById('f-date').setAttribute('min', today);
   updateProgress();
-
-  // Helper bubble after 30s
-  setTimeout(() => {
-    if (state.currentStep < state.totalSteps) showHelper();
-  }, 30000);
-
-  // Notes counter
-  document.getElementById('fieldNotes').addEventListener('input', function() {
-    document.getElementById('noteCount').textContent = this.value.length;
-  });
+  restoreLocal();
 });
 
-function buildDots() {
-  const wrap = document.getElementById('stepDots');
-  wrap.innerHTML = '';
-  for (let i = 1; i <= state.totalSteps; i++) {
-    const d = document.createElement('div');
-    d.className = 'step-dot' + (i === state.currentStep ? ' active' : i < state.currentStep ? ' done' : '');
-    d.id = `dot${i}`;
-    wrap.appendChild(d);
-  }
-}
-
+// ═══════════════════════════════
+//  PROGRESS
+// ═══════════════════════════════
 function updateProgress() {
-  const pct = Math.round(((state.currentStep - 1) / state.totalSteps) * 100);
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('progressPercent').textContent = pct + '%';
-  const labels = ['מתחילים','כמעט שם','ממשיכים','יופי!','עוד קצת','סיום!'];
-  document.getElementById('progressText').textContent = labels[state.currentStep - 1] || 'סיום!';
-
-  // Update dots
-  for (let i = 1; i <= state.totalSteps; i++) {
-    const d = document.getElementById(`dot${i}`);
-    if (!d) continue;
-    d.className = 'step-dot' + (i === state.currentStep ? ' active' : i < state.currentStep ? ' done' : '');
-  }
-
-  // Back btn
-  document.getElementById('backBtn').style.display = state.currentStep > 1 ? 'flex' : 'none';
+  const pct = Math.round(((s.step - 1) / s.totalSteps) * 100);
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progPct').textContent = pct + '%';
+  document.getElementById('progLabel').textContent = `שלב ${s.step} מתוך ${s.totalSteps}`;
+  document.getElementById('backBtn').style.display = s.step > 1 ? 'flex' : 'none';
 }
 
-// ─── Navigation ───
-function nextStep() {
-  if (!validateStep(state.currentStep)) return;
-  collectStep(state.currentStep);
+// ═══════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════
+function next() {
+  if (!validateStep()) return;
+  collectStep();
 
-  if (state.currentStep >= state.totalSteps) { submitForm(); return; }
+  // Skip step 4 (companions) if not bride
+  let nextStep = s.step + 1;
+  if (nextStep === 4 && s.service !== 'bride') nextStep = 5;
 
-  // Hide current
-  document.querySelector(`.question-card[data-step="${state.currentStep}"]`).classList.remove('active');
-  state.currentStep++;
+  // Adjust step numbers display if skipping step 4
+  if (s.service !== 'bride') {
+    document.getElementById('s5-num').textContent = 'שלב 4 מתוך 6';
+    document.getElementById('s6-num').textContent = 'שלב 5 מתוך 6';
+    document.getElementById('s7-num').textContent = 'שלב 6 מתוך 6';
+    s.totalSteps = 6;
+  } else {
+    s.totalSteps = 7;
+  }
 
-  // Personalise next step
-  personaliseStep(state.currentStep);
-
-  // Show next
-  const next = document.querySelector(`.question-card[data-step="${state.currentStep}"]`);
-  next.classList.add('active');
-  next.style.animation = 'none';
-  next.offsetHeight; // reflow
-  next.style.animation = '';
-
-  updateProgress();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  showStep(nextStep);
 }
 
 function goBack() {
-  document.querySelector(`.question-card[data-step="${state.currentStep}"]`).classList.remove('active');
-  state.currentStep--;
-  document.querySelector(`.question-card[data-step="${state.currentStep}"]`).classList.add('active');
+  collectStep();
+  let prevStep = s.step - 1;
+  if (prevStep === 4 && s.service !== 'bride') prevStep = 3;
+  showStep(prevStep);
+}
+
+function skipStep() {
+  if (s.step === 6) s.budgetSkipped = true;
+  next();
+}
+
+function showStep(n) {
+  document.querySelector(`.step[data-step="${s.step}"]`).classList.remove('active');
+  s.step = n;
+  const next = document.querySelector(`.step[data-step="${n}"]`);
+  next.classList.remove('active');
+  void next.offsetWidth; // reflow for re-animation
+  next.classList.add('active');
   updateProgress();
+  personalise();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function personaliseStep(step) {
-  if (step === 2 && state.name) {
-    document.getElementById('step2Title').innerHTML = `מה <strong>הטלפון שלך</strong>, ${state.name.split(' ')[0]}?`;
-  }
-  if (step === 3 && state.name) {
-    document.getElementById('step3Title').innerHTML = `מה <strong>השירות שאת מחפשת</strong>, ${state.name.split(' ')[0]}?`;
-  }
+function enterNext(e) {
+  if (e.key === 'Enter') { e.preventDefault(); next(); }
 }
 
-// ─── Validation ───
-function validateStep(step) {
-  if (step === 1) {
-    const val = document.getElementById('fieldName').value.trim();
-    if (val.length < 2) { showError('errName'); return false; }
-    hideError('errName'); return true;
-  }
-  if (step === 2) {
-    const phone = document.getElementById('fieldPhone').value.replace(/\D/g,'');
-    if (phone.length < 9 || phone.length > 11) { showError('errPhone'); return false; }
-    hideError('errPhone'); return true;
-  }
-  if (step === 3) {
-    if (!state.service) return false;
-    return true;
-  }
-  if (step === 4) {
-    const dateVal = document.getElementById('fieldDate').value;
-    const urgent = state.urgency;
-    if (!dateVal && !urgent) { showError('errDate'); return false; }
-    if (dateVal) {
-      const chosen = new Date(dateVal);
-      const today = new Date(); today.setHours(0,0,0,0);
-      if (chosen < today) { showError('errDate'); return false; }
-    }
-    hideError('errDate'); return true;
+function personalise() {
+  const first = s.name.split(' ')[0];
+  if (s.step === 2 && first)
+    document.getElementById('s2-title').innerHTML = `מה <strong>פרטי הקשר שלך</strong>, ${first}?`;
+  if (s.step === 3 && first)
+    document.getElementById('s3-title').innerHTML = `מה <strong>השירות שאת מחפשת</strong>, ${first}?`;
+}
+
+// ═══════════════════════════════
+//  VALIDATION
+// ═══════════════════════════════
+function validateStep() {
+  switch(s.step) {
+    case 1: return checkName();
+    case 2: return checkPhone() & checkEmail(); // bitwise: run both
+    case 3: return checkService();
+    case 4: return checkCompanions();
+    case 5: return checkDate();
+    case 6: case 7: return true;
   }
   return true;
 }
 
-function collectStep(step) {
-  if (step === 1) state.name = document.getElementById('fieldName').value.trim();
-  if (step === 2) {
-    state.phone = document.getElementById('fieldPhone').value.trim();
-    state.email = document.getElementById('fieldEmail').value.trim();
+function checkName() {
+  const v = document.getElementById('f-name').value.trim();
+  return setErr('f-name','e-name', v.length < 2);
+}
+function checkPhone() {
+  const v = document.getElementById('f-phone').value.replace(/\D/g,'');
+  return setErr('f-phone','e-phone', v.length < 9 || v.length > 11);
+}
+function checkEmail() {
+  const v = document.getElementById('f-email').value.trim();
+  const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  return setErr('f-email','e-email', !ok);
+}
+function checkService() {
+  if (!s.service) {
+    document.getElementById('e-service').style.display = 'block';
+    return false;
   }
-  if (step === 4) state.date = document.getElementById('fieldDate').value;
-  if (step === 5) state.budget = parseInt(document.getElementById('budgetRange').value);
-  if (step === 6) state.notes = document.getElementById('fieldNotes').value.trim();
+  document.getElementById('e-service').style.display = 'none';
+
+  // Check sub for "other" variants
+  if (s.service === 'other') {
+    const v = document.getElementById('service-other-text').value.trim();
+    return setErr('service-other-text','e-service-other', v.length === 0);
+  }
+
+  // Check sub-chip if shown
+  const subMap = { bride:'sub-bride', fashion:'sub-fashion', product:'sub-product', production:'sub-production' };
+  const subBlock = document.getElementById(subMap[s.service]);
+  if (subBlock && subBlock.classList.contains('show')) {
+    // validate "other" sub-text
+    const otherBlock = document.getElementById(`${s.service}-other-block`);
+    if (otherBlock && otherBlock.classList.contains('show')) {
+      const v = document.getElementById(`${s.service}-other-text`).value.trim();
+      return setErr(`${s.service}-other-text`,`e-${s.service}-other`, v.length === 0);
+    }
+  }
+  return true;
+}
+function checkCompanions() {
+  const v = parseInt(document.getElementById('f-companions').value);
+  if (isNaN(v) || v < 0 || v > 8) return setErr('f-companions','e-companions', true);
+  return setErr('f-companions','e-companions', false);
+}
+function checkDate() {
+  const dateVal = document.getElementById('f-date').value;
+  const urgent = s.urgency;
+  const errEl = document.getElementById('e-date-req');
+  if (!dateVal && !urgent) {
+    errEl.style.display = 'block';
+    return false;
+  }
+  errEl.style.display = 'none';
+  if (dateVal) {
+    const chosen = new Date(dateVal);
+    const today = new Date(); today.setHours(0,0,0,0);
+    if (chosen < today) return setErr('f-date','e-date', true);
+    setErr('f-date','e-date', false);
+  }
+  return true;
 }
 
-function showError(id) {
-  document.getElementById(id).classList.add('show');
-  const input = document.getElementById(id.replace('err','field'));
-  if (input) { input.classList.add('error'); input.focus(); }
-}
-function hideError(id) {
-  document.getElementById(id).classList.remove('show');
-  const input = document.getElementById(id.replace('err','field'));
-  if (input) input.classList.remove('error');
-}
-
-// ─── Input handlers ───
-function onNameInput(el) {
-  el.classList.toggle('valid', el.value.trim().length >= 2);
-  if (el.value.trim().length >= 2) hideError('errName');
+function setErr(inputId, errId, hasError) {
+  const inp = document.getElementById(inputId);
+  const err = document.getElementById(errId);
+  if (inp) {
+    inp.classList.toggle('has-error', hasError);
+    inp.classList.toggle('is-valid', !hasError);
+  }
+  if (err) err.classList.toggle('show', hasError);
+  return !hasError;
 }
 
-function onPhoneInput(el) {
-  const digits = el.value.replace(/\D/g,'');
-  const valid = digits.length >= 9 && digits.length <= 11;
-  el.classList.toggle('valid', valid);
-  if (valid) hideError('errPhone');
+// Live validators
+function liveValidateName() {
+  const v = document.getElementById('f-name').value.trim();
+  if (v.length >= 2) setErr('f-name','e-name', false);
+}
+function liveValidatePhone() {
+  const v = document.getElementById('f-phone').value.replace(/\D/g,'');
+  if (v.length >= 9) setErr('f-phone','e-phone', false);
+}
+function liveValidateEmail() {
+  const v = document.getElementById('f-email').value.trim();
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) setErr('f-email','e-email', false);
+}
+function liveValidateCompanions() {
+  const v = parseInt(document.getElementById('f-companions').value);
+  if (!isNaN(v) && v >= 0 && v <= 8) setErr('f-companions','e-companions', false);
+}
+
+// ═══════════════════════════════
+//  COLLECTION
+// ═══════════════════════════════
+function collectStep() {
+  switch(s.step) {
+    case 1: s.name = document.getElementById('f-name').value.trim(); break;
+    case 2:
+      s.phone = document.getElementById('f-phone').value.trim();
+      s.email = document.getElementById('f-email').value.trim();
+      break;
+    case 4: s.companions = document.getElementById('f-companions').value; break;
+    case 5:
+      s.date = document.getElementById('f-date').value;
+      break;
+    case 6:
+      s.budget = parseInt(document.getElementById('budget-range').value);
+      break;
+    case 7:
+      s.notes = document.getElementById('f-notes').value.trim();
+      break;
+  }
+}
+
+// ═══════════════════════════════
+//  SERVICE SELECTION
+// ═══════════════════════════════
+function selectService(service, el) {
+  document.querySelectorAll('.service-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  s.service = service;
+  s.sub = '';
+
+  // Hide all sub-blocks
+  ['sub-bride','sub-fashion','sub-product','sub-production','sub-other'].forEach(id => {
+    document.getElementById(id).classList.remove('show');
+  });
+
+  // Show relevant
+  const map = { bride:'sub-bride', fashion:'sub-fashion', product:'sub-product', production:'sub-production', other:'sub-other' };
+  if (map[service]) document.getElementById(map[service]).classList.add('show');
+
+  document.getElementById('e-service').style.display = 'none';
+}
+
+function selectSubChip(service, value, el) {
+  // Deselect siblings
+  el.parentElement.querySelectorAll('.sub-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  s.sub = value;
+
+  // Show/hide "other" text field
+  const otherBlock = document.getElementById(`${service}-other-block`);
+  if (otherBlock) otherBlock.classList.toggle('show', value === 'אחר');
+}
+
+// ═══════════════════════════════
+//  DATE / URGENCY
+// ═══════════════════════════════
+function selectUrgency(value, el) {
+  document.querySelectorAll('.urgency-chips .sub-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  s.urgency = value;
+  // Clear date
+  document.getElementById('f-date').value = '';
+  document.getElementById('f-date').classList.remove('has-error','is-valid');
+  setErr('f-date','e-date', false);
+  document.getElementById('e-date-req').style.display = 'none';
 }
 
 function onDateInput(el) {
   const chosen = new Date(el.value);
   const today = new Date(); today.setHours(0,0,0,0);
   if (chosen >= today) {
-    el.classList.add('valid');
-    hideError('errDate');
-    // Clear urgency chips if date selected
-    document.querySelectorAll('#urgencyChips .urgency-chip').forEach(c => c.classList.remove('selected'));
-    state.urgency = '';
+    setErr('f-date','e-date', false);
+    document.getElementById('e-date-req').style.display = 'none';
+    // Clear urgency chips
+    document.querySelectorAll('.urgency-chips .sub-chip').forEach(c => c.classList.remove('selected'));
+    s.urgency = '';
   }
 }
 
-// ─── Service selection ───
-let selectedServiceEl = null;
-function selectService(service, el) {
-  // Deselect all
-  document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
-  // Hide all extras
-  document.querySelectorAll('.bride-extras,.fashion-extras,.product-extras,.production-extras').forEach(e => e.classList.remove('show'));
-
-  el.classList.add('selected');
-  state.service = service;
-  selectedServiceEl = el;
-
-  // Show relevant extras
-  const extrasMap = { bride:'brideExtras', fashion:'fashionExtras', product:'productExtras', production:'productionExtras' };
-  if (extrasMap[service]) document.getElementById(extrasMap[service]).classList.add('show');
-
-  document.getElementById('serviceNextBtn').disabled = false;
-}
-
-// ─── Extra chips (conditional) ───
-const extras = {};
-function selectExtra(key, value, el) {
-  // Only one selection per key
-  el.parentElement.querySelectorAll('.urgency-chip').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  extras[key] = value;
-  state.serviceExtra = value;
-}
-
-// ─── Urgency chips ───
-function selectUrgency(value, el) {
-  document.querySelectorAll('#urgencyChips .urgency-chip').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  state.urgency = value;
-  // Clear date field
-  document.getElementById('fieldDate').value = '';
-  document.getElementById('fieldDate').classList.remove('valid','error');
-  hideError('errDate');
-}
-
-// ─── Budget ───
+// ═══════════════════════════════
+//  BUDGET
+// ═══════════════════════════════
 function updateBudget(el) {
-  const val = parseInt(el.value);
-  const formatted = val.toLocaleString('he-IL');
-  document.getElementById('budgetValue').textContent = formatted;
-  document.getElementById('budgetSuffix').textContent = val >= 10000 ? '+' : ' ומעלה';
-
-  // Update range gradient
-  const pct = ((val - 500) / (10000 - 500)) * 100;
-  el.style.setProperty('--val', pct + '%');
-  el.style.background = `linear-gradient(to left, var(--warm) ${pct}%, rgba(98,94,81,0.2) ${pct}%)`;
+  const v = parseInt(el.value);
+  document.getElementById('budget-val').textContent = v.toLocaleString('he-IL');
+  document.getElementById('budget-sfx').textContent = v >= 10000 ? '+' : ' ומעלה';
+  const pct = ((v - 500) / (10000 - 500)) * 100;
+  el.style.background = `linear-gradient(to left, var(--warm) ${pct}%, rgba(98,94,81,0.15) ${pct}%)`;
 }
 
-function skipBudget() {
-  state.budgetSkipped = true;
-  nextStep();
-}
-
-// ─── Lead Scoring ───
-function calcLeadScore() {
+// ═══════════════════════════════
+//  LEAD SCORE
+// ═══════════════════════════════
+function calcScore() {
   let score = 0;
-
-  // Urgency
-  const urgency = state.urgency;
-  const dateVal = state.date;
-  if (urgency === 'השבוע') score += 40;
-  else if (urgency === 'חודש הקרוב') score += 30;
-  else if (urgency === 'גמיש') score += 10;
-  else if (urgency === '3 חודשים') score += 20;
-  if (dateVal) {
-    const daysAway = (new Date(dateVal) - new Date()) / (1000*60*60*24);
-    if (daysAway < 30) score += 35;
-    else if (daysAway < 90) score += 20;
+  if (s.urgency === 'השבוע') score += 40;
+  else if (s.urgency === 'חודש הקרוב') score += 30;
+  else if (s.urgency === '3 חודשים') score += 20;
+  else if (s.urgency === 'גמיש') score += 10;
+  if (s.date) {
+    const days = (new Date(s.date) - new Date()) / 86400000;
+    if (days < 30) score += 35;
+    else if (days < 90) score += 20;
     else score += 10;
   }
-
-  // Budget
-  if (!state.budgetSkipped) {
-    if (state.budget >= 5000) score += 25;
-    else if (state.budget >= 2000) score += 15;
+  if (!s.budgetSkipped) {
+    if (s.budget >= 5000) score += 25;
+    else if (s.budget >= 2000) score += 15;
     else score += 5;
   }
-
-  // Service premium
-  if (state.service === 'bride') score += 20;
-  if (state.service === 'production') score += 15;
-
-  // Has email
-  if (state.email) score += 5;
-  // Has notes
-  if (state.notes.length > 20) score += 5;
-
+  if (s.service === 'bride') score += 20;
+  if (s.service === 'production') score += 15;
+  if (s.notes.length > 20) score += 5;
   if (score >= 60) return 'hot';
   if (score >= 35) return 'warm';
   return 'cold';
 }
 
-// ─── Submit ───
+// ═══════════════════════════════
+//  SUBMIT
+// ═══════════════════════════════
 function submitForm() {
-  collectStep(state.currentStep);
+  collectStep();
 
-  const score = calcLeadScore();
-  const leadData = {
-    name: state.name,
-    phone: state.phone,
-    email: state.email,
-    service: state.service,
-    serviceExtra: state.serviceExtra,
-    date: state.date || state.urgency,
-    budget: state.budgetSkipped ? 'לא צוין' : `₪${state.budget.toLocaleString()}`,
-    notes: state.notes,
-    score: score,
-    timestamp: new Date().toISOString(),
-    source: 'lead-page',
-  };
+  // Get sub other texts
+  const subMap = { bride:'bride-other-text', fashion:'fashion-other-text', product:'product-other-text', production:'production-other-text' };
+  let subDetail = s.sub;
+  if (s.sub === 'אחר' && subMap[s.service]) {
+    subDetail = document.getElementById(subMap[s.service]).value.trim() || 'אחר';
+  }
+  let serviceDetail = serviceLabel(s.service);
+  if (s.service === 'other') {
+    serviceDetail = document.getElementById('service-other-text').value.trim() || 'אחר';
+  }
 
-  // ── Web3Forms — שליחת מייל לבעל העסק ──
-  const WEB3_KEY = '6aae6eda-4942-498e-879b-44b541f04334';
-  const scoreEmoji = { hot: '🔥 HOT', warm: '✨ WARM', cold: '📋 COLD' }[score];
-  const emailBody =
-    `ליד חדש מהאתר קאזה מנצ'יני\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `שם: ${leadData.name}\n` +
-    `טלפון: ${leadData.phone}\n` +
-    `אימייל: ${leadData.email || '—'}\n` +
-    `שירות: ${serviceLabel(leadData.service)}${leadData.serviceExtra ? ' · ' + leadData.serviceExtra : ''}\n` +
-    `תאריך/מועד: ${leadData.date || '—'}\n` +
-    `תקציב: ${leadData.budget}\n` +
-    `הערות: ${leadData.notes || '—'}\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n` +
-    `דירוג ליד: ${scoreEmoji}\n` +
+  const score = calcScore();
+  const scoreLabel = { hot:'🔥 HOT', warm:'✨ WARM', cold:'📋 COLD' }[score];
+
+  const dateStr = s.date ? formatDate(s.date) : s.urgency || '—';
+  const budgetStr = s.budgetSkipped ? 'לא צוין' : `₪${s.budget.toLocaleString('he-IL')}`;
+
+  const msg =
+    `ליד חדש – קאזה מנצ'יני\n` +
+    `─────────────────────\n` +
+    `שם: ${s.name}\n` +
+    `טלפון: ${s.phone}\n` +
+    `אימייל: ${s.email}\n` +
+    `שירות: ${serviceDetail}${subDetail && subDetail !== 'אחר' ? ` · ${subDetail}` : ''}\n` +
+    (s.service === 'bride' && s.companions !== null ? `מלוות: ${s.companions}\n` : '') +
+    `תאריך: ${dateStr}\n` +
+    `תקציב: ${budgetStr}\n` +
+    `הערות: ${s.notes || '—'}\n` +
+    `─────────────────────\n` +
+    `ניקוד ליד: ${scoreLabel}\n` +
     `זמן פנייה: ${new Date().toLocaleString('he-IL')}`;
 
+  // Web3Forms
   fetch('https://api.web3forms.com/submit', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({
       access_key: WEB3_KEY,
-      subject: `🧠 ליד חדש – ${serviceLabel(state.service)} | ${state.name} | ${scoreEmoji}`,
-      from_name: `Casa Mancini – טופס חכם`,
-      message: emailBody,
-      name: leadData.name,
-      phone: leadData.phone,
-      email: leadData.email || 'no-reply@casamancini.co.il',
+      subject: `ליד חדש – ${serviceDetail} | ${s.name} | ${scoreLabel}`,
+      from_name: 'Casa Mancini – דף פנייה',
+      message: msg,
+      name: s.name,
+      phone: s.phone,
+      email: s.email || 'no-reply@casamancini.site',
       botcheck: '',
     }),
   })
   .then(r => r.json())
-  .then(d => { if (!d.success) console.warn('Web3Forms error:', d); })
+  .then(d => { if (!d.success) console.warn('Web3Forms:', d); })
   .catch(console.error);
 
-  // ── Webhook נוסף (אופציונלי) ──
-  const WEBHOOK_URL = ''; // ← Zapier / Make / n8n
-  if (WEBHOOK_URL) {
-    fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(leadData),
-    }).catch(console.error);
-  }
+  // Save to localStorage
+  try { localStorage.removeItem('casa_partial'); } catch(e) {}
 
-  // ── WhatsApp message ──
-  const waMsg = encodeURIComponent(
-    `שלום ${state.name} 👋\nקיבלנו את הפנייה שלך לקאזה מנצ'יני!\n` +
-    `השירות: ${serviceLabel(state.service)}\n` +
-    `${state.date ? 'תאריך: ' + formatDate(state.date) : state.urgency ? 'מועד: ' + state.urgency : ''}\n` +
-    `ניצור איתך קשר בהקדם ✨`
-  );
-  const waLink = `https://wa.me/${WA_PHONE}?text=${waMsg}`;
-  document.getElementById('waBtn').href = waLink;
-
-  // ── Show success ──
-  document.getElementById('formContainer').style.display = 'none';
-  document.getElementById('testimonialStrip').style.display = 'none';
-  document.getElementById('helperBubble').style.display = 'none';
-  document.getElementById('progressWrap').style.display = 'none';
-  document.getElementById('backBtn').style.display = 'none';
-
-  const scoreMap = {
-    hot:  { cls: 'score-hot',  text: '🔥 ליד חם — נחזור אליך מהר!' },
-    warm: { cls: 'score-warm', text: '✨ ליד איכותי — נחזור בקרוב' },
-    cold: { cls: 'score-cold', text: '📋 קיבלנו! נחזור אליך בקרוב' },
-  };
-  const badge = document.getElementById('scoreBadge');
-  badge.className = `score-badge ${scoreMap[score].cls}`;
-  badge.textContent = scoreMap[score].text;
-
-  document.getElementById('successName').textContent = state.name ? `${state.name}!` : '!';
-
-  if (score === 'hot') {
-    document.getElementById('successSub').innerHTML =
-      `קיבלנו את הפנייה שלך ✨<br/>נחזור אליך <strong>תוך שעה</strong> — מבטיחים!<br/>בינתיים — אפשר לכתוב לנו ישירות.`;
-  }
-
-  document.getElementById('successScreen').classList.add('active');
-  document.getElementById('successScreen').style.display = 'block';
+  // Show success
+  document.getElementById('formCard').style.display = 'none';
+  document.getElementById('reviewsSection').style.display = 'none';
+  const sc = document.getElementById('successCard');
+  sc.style.display = 'block';
+  sc.classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  // Auto-open WhatsApp thank-you (optional, comment out if not desired)
-  // setTimeout(() => { window.open(waLink, '_blank'); }, 2000);
 }
 
-// ─── Helper bubble ───
-function showHelper() {
-  if (state.helperShown) return;
-  state.helperShown = true;
-  document.getElementById('helperBubble').classList.add('show');
-  setTimeout(() => {
-    document.getElementById('helperBubble').classList.remove('show');
-  }, 8000);
-}
-
-function openWhatsApp() {
-  const waMsg = encodeURIComponent('שלום! אשמח לקבל עזרה לגבי השירותים של קאזה מנצ\'יני 🙏');
-  window.open(`https://wa.me/${WA_PHONE}?text=${waMsg}`, '_blank');
-}
-
-// ─── Helpers ───
-function serviceLabel(s) {
-  const m = { bride:'התארגנות כלה', fashion:'צילום אופנה', product:'צילום מוצר', production:'הפקות', other:'אחר' };
-  return m[s] || s;
+// ═══════════════════════════════
+//  HELPERS
+// ═══════════════════════════════
+function serviceLabel(sv) {
+  return { bride:'התארגנות כלה', fashion:'צילום אופנה', product:'צילום מוצר', production:'הפקות', other:'אחר' }[sv] || sv;
 }
 function formatDate(d) {
   if (!d) return '';
@@ -1270,30 +1201,28 @@ function formatDate(d) {
   return `${day}/${m}/${y}`;
 }
 
-// ─── Save partial data on exit ───
+// ── Persist partial ──
 window.addEventListener('beforeunload', () => {
-  collectStep(state.currentStep);
-  if (state.name || state.phone) {
+  collectStep();
+  if (s.name || s.phone) {
     try {
-      localStorage.setItem('casa_lead_partial', JSON.stringify({
-        name: state.name, phone: state.phone,
-        service: state.service, step: state.currentStep,
-        ts: Date.now()
+      localStorage.setItem('casa_partial', JSON.stringify({
+        name: s.name, phone: s.phone, email: s.email, step: s.step, ts: Date.now()
       }));
     } catch(e) {}
   }
 });
 
-// ─── Restore partial ───
-window.addEventListener('DOMContentLoaded', () => {
+function restoreLocal() {
   try {
-    const saved = JSON.parse(localStorage.getItem('casa_lead_partial') || '{}');
-    if (saved.name && (Date.now() - saved.ts) < 86400000) {
-      if (saved.name) document.getElementById('fieldName').value = saved.name;
-      if (saved.phone) document.getElementById('fieldPhone').value = saved.phone;
+    const p = JSON.parse(localStorage.getItem('casa_partial') || '{}');
+    if (p.name && (Date.now() - p.ts) < 86400000) {
+      if (p.name) document.getElementById('f-name').value = p.name;
+      if (p.phone) document.getElementById('f-phone').value = p.phone;
+      if (p.email) document.getElementById('f-email').value = p.email;
     }
   } catch(e) {}
-});
+}
 </script>
 </body>
 </html>
