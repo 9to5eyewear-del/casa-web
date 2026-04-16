@@ -543,6 +543,16 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
   line-height: 1.4;
 }
 
+/* ── Policy modal animation ── */
+@keyframes slideUpModal {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (min-width: 640px) {
+  #policy-modal { align-items: center !important; padding: 1.5rem; }
+  #policy-modal > div { border-radius: 8px !important; }
+}
+
 /* ── Accessibility classes ── */
 .a11y-contrast { background: #000 !important; color: #fff !important; }
 .a11y-contrast a { color: #7dd3fc !important; text-decoration: underline !important; }
@@ -840,18 +850,34 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
 <footer class="w-full pt-10 pb-10 mt-10 bg-stone-100 flex flex-col items-center gap-6 border-t border-stone-200/50"
         style="font-family:'Heebo',sans-serif;">
   <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:2rem;">
-    <a href="policy.html"
-       style="font-size:0.68rem;letter-spacing:0.15em;text-transform:uppercase;color:#44403c;text-decoration:none;transition:color 0.2s;"
-       onmouseover="this.style.color='#625e51'" onmouseout="this.style.color='#44403c'">מדיניות שימוש באתר</a>
-    <a href="accessibility.html"
-       style="font-size:0.68rem;letter-spacing:0.15em;text-transform:uppercase;color:#44403c;text-decoration:none;transition:color 0.2s;"
-       onmouseover="this.style.color='#625e51'" onmouseout="this.style.color='#44403c'">נגישות</a>
+    <button onclick="openPolicyModal('policy')"
+       style="font-size:0.68rem;letter-spacing:0.15em;text-transform:uppercase;color:#44403c;text-decoration:none;background:none;border:none;cursor:pointer;font-family:'Heebo',sans-serif;padding:0;transition:color 0.2s;"
+       onmouseover="this.style.color='#625e51'" onmouseout="this.style.color='#44403c'">מדיניות שימוש באתר</button>
+    <button onclick="openPolicyModal('accessibility')"
+       style="font-size:0.68rem;letter-spacing:0.15em;text-transform:uppercase;color:#44403c;text-decoration:none;background:none;border:none;cursor:pointer;font-family:'Heebo',sans-serif;padding:0;transition:color 0.2s;"
+       onmouseover="this.style.color='#625e51'" onmouseout="this.style.color='#44403c'">נגישות</button>
   </div>
   <div style="font-size:0.68rem;letter-spacing:0.1em;color:#78716c;text-align:center;line-height:1.8;">
     © 2024 CASA MANCINI. ALL RIGHTS RESERVED.<br/>
     מעוצב באהבה עבור רגעים של יופי.
   </div>
 </footer>
+
+<!-- ── Policy modal ── -->
+<div id="policy-modal"
+     style="position:fixed;inset:0;z-index:60;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);"
+     role="dialog" aria-modal="true">
+  <div style="background:#faf9f6;width:100%;max-width:680px;max-height:88vh;border-radius:8px 8px 0 0;overflow-y:auto;display:flex;flex-direction:column;font-family:'Heebo',sans-serif;direction:rtl;animation:slideUpModal 0.4s cubic-bezier(0.16,1,0.3,1) both;">
+    <div style="position:sticky;top:0;background:#faf9f6;display:flex;justify-content:space-between;align-items:center;padding:1.25rem 1.5rem;border-bottom:1px solid rgba(98,94,81,0.12);z-index:1;">
+      <span id="policy-modal-title" style="font-size:1rem;font-weight:700;color:#2f3430;letter-spacing:0.02em;"></span>
+      <button onclick="closePolicyModal()"
+              style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(98,94,81,0.08);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#777c77;transition:background 0.2s;flex-shrink:0;"
+              aria-label="סגור"
+              onmouseover="this.style.background='rgba(98,94,81,0.16)'" onmouseout="this.style.background='rgba(98,94,81,0.08)'">×</button>
+    </div>
+    <div id="policy-modal-body" style="padding:1.5rem;color:#44403c;line-height:1.8;font-size:0.9rem;"></div>
+  </div>
+</div>
 
 <!-- ── Accessibility button (fixed, same as main site) ── -->
 <button type="button" id="accessibility-btn"
@@ -1317,6 +1343,66 @@ function restoreLocal() {
     }
   } catch(e) {}
 }
+
+// ═══════════════════════════════
+//  POLICY MODALS
+// ═══════════════════════════════
+const policyContent = {
+  policy: {
+    title: 'מדיניות שימוש באתר',
+    body: `
+      <p>ברוכים הבאים לאתר קאזה מנצ'יני. שימוש באתר זה כפוף לתנאים הבאים:</p>
+      <h2 style="font-size:1rem;font-weight:700;color:#2f3430;margin:1.5rem 0 0.5rem">שימוש בכלי האתר</h2>
+      <p>האתר נועד לספק מידע אודות השירותים שאנו מציעים – התארגנות כלה והפקות צילום. אסור להשתמש באתר או בתכניו למטרות בלתי חוקיות או בניגוד לתנאים אלה.</p>
+      <h2 style="font-size:1rem;font-weight:700;color:#2f3430;margin:1.5rem 0 0.5rem">קניין רוחני</h2>
+      <p>כל התכנים באתר – לרבות טקסטים, תמונות, עיצוב ולוגו – הם קניינה של קאזה מנצ'יני ומוגנים בזכויות יוצרים. אין להעתיק, להפיץ או לעשות שימוש בתכנים ללא אישור מראש.</p>
+      <h2 style="font-size:1rem;font-weight:700;color:#2f3430;margin:1.5rem 0 0.5rem">פרטיות ומידע אישי</h2>
+      <p>מידע שמסרתם באמצעות טופס יצירת הקשר ישמש אך ורק לצורכי טיפול בפנייתכם ולא יועבר לצדדים שלישיים ללא הסכמתכם.</p>
+      <h2 style="font-size:1rem;font-weight:700;color:#2f3430;margin:1.5rem 0 0.5rem">יצירת קשר</h2>
+      <p>לשאלות בנוגע למדיניות זו ניתן ליצור קשר דרך טופס יצירת הקשר באתר.</p>
+      <p style="font-size:0.78rem;color:#78716c;margin-top:2rem;">עודכן לאחרונה: 2024</p>
+    `
+  },
+  accessibility: {
+    title: 'הצהרת נגישות',
+    body: `
+      <p>קאזה מנצ'יני מחויבת להנגשת האתר לכלל המשתמשים, בהתאם לחוק שוויון זכויות לאנשים עם מוגבלות, התשנ"ח-1998, ולתקנות שוויון זכויות לאנשים עם מוגבלות (התאמות נגישות לשירות), התשע"ג-2013.</p>
+      <p style="margin-top:0.75rem;">האתר עומד בתקן הישראלי (ת"י 5568) לנגישות תכנים באינטרנט ברמת AA.</p>
+      <h2 style="font-size:1rem;font-weight:700;color:#2f3430;margin:1.5rem 0 0.5rem">אמצעי הנגישות באתר</h2>
+      <ul style="padding-right:1.25rem;display:flex;flex-direction:column;gap:0.4rem;">
+        <li>גודל טקסט – ניתן להגדיל או להקטין את גודל הטקסט דרך כפתור הגדרות הנגישות</li>
+        <li>ניגודיות גבוהה – אפשרות להפעלת מצב ניגודיות מוגברת</li>
+        <li>הדגשת קישורים – אפשרות להדגשת קישורים לצורכי זיהוי קל יותר</li>
+        <li>ביטול אנימציות – אפשרות לכיבוי אנימציות למשתמשים הרגישים להן</li>
+        <li>ניווט מקלדת – ניתן לנווט באתר באמצעות מקלדת בלבד</li>
+        <li>תמיכה בקוראי מסך – האתר מותאם לתוכנות הקראת מסך</li>
+      </ul>
+      <h2 style="font-size:1rem;font-weight:700;color:#2f3430;margin:1.5rem 0 0.5rem">דיווח על בעיות נגישות</h2>
+      <p>אם נתקלתם בבעיה בנגישות האתר, נשמח לשמוע מכם. ניתן ליצור קשר באמצעות טופס יצירת הקשר. נטפל בבקשה בהקדם.</p>
+      <h2 style="font-size:1rem;font-weight:700;color:#2f3430;margin:1.5rem 0 0.5rem">נגישות במקום הפיזי</h2>
+      <p>לגבי נגישות המקום הפיזי – בית האירוח וההפקות – ניתן לפנות אלינו לקבלת פרטים והתאמות לפי הצורך.</p>
+      <p style="font-size:0.78rem;color:#78716c;margin-top:2rem;">עודכן לאחרונה: 2024</p>
+    `
+  }
+};
+
+function openPolicyModal(type) {
+  const modal = document.getElementById('policy-modal');
+  document.getElementById('policy-modal-title').textContent = policyContent[type].title;
+  document.getElementById('policy-modal-body').innerHTML  = policyContent[type].body;
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closePolicyModal() {
+  document.getElementById('policy-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+document.getElementById('policy-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('policy-modal')) closePolicyModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePolicyModal();
+});
 
 // ═══════════════════════════════
 //  ACCESSIBILITY
