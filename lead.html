@@ -485,6 +485,64 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
 .review-text { font-size: 0.82rem; line-height: 1.65; color: var(--text); font-weight: 300; }
 .reviews-note { font-size: 0.7rem; color: var(--muted); text-align: center; margin-top: 0.75rem; }
 
+/* ── Companions counter ── */
+.companions-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: fit-content;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg);
+}
+.companions-btn {
+  width: 46px; height: 46px;
+  display: flex; align-items: center; justify-content: center;
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  font-weight: 300;
+  color: var(--primary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  user-select: none;
+  flex-shrink: 0;
+}
+.companions-btn:hover { background: rgba(201,169,110,0.12); color: var(--primary-dark); }
+.companions-btn:active { background: rgba(201,169,110,0.22); }
+.companions-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.companions-val {
+  min-width: 52px;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  border-right: 1.5px solid var(--border);
+  border-left: 1.5px solid var(--border);
+  line-height: 46px;
+}
+
+/* ── Success notice ── */
+.success-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(98,94,81,0.07);
+  border: 1px solid rgba(98,94,81,0.18);
+  border-right: 3px solid var(--primary);
+  border-radius: 4px;
+  padding: 0.85rem 1rem;
+  margin-top: 1.25rem;
+  text-align: right;
+}
+.success-notice-text {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--primary-dark);
+  line-height: 1.4;
+}
+
 /* ── Char counter ── */
 .char-count {
   text-align: left;
@@ -525,7 +583,7 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
 
     <!-- ══ STEP 1: Name ══ -->
     <div class="step active" data-step="1">
-      <div class="step-num">שלב 1 מתוך 7</div>
+      <div class="step-num">שלב 1 מתוך 6</div>
       <h2 class="step-title">שלום! <strong>איך קוראים לך?</strong></h2>
       <div class="field">
         <label class="field-label" for="f-name">שם מלא <span class="req">*</span></label>
@@ -540,7 +598,7 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
 
     <!-- ══ STEP 2: Phone + Email ══ -->
     <div class="step" data-step="2">
-      <div class="step-num">שלב 2 מתוך 7</div>
+      <div class="step-num">שלב 2 מתוך 6</div>
       <h2 class="step-title" id="s2-title">מה <strong>פרטי הקשר שלך</strong>?</h2>
       <div class="field">
         <label class="field-label" for="f-phone">טלפון <span class="req">*</span></label>
@@ -563,7 +621,7 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
 
     <!-- ══ STEP 3: Service ══ -->
     <div class="step" data-step="3">
-      <div class="step-num">שלב 3 מתוך 7</div>
+      <div class="step-num">שלב 3 מתוך 6</div>
       <h2 class="step-title" id="s3-title">מה <strong>השירות שאת מחפשת</strong>?</h2>
       <div class="service-grid">
         <div class="service-chip" id="chip-bride" onclick="selectService('bride',this)">
@@ -593,21 +651,16 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
         </div>
       </div>
 
-      <!-- Sub: Bride -->
+      <!-- Sub: Bride – companions counter -->
       <div class="conditional-block" id="sub-bride">
-        <div class="cond-label">סוג האירוע</div>
-        <div class="sub-chips" id="bride-sub-chips">
-          <div class="sub-chip" onclick="selectSubChip('bride','בוקר כלה',this)">בוקר כלה</div>
-          <div class="sub-chip" onclick="selectSubChip('bride','ציפוי גלימה',this)">ציפוי גלימה</div>
-          <div class="sub-chip" onclick="selectSubChip('bride','ארוחת בוקר',this)">ארוחת בוקר</div>
-          <div class="sub-chip" onclick="selectSubChip('bride','אחר',this)">אחר</div>
+        <div class="cond-label">כמה מלוות מגיעות?</div>
+        <div class="companions-wrap">
+          <button type="button" class="companions-btn" onclick="changeCompanions(-1)" aria-label="הפחתה">−</button>
+          <span class="companions-val" id="companions-display">0</span>
+          <button type="button" class="companions-btn" onclick="changeCompanions(1)" aria-label="הוספה">+</button>
         </div>
-        <div class="conditional-block" id="bride-other-block" style="margin-top:0.75rem">
-          <div class="field" style="margin-bottom:0">
-            <input type="text" id="bride-other-text" placeholder="אנא פרטי בקצרה"/>
-            <div class="field-error" id="e-bride-other">שדה חובה</div>
-          </div>
-        </div>
+        <div class="field-hint" style="margin-top:0.5rem">עד 8 מלוות. האירוח כולל כלה אחת + מלוות.</div>
+        <div class="field-error" id="e-companions">ניתן לבחור עד 8 מלוות בלבד</div>
       </div>
 
       <!-- Sub: Fashion -->
@@ -676,25 +729,9 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
       </button>
     </div>
 
-    <!-- ══ STEP 4: Companions (bride only) ══ -->
+    <!-- ══ STEP 4: Date ══ -->
     <div class="step" data-step="4">
-      <div class="step-num">שלב 4 מתוך 7</div>
-      <h2 class="step-title"><strong>כמה מלוות</strong> מגיעות עם הכלה?</h2>
-      <div class="field">
-        <label class="field-label" for="f-companions">מספר מלוות <span class="req">*</span></label>
-        <input type="number" id="f-companions" placeholder="0" min="0" max="8"
-               oninput="liveValidateCompanions()" onkeydown="enterNext(event)"/>
-        <div class="field-hint">עד 8 מלוות. האירוח כולל כלה אחת + מלוות.</div>
-        <div class="field-error" id="e-companions">ניתן להזין עד 8 מלוות בלבד</div>
-      </div>
-      <button class="btn-primary" onclick="next()">
-        המשך <span class="btn-arrow">←</span>
-      </button>
-    </div>
-
-    <!-- ══ STEP 5: Date ══ -->
-    <div class="step" data-step="5">
-      <div class="step-num" id="s5-num">שלב 5 מתוך 7</div>
+      <div class="step-num">שלב 4 מתוך 6</div>
       <h2 class="step-title"><strong>תאריך האירוע</strong> המבוקש</h2>
       <div class="field">
         <label class="field-label" for="f-date">בחרי תאריך</label>
@@ -717,9 +754,9 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
       </button>
     </div>
 
-    <!-- ══ STEP 6: Budget ══ -->
-    <div class="step" data-step="6">
-      <div class="step-num" id="s6-num">שלב 6 מתוך 7</div>
+    <!-- ══ STEP 5: Budget ══ -->
+    <div class="step" data-step="5">
+      <div class="step-num">שלב 5 מתוך 6</div>
       <h2 class="step-title"><strong>תקציב</strong> משוער</h2>
       <div class="budget-amount">₪<span id="budget-val">2,000</span><span id="budget-sfx"> ומעלה</span></div>
       <input type="range" id="budget-range"
@@ -732,9 +769,9 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
       <span class="btn-skip" onclick="skipStep()">דלגי על שאלה זו</span>
     </div>
 
-    <!-- ══ STEP 7: Notes ══ -->
-    <div class="step" data-step="7">
-      <div class="step-num" id="s7-num">שלב 7 מתוך 7</div>
+    <!-- ══ STEP 6: Notes ══ -->
+    <div class="step" data-step="6">
+      <div class="step-num">שלב 6 מתוך 6</div>
       <h2 class="step-title">עוד <strong>משהו שנדע</strong>?</h2>
       <div class="field">
         <label class="field-label" for="f-notes">הערות נוספות</label>
@@ -758,7 +795,10 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
     <div class="success-mark">✓</div>
     <div class="success-title">תודה!</div>
     <p class="success-body">קיבלנו את הפנייה שלך, נחזור אלייך בהקדם.</p>
-    <p class="success-note">האירוח במקום הינו ללא לינה.</p>
+    <div class="success-notice">
+      <span style="font-size:1.1rem;flex-shrink:0">🏠</span>
+      <span class="success-notice-text">האירוח במקום הינו ללא לינה</span>
+    </div>
   </div>
 
   <!-- REVIEWS (real Google reviews – manual update required) -->
@@ -789,9 +829,6 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
       <div class="review-text">הגענו לצלם קולקציית קיץ וקיבלנו בדיוק מה שחלמנו עליו. האור, הסטייל, הכל. תודה!</div>
     </div>
 
-    <div class="reviews-note">
-      ⚠️ להחלפה בביקורות אמיתיות מ-Google Reviews יש לעדכן את הקוד עם הביקורות הנכונות.
-    </div>
   </div>
 
 </div><!-- /page -->
@@ -802,10 +839,10 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
 // ═══════════════════════════════
 const s = {
   step: 1,
-  totalSteps: 7,
+  totalSteps: 6,
   name:'', phone:'', email:'',
   service:'', sub:'', subOtherText:'',
-  companions: null,
+  companions: 0,
   date:'', urgency:'',
   budget: 2000, budgetSkipped: false,
   notes:'',
@@ -840,34 +877,18 @@ function updateProgress() {
 function next() {
   if (!validateStep()) return;
   collectStep();
-
-  // Skip step 4 (companions) if not bride
-  let nextStep = s.step + 1;
-  if (nextStep === 4 && s.service !== 'bride') nextStep = 5;
-
-  // Adjust step numbers display if skipping step 4
-  if (s.service !== 'bride') {
-    document.getElementById('s5-num').textContent = 'שלב 4 מתוך 6';
-    document.getElementById('s6-num').textContent = 'שלב 5 מתוך 6';
-    document.getElementById('s7-num').textContent = 'שלב 6 מתוך 6';
-    s.totalSteps = 6;
-  } else {
-    s.totalSteps = 7;
-  }
-
-  showStep(nextStep);
+  showStep(s.step + 1);
 }
 
 function goBack() {
   collectStep();
-  let prevStep = s.step - 1;
-  if (prevStep === 4 && s.service !== 'bride') prevStep = 3;
-  showStep(prevStep);
+  showStep(s.step - 1);
 }
 
 function skipStep() {
-  if (s.step === 6) s.budgetSkipped = true;
-  next();
+  if (s.step === 5) s.budgetSkipped = true;
+  collectStep();
+  showStep(s.step + 1);
 }
 
 function showStep(n) {
@@ -900,11 +921,10 @@ function personalise() {
 function validateStep() {
   switch(s.step) {
     case 1: return checkName();
-    case 2: return checkPhone() & checkEmail(); // bitwise: run both
+    case 2: return checkPhone() & checkEmail();
     case 3: return checkService();
-    case 4: return checkCompanions();
-    case 5: return checkDate();
-    case 6: case 7: return true;
+    case 4: return checkDate();
+    case 5: case 6: return true;
   }
   return true;
 }
@@ -948,11 +968,6 @@ function checkService() {
   }
   return true;
 }
-function checkCompanions() {
-  const v = parseInt(document.getElementById('f-companions').value);
-  if (isNaN(v) || v < 0 || v > 8) return setErr('f-companions','e-companions', true);
-  return setErr('f-companions','e-companions', false);
-}
 function checkDate() {
   const dateVal = document.getElementById('f-date').value;
   const urgent = s.urgency;
@@ -995,9 +1010,22 @@ function liveValidateEmail() {
   const v = document.getElementById('f-email').value.trim();
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) setErr('f-email','e-email', false);
 }
-function liveValidateCompanions() {
-  const v = parseInt(document.getElementById('f-companions').value);
-  if (!isNaN(v) && v >= 0 && v <= 8) setErr('f-companions','e-companions', false);
+
+// ── Companions +/- ──
+function changeCompanions(delta) {
+  const next = s.companions + delta;
+  if (next < 0 || next > 8) {
+    if (next > 8) {
+      document.getElementById('e-companions').classList.add('show');
+    }
+    return;
+  }
+  document.getElementById('e-companions').classList.remove('show');
+  s.companions = next;
+  document.getElementById('companions-display').textContent = next;
+  // Update button states
+  document.querySelector('.companions-btn[aria-label="הפחתה"]').disabled = next === 0;
+  document.querySelector('.companions-btn[aria-label="הוספה"]').disabled = next === 8;
 }
 
 // ═══════════════════════════════
@@ -1010,16 +1038,9 @@ function collectStep() {
       s.phone = document.getElementById('f-phone').value.trim();
       s.email = document.getElementById('f-email').value.trim();
       break;
-    case 4: s.companions = document.getElementById('f-companions').value; break;
-    case 5:
-      s.date = document.getElementById('f-date').value;
-      break;
-    case 6:
-      s.budget = parseInt(document.getElementById('budget-range').value);
-      break;
-    case 7:
-      s.notes = document.getElementById('f-notes').value.trim();
-      break;
+    case 4: s.date = document.getElementById('f-date').value; break;
+    case 5: s.budget = parseInt(document.getElementById('budget-range').value); break;
+    case 6: s.notes = document.getElementById('f-notes').value.trim(); break;
   }
 }
 
@@ -1150,7 +1171,7 @@ function submitForm() {
     `טלפון: ${s.phone}\n` +
     `אימייל: ${s.email}\n` +
     `שירות: ${serviceDetail}${subDetail && subDetail !== 'אחר' ? ` · ${subDetail}` : ''}\n` +
-    (s.service === 'bride' && s.companions !== null ? `מלוות: ${s.companions}\n` : '') +
+    (s.service === 'bride' ? `מלוות: ${s.companions}\n` : '') +
     `תאריך: ${dateStr}\n` +
     `תקציב: ${budgetStr}\n` +
     `הערות: ${s.notes || '—'}\n` +
