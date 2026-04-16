@@ -1624,7 +1624,7 @@ document.addEventListener('keydown', e => {
 </script>
 
 <!-- ── Background Music ── -->
-<audio id="bg-music" loop preload="none">
+<audio id="bg-music" loop preload="auto">
   <source src="music.mp3" type="audio/mpeg"/>
 </audio>
 <script>
@@ -1632,20 +1632,23 @@ document.addEventListener('keydown', e => {
   const audio = document.getElementById('bg-music');
   audio.volume = 0;
   let started = false;
+
+  function fadeIn() {
+    let v = 0;
+    const t = setInterval(() => {
+      v = Math.min(v + 0.015, 0.35);
+      audio.volume = v;
+      if (v >= 0.35) clearInterval(t);
+    }, 80);
+  }
+
   function start() {
     if (started) return;
     started = true;
-    audio.play().then(() => {
-      let v = 0;
-      const t = setInterval(() => {
-        v = Math.min(v + 0.015, 0.35);
-        audio.volume = v;
-        if (v >= 0.35) clearInterval(t);
-      }, 80);
-    }).catch(() => {});
+    audio.play().then(fadeIn).catch(() => {});
   }
-  audio.play().then(() => { started = true; let v=0; const t=setInterval(()=>{v=Math.min(v+0.015,0.35);audio.volume=v;if(v>=0.35)clearInterval(t);},80); }).catch(() => {});
-  ['click','scroll','touchstart','keydown'].forEach(e =>
+
+  ['click', 'scroll', 'touchstart', 'keydown', 'mousemove'].forEach(e =>
     document.addEventListener(e, start, { once: true, passive: true })
   );
 })();
