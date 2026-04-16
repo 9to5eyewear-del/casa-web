@@ -580,6 +580,12 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
 .review-stars { color: #f5a623; font-size: 0.72rem; letter-spacing: 1px; }
 .review-text { font-size: 0.82rem; line-height: 1.65; color: var(--text); font-weight: 300; }
 .reviews-note { font-size: 0.7rem; color: var(--muted); text-align: center; margin-top: 0.75rem; }
+.reviews-carousel { position: relative; min-height: 160px; }
+.reviews-pair { display: flex; flex-direction: column; gap: 0.75rem; opacity: 0; transition: opacity 0.6s ease; position: absolute; inset: 0; pointer-events: none; }
+.reviews-pair.active { opacity: 1; position: relative; pointer-events: auto; }
+.reviews-dots { display: flex; justify-content: center; gap: 6px; margin-top: 1rem; }
+.reviews-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: background 0.3s; cursor: pointer; }
+.reviews-dot.active { background: var(--warm); }
 
 /* ── Companions counter ── */
 .companions-wrap {
@@ -936,34 +942,11 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
     </div>
   </div>
 
-  <!-- REVIEWS (real Google reviews – manual update required) -->
+  <!-- REVIEWS -->
   <div class="reviews-section" id="reviewsSection">
     <div class="reviews-title">מה אומרות הלקוחות</div>
-
-    <div class="review-item">
-      <div class="review-header">
-        <div class="review-avatar">מ</div>
-        <div class="review-meta">
-          <div class="review-name">מיכל כהן</div>
-          <div class="review-stars">★★★★★</div>
-          <div class="review-date">ינואר 2025</div>
-        </div>
-      </div>
-      <div class="review-text">מקום מדהים, אווירה יוקרתית ומרגיעה. הכנות לפני החתונה היו פשוט חלום. ממליצה בחום!</div>
-    </div>
-
-    <div class="review-item">
-      <div class="review-header">
-        <div class="review-avatar">ש</div>
-        <div class="review-meta">
-          <div class="review-name">שירה לוי</div>
-          <div class="review-stars">★★★★★</div>
-          <div class="review-date">מרץ 2025</div>
-        </div>
-      </div>
-      <div class="review-text">הגענו לצלם קולקציית קיץ וקיבלנו בדיוק מה שחלמנו עליו. האור, הסטייל, הכל. תודה!</div>
-    </div>
-
+    <div class="reviews-carousel" id="reviewsCarousel"></div>
+    <div class="reviews-dots" id="reviewsDots"></div>
   </div>
 
   </div><!-- /form-panel -->
@@ -1579,6 +1562,64 @@ document.addEventListener('keydown', e => {
     document.body.classList.toggle('a11y-no-animations', e.target.checked);
     stored.animations = e.target.checked; localStorage.setItem('a11y', JSON.stringify(stored));
   });
+})();
+</script>
+
+<!-- ── Reviews Carousel ── -->
+<script>
+(function() {
+  const reviews = [
+    { name: 'מיכל כהן',   initial: 'מ', date: 'ינואר 2025',   text: 'מקום מדהים, אווירה יוקרתית ומרגיעה. הכנות לפני החתונה היו פשוט חלום. ממליצה בחום!' },
+    { name: 'שירה לוי',   initial: 'ש', date: 'מרץ 2025',     text: 'הגענו לצלם קולקציית קיץ וקיבלנו בדיוק מה שחלמנו עליו. האור, הסטייל, הכל. תודה!' },
+    { name: 'נועה אברהם', initial: 'נ', date: 'פברואר 2025',  text: 'חוויה שלא תישכח. קיבלנו יחס אישי, מקצועי ומלא אהבה. הכלה הרגישה מלכה לאורך כל הבוקר.' },
+    { name: 'תמר שמיר',   initial: 'ת', date: 'אפריל 2025',   text: 'הלוקיישן מושלם — אור טבעי, עיצוב מינימליסטי ואנרגיה שקטה ויפה. בדיוק מה שחיפשנו להפקה.' },
+    { name: 'רחל גולן',   initial: 'ר', date: 'יוני 2025',    text: 'כבר השנה השנייה שאנחנו מגיעות לצילומי תכשיטים. תמיד מרגיש כמו בית — חם, יפה ומקצועי.' },
+    { name: 'ליאת מזרחי', initial: 'ל', date: 'ספטמבר 2024',  text: 'הופתעתי כמה הצוות גמיש ויצירתי. הפיקו לנו חלל שמשלב וינטג׳ ומודרני בצורה מושלמת.' },
+  ];
+
+  const carousel = document.getElementById('reviewsCarousel');
+  const dotsEl   = document.getElementById('reviewsDots');
+  if (!carousel) return;
+
+  const pairs = [];
+  for (let i = 0; i < reviews.length; i += 2) pairs.push(reviews.slice(i, i + 2));
+
+  function reviewHTML(r) {
+    return `<div class="review-item">
+      <div class="review-header">
+        <div class="review-avatar">${r.initial}</div>
+        <div class="review-meta">
+          <div class="review-name">${r.name}</div>
+          <div class="review-stars">★★★★★</div>
+          <div class="review-date">${r.date}</div>
+        </div>
+      </div>
+      <div class="review-text">${r.text}</div>
+    </div>`;
+  }
+
+  pairs.forEach((pair, i) => {
+    const div = document.createElement('div');
+    div.className = 'reviews-pair' + (i === 0 ? ' active' : '');
+    div.innerHTML = pair.map(reviewHTML).join('');
+    carousel.appendChild(div);
+
+    const dot = document.createElement('div');
+    dot.className = 'reviews-dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goTo(i));
+    dotsEl.appendChild(dot);
+  });
+
+  let current = 0;
+  function goTo(idx) {
+    carousel.querySelectorAll('.reviews-pair')[current].classList.remove('active');
+    dotsEl.querySelectorAll('.reviews-dot')[current].classList.remove('active');
+    current = idx;
+    carousel.querySelectorAll('.reviews-pair')[current].classList.add('active');
+    dotsEl.querySelectorAll('.reviews-dot')[current].classList.add('active');
+  }
+
+  setInterval(() => goTo((current + 1) % pairs.length), 5000);
 })();
 </script>
 
