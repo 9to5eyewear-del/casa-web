@@ -54,7 +54,71 @@ body::before {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.form-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 2.5rem 1.25rem 5rem;
+  width: 100%;
+}
+
+/* ── Video split panel (desktop) ── */
+.video-panel { display: none; }
+
+@media (min-width: 768px) {
+  .page {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  .video-panel {
+    display: flex;
+    position: sticky;
+    top: 0;
+    width: 44%;
+    height: 100vh;
+    flex-shrink: 0;
+    overflow: hidden;
+    align-items: flex-end;
+  }
+  .video-panel video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .video-panel-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(170deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.55) 100%);
+  }
+  .video-panel-text {
+    position: relative;
+    z-index: 2;
+    padding: 2.5rem;
+    color: rgba(255,255,255,0.92);
+  }
+  .video-panel-text h2 {
+    font-weight: 200;
+    font-size: 1.6rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+  .video-panel-text p {
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    opacity: 0.65;
+    text-transform: uppercase;
+  }
+  .form-panel {
+    flex: 1;
+    padding: 3rem 2.5rem 5rem;
+    overflow-y: auto;
+    min-height: 100vh;
+  }
 }
 
 .card {
@@ -68,7 +132,7 @@ body::before {
 }
 
 @media (max-width: 480px) {
-  .page { padding: 1.5rem 0 4rem; }
+  .form-panel { padding: 1.5rem 0 4rem; }
   .card { border-radius: 0; border-left: none; border-right: none; padding: 2rem 1.25rem; }
 }
 
@@ -572,6 +636,21 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
 
 <div class="page">
 
+  <!-- Video panel (desktop only) -->
+  <div class="video-panel" aria-hidden="true">
+    <video autoplay muted loop playsinline>
+      <source src="hero-video.mp4" type="video/mp4"/>
+    </video>
+    <div class="video-panel-overlay"></div>
+    <div class="video-panel-text">
+      <h2>Casa Mancini</h2>
+      <p>התארגנות כלה ולוקיישן להפקות</p>
+    </div>
+  </div>
+
+  <!-- Form panel -->
+  <div class="form-panel">
+
   <!-- FORM CARD -->
   <div class="card" id="formCard">
 
@@ -843,6 +922,8 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
     </div>
 
   </div>
+
+  </div><!-- /form-panel -->
 
 </div><!-- /page -->
 
