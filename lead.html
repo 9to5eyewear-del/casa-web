@@ -1627,98 +1627,27 @@ document.addEventListener('keydown', e => {
 <audio id="bg-music" loop preload="none">
   <source src="music.mp3" type="audio/mpeg"/>
 </audio>
-
-<button id="music-btn" aria-label="מוזיקה ברקע" title="מוזיקה ברקע" style="
-  position: fixed;
-  bottom: 2rem;
-  left: 5rem;
-  z-index: 50;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.92);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(98,94,81,0.18);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: box-shadow 0.2s, transform 0.2s;
-  color: #625e51;
-">
-  <svg id="music-icon-on" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/>
-  </svg>
-  <svg id="music-icon-off" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none">
-    <path d="M4.27 3L3 4.27l9 9V17a4 4 0 1 0 2 3.55V15.27l4.73 4.73L20 18.73 4.27 3zM14 7h4V3h-6v5.18l2 2V7z"/>
-  </svg>
-</button>
-
-<style>
-  #music-btn:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.18); transform: scale(1.08); }
-  #music-btn.playing { animation: music-pulse 2.5s ease-in-out infinite; }
-  @keyframes music-pulse {
-    0%, 100% { box-shadow: 0 2px 12px rgba(98,94,81,0.15); }
-    50% { box-shadow: 0 2px 20px rgba(201,169,110,0.45); }
-  }
-</style>
-
 <script>
 (function() {
   const audio = document.getElementById('bg-music');
-  const btn = document.getElementById('music-btn');
-  const iconOn = document.getElementById('music-icon-on');
-  const iconOff = document.getElementById('music-icon-off');
-  let playing = false;
-  let started = false;
-
   audio.volume = 0;
-
-  function fadeIn() {
-    let v = 0;
-    const t = setInterval(() => {
-      v = Math.min(v + 0.02, 0.35);
-      audio.volume = v;
-      if (v >= 0.35) clearInterval(t);
-    }, 80);
-  }
-
-  function fadeOut(cb) {
-    let v = audio.volume;
-    const t = setInterval(() => {
-      v = Math.max(v - 0.02, 0);
-      audio.volume = v;
-      if (v <= 0) { clearInterval(t); cb && cb(); }
-    }, 80);
-  }
-
-  function setPlaying(val) {
-    playing = val;
-    iconOn.style.display = val ? 'block' : 'none';
-    iconOff.style.display = val ? 'none' : 'block';
-    btn.classList.toggle('playing', val);
-  }
-
-  function startAudio() {
+  let started = false;
+  function start() {
     if (started) return;
     started = true;
-    audio.play().then(() => { setPlaying(true); fadeIn(); }).catch(() => {});
+    audio.play().then(() => {
+      let v = 0;
+      const t = setInterval(() => {
+        v = Math.min(v + 0.015, 0.35);
+        audio.volume = v;
+        if (v >= 0.35) clearInterval(t);
+      }, 80);
+    }).catch(() => {});
   }
-
-  ['scroll', 'touchstart', 'mousemove'].forEach(e =>
-    document.addEventListener(e, startAudio, { once: true, passive: true })
+  audio.play().then(() => { started = true; let v=0; const t=setInterval(()=>{v=Math.min(v+0.015,0.35);audio.volume=v;if(v>=0.35)clearInterval(t);},80); }).catch(() => {});
+  ['click','scroll','touchstart','keydown'].forEach(e =>
+    document.addEventListener(e, start, { once: true, passive: true })
   );
-
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (!started) { startAudio(); return; }
-    if (playing) {
-      fadeOut(() => { audio.pause(); setPlaying(false); });
-    } else {
-      audio.play().then(() => { setPlaying(true); fadeIn(); }).catch(() => {});
-    }
-  });
 })();
 </script>
 
