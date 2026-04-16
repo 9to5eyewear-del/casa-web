@@ -1068,7 +1068,6 @@
 (function() {
   const audio = document.getElementById('bg-music');
   audio.volume = 0;
-  let started = false;
 
   function fadeIn() {
     let v = 0;
@@ -1079,15 +1078,16 @@
     }, 80);
   }
 
+  const events = ['click', 'touchend', 'keydown', 'pointerdown'];
+
   function start() {
-    if (started) return;
-    started = true;
-    audio.play().then(fadeIn).catch(() => {});
+    audio.play().then(() => {
+      events.forEach(e => document.removeEventListener(e, start));
+      fadeIn();
+    }).catch(() => {});
   }
 
-  ['click', 'scroll', 'touchstart', 'keydown', 'mousemove'].forEach(e =>
-    document.addEventListener(e, start, { once: true, passive: true })
-  );
+  events.forEach(e => document.addEventListener(e, start, { passive: true }));
 })();
 </script>
 
