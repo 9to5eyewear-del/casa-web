@@ -1,8 +1,9 @@
 -- Casa Mancini leads: the single source of truth for every inquiry.
 --
--- Access model: RLS is on and no policies exist, so the anon/authenticated
--- roles can't read or write anything. Only the server (service_role, via the
--- functions under /api) touches these tables, through the RPC functions below.
+-- Plain PostgreSQL (runs on Neon). Only the Vercel Functions under /api hold
+-- the connection string; browsers never talk to the database. All lead
+-- writes go through the functions below, so dedupe and status rules run
+-- atomically in one place.
 
 -- ─────────────────────────────────────────────
 --  Tables
@@ -56,7 +57,7 @@ create table public.lead_events (
   -- lead_created | repeat_submission | status_changed (open text for future events)
   type          text not null check (type ~ '^[a-z][a-z0-9_]{1,39}$'),
   created_at    timestamptz not null default now(),   -- for status_changed: changed_at
-  actor_id      uuid references auth.users (id) on delete set null,  -- changed_by
+  actor_id      text,                                 -- changed_by: staff user id
   actor_email   text,
   from_status   text,
   to_status     text,
@@ -71,7 +72,7 @@ create index lead_events_ip_idx on public.lead_events (ip_hash, created_at) wher
 
 create table public.push_subscriptions (
   id              uuid primary key default gen_random_uuid(),
-  user_id         uuid not null references auth.users (id) on delete cascade,
+  user_id         text not null,                      -- staff user id
   endpoint        text not null unique,
   p256dh          text not null,
   auth            text not null,
@@ -91,17 +92,6 @@ end $$;
 
 create trigger leads_set_updated_at before update on public.leads
   for each row execute function public.set_updated_at();
-
--- ─────────────────────────────────────────────
---  Access: server only
--- ─────────────────────────────────────────────
-
-alter table public.leads              enable row level security;
-alter table public.lead_events        enable row level security;
-alter table public.push_subscriptions enable row level security;
-
-revoke all on public.leads, public.lead_events, public.push_subscriptions from anon, authenticated;
-grant all on public.leads, public.lead_events, public.push_subscriptions to service_role;
 
 -- ─────────────────────────────────────────────
 --  ingest_lead: create a lead, or attach a repeat inquiry to an open one.
@@ -220,7 +210,7 @@ end $$;
 create function public.set_lead_status(
   p_lead_id     uuid,
   p_status      text,
-  p_actor_id    uuid default null,
+  p_actor_id    text default null,
   p_actor_email text default null
 ) returns jsonb
 language plpgsql set search_path = public, pg_temp as $$
@@ -321,16 +311,3 @@ language sql stable set search_path = public, pg_temp as $$
     from lead_events e where e.lead_id = l.id), '[]'::jsonb))
   from leads l where l.id = p_lead_id;
 $$;
-
-revoke all on function public.ingest_lead(jsonb, uuid, text, integer, integer) from public, anon, authenticated;
-revoke all on function public.set_lead_status(uuid, text, uuid, text)         from public, anon, authenticated;
-revoke all on function public.list_leads(text, text, text, timestamptz, uuid, integer) from public, anon, authenticated;
-revoke all on function public.lead_status_counts()                              from public, anon, authenticated;
-revoke all on function public.get_lead(uuid)                                    from public, anon, authenticated;
-revoke all on function public.set_updated_at()                                  from public, anon, authenticated;
-
-grant execute on function public.ingest_lead(jsonb, uuid, text, integer, integer) to service_role;
-grant execute on function public.set_lead_status(uuid, text, uuid, text)         to service_role;
-grant execute on function public.list_leads(text, text, text, timestamptz, uuid, integer) to service_role;
-grant execute on function public.lead_status_counts()                              to service_role;
-grant execute on function public.get_lead(uuid)                                    to service_role;

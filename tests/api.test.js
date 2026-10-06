@@ -8,7 +8,6 @@ let t, log, leadsApi, leadApi;
 
 beforeEach(async () => {
   t = await createTestDb();
-  await t.pg.query('insert into auth.users (id, email) values ($1, $2)', [STAFF.id, STAFF.email]);
   log = silentLog();
   const deps = () => ({ db: t.db, ipHashKey: 'test-key', requireStaff: fakeRequireStaff });
   leadsApi = createLeadsHandler(deps, { log });
@@ -274,21 +273,6 @@ test('list: newest activity first, keyset pagination', async () => {
   }
   assert.deepEqual(paged, full);
   assert.equal((await list({ cursor: 'garbage' })).statusCode, 400);
-});
-
-test('database: anon / authenticated roles cannot read tables or call functions', async () => {
-  await post(websiteLead());
-  for (const role of ['anon', 'authenticated']) {
-    await t.pg.exec(`set role ${role}`);
-    for (const sql of ['select * from public.leads', 'select * from public.lead_events',
-                       'select * from public.push_subscriptions', 'select public.lead_status_counts()',
-                       `select public.ingest_lead('{}'::jsonb)`]) {
-      await assert.rejects(t.pg.query(sql), /permission denied/, `${role}: ${sql}`);
-    }
-    await t.pg.exec('reset role');
-  }
-  const { rows } = await t.pg.query(`select relname from pg_class where relname in ('leads','lead_events','push_subscriptions') and relrowsecurity`);
-  assert.equal(rows.length, 3);
 });
 
 test('database: constraints hold even if the API is bypassed', async () => {

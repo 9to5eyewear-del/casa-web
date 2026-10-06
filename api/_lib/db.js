@@ -1,6 +1,5 @@
-// All lead data access goes through the SQL functions in
-// supabase/migrations, so dedupe / status rules run atomically in Postgres.
-// `rpc(fn, args)` is injectable: Supabase REST in production, PGlite in tests.
+// All lead data access goes through the SQL functions in db/migrations, so
+// dedupe / status rules run atomically in Postgres.
 
 export function createDb(rpc) {
   return {
@@ -33,25 +32,20 @@ export function createDb(rpc) {
   };
 }
 
-export function supabaseRpc({ url, serviceKey, fetchImpl = fetch, timeoutMs = 8000 }) {
-  const headers = { apikey: serviceKey, 'Content-Type': 'application/json' };
-  // Legacy service_role keys are JWTs and go in Authorization too; the new
-  // sb_secret_ keys must only be sent as apikey.
-  if (serviceKey.startsWith('eyJ')) headers.Authorization = `Bearer ${serviceKey}`;
-
+// Calls one of the SQL functions with named arguments; each returns jsonb.
+// `query(text, params) → rows` is Neon in production and PGlite in tests.
+export function sqlRpc(query) {
   return async function rpc(fn, args) {
-    const res = await fetchImpl(`${url}/rest/v1/rpc/${fn}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(args),
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    const text = await res.text();
-    if (!res.ok) {
-      const err = new Error(`rpc ${fn} failed: ${res.status} ${text.slice(0, 300)}`);
-      err.status = res.status;
-      throw err;
-    }
-    return text ? JSON.parse(text) : null;
+    if (!/^[a-z_]+$/.test(fn)) throw new Error(`bad function name: ${fn}`);
+    const keys = Object.keys(args);
+    const text = `select public.${fn}(${keys.map((k, i) => `${k} => $${i + 1}`).join(', ')}) as r`;
+    const params = keys.map((k) => (args[k] !== null && typeof args[k] === 'object' ? JSON.stringify(args[k]) : args[k]));
+    const rows = await query(text, params);
+    return rows[0].r;
   };
+}
+
+export function neonQuery(connectionString, neon, { timeoutMs = 8000 } = {}) {
+  const sql = neon(connectionString);
+  return (text, params) => sql.query(text, params, { fetchOptions: { signal: AbortSignal.timeout(timeoutMs) } });
 }

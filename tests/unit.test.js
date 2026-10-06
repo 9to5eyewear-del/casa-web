@@ -5,7 +5,7 @@ import { validateLead } from '../api/_lib/validate.js';
 import { scoreLead } from '../api/_lib/score.js';
 import { parseEmailList, createStaffAuth } from '../api/_lib/auth.js';
 import { isSameOrigin } from '../api/_lib/http.js';
-import { supabaseRpc } from '../api/_lib/db.js';
+import { sqlRpc } from '../api/_lib/db.js';
 
 const NOW = new Date('2026-10-06T12:00:00Z');
 
@@ -134,21 +134,11 @@ test('same-origin check', () => {
   assert.equal(isSameOrigin(r('garbage')), false);
 });
 
-test('supabase rpc: headers for both key formats, errors surface', async () => {
+test('sql rpc: named arguments, JSON-encoded objects, safe function names', async () => {
   const seen = [];
-  const fetchImpl = async (url, opts) => {
-    seen.push({ url, headers: opts.headers, body: JSON.parse(opts.body) });
-    return url.endsWith('/boom') ? new Response('{"message":"nope"}', { status: 500 }) : new Response('{"result":"created"}');
-  };
-  const legacy = supabaseRpc({ url: 'https://p.supabase.co', serviceKey: 'eyJhbGciOi.x.y', fetchImpl });
-  assert.deepEqual(await legacy('ingest_lead', { p_lead: { a: 1 } }), { result: 'created' });
-  assert.equal(seen[0].url, 'https://p.supabase.co/rest/v1/rpc/ingest_lead');
-  assert.equal(seen[0].headers.Authorization, 'Bearer eyJhbGciOi.x.y');
-  assert.deepEqual(seen[0].body, { p_lead: { a: 1 } });
-
-  const modern = supabaseRpc({ url: 'https://p.supabase.co', serviceKey: 'sb_secret_abc', fetchImpl });
-  await modern('get_lead', {});
-  assert.equal(seen[1].headers.apikey, 'sb_secret_abc');
-  assert.equal('Authorization' in seen[1].headers, false);
-  await assert.rejects(modern('boom', {}), /rpc boom failed: 500/);
+  const rpc = sqlRpc(async (text, params) => { seen.push({ text, params }); return [{ r: { ok: 1 } }]; });
+  assert.deepEqual(await rpc('ingest_lead', { p_lead: { a: 1 }, p_ip_hash: null, p_rate_max: 5 }), { ok: 1 });
+  assert.equal(seen[0].text, 'select public.ingest_lead(p_lead => $1, p_ip_hash => $2, p_rate_max => $3) as r');
+  assert.deepEqual(seen[0].params, ['{"a":1}', null, 5]);
+  await assert.rejects(rpc('x; drop table leads', {}), /bad function name/);
 });

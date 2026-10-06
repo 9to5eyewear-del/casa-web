@@ -1,5 +1,5 @@
-import { createDb, supabaseRpc } from './db.js';
-import { createStaffAuth, parseEmailList } from './auth.js';
+import { neon } from '@neondatabase/serverless';
+import { createDb, sqlRpc, neonQuery } from './db.js';
 
 function required(name) {
   const v = process.env[name];
@@ -10,19 +10,15 @@ function required(name) {
 // Built per request so a missing variable fails loudly in the logs instead
 // of at import time.
 export function productionDeps() {
-  const url = required('SUPABASE_URL').replace(/\/+$/, '');
-  const serviceKey = required('SUPABASE_SERVICE_ROLE_KEY');
+  // DATABASE_URL is set by the Neon integration on Vercel.
+  const databaseUrl = required('DATABASE_URL');
   return {
-    db: createDb(supabaseRpc({ url, serviceKey })),
-    // The IP hash is keyed with the service key: nothing extra to configure,
-    // and rotating the key only resets the 10-minute rate-limit window.
-    ipHashKey: serviceKey,
-    get requireStaff() {
-      return createStaffAuth({
-        url,
-        anonKey: required('SUPABASE_ANON_KEY'),
-        allowedEmails: parseEmailList(required('LEADS_ADMIN_EMAILS')),
-      });
-    },
+    db: createDb(sqlRpc(neonQuery(databaseUrl, neon))),
+    // The IP hash is keyed with the DB secret: nothing extra to configure,
+    // and rotating it only resets the 10-minute rate-limit window.
+    ipHashKey: databaseUrl,
+    // Staff login is being replaced (Supabase Auth is gone). Until then every
+    // private endpoint fails closed.
+    requireStaff: async () => ({ status: 503, error: 'auth_not_configured' }),
   };
 }

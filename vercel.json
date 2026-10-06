@@ -1,7 +1,16 @@
 {
+  "regions": [
+    "fra1"
+  ],
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/lead", "destination": "/lead.html" }
+    {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/lead",
+      "destination": "/lead.html"
+    }
   ]
 }

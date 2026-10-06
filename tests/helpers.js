@@ -1,32 +1,17 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
-import { createDb } from '../api/_lib/db.js';
+import { createDb, sqlRpc } from '../api/_lib/db.js';
 
-const MIGRATIONS = new URL('../supabase/migrations/', import.meta.url);
+const MIGRATIONS = new URL('../db/migrations/', import.meta.url);
 
-// A real Postgres (PGlite) with the bits of Supabase the migration relies on.
+// A real Postgres (PGlite) with the production migrations applied.
 export async function createTestDb() {
   const pg = new PGlite();
-  await pg.exec(`
-    create role anon nologin;
-    create role authenticated nologin;
-    create role service_role nologin bypassrls;
-    create schema auth;
-    create table auth.users (id uuid primary key, email text);
-  `);
   for (const file of readdirSync(MIGRATIONS).sort()) {
     await pg.exec(readFileSync(new URL(file, MIGRATIONS), 'utf8'));
   }
 
-  // Same contract as supabaseRpc(): named args in, JSON out.
-  async function rpc(fn, args) {
-    const keys = Object.keys(args);
-    const sql = `select public.${fn}(${keys.map((k, i) => `${k} => $${i + 1}`).join(', ')}) as r`;
-    const values = keys.map((k) => (args[k] !== null && typeof args[k] === 'object' ? JSON.stringify(args[k]) : args[k]));
-    const { rows } = await pg.query(sql, values);
-    return rows[0].r;
-  }
-
+  const rpc = sqlRpc(async (text, params) => (await pg.query(text, params)).rows);
   return { pg, rpc, db: createDb(rpc) };
 }
 
