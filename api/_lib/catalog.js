@@ -16,3 +16,11 @@ export const LEAD_TYPE_LABELS = {
   product: 'צילום מוצר',
   other: 'אחר',
 };
+
+// Display names; an unknown source (e.g. a future 'judith_ai' before it is
+// listed here) still shows up everywhere under its raw key.
+export const SOURCE_LABELS = {
+  website_form: 'טופס באתר',
+  lead_page: 'דף ליד',
+  judith_ai: 'יהודית AI',
+};

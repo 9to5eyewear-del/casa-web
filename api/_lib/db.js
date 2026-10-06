@@ -11,7 +11,7 @@ export function createDb(rpc) {
         p_rate_max: rateMax,
         p_rate_window_seconds: rateWindowSeconds,
       }),
-    listLeads: ({ status = null, source = null, query = null, cursorTs = null, cursorId = null, limit = 30 }) =>
+    listLeads: ({ status = null, source = null, query = null, cursorTs = null, cursorId = null, limit = 30, flag = null }) =>
       rpc('list_leads', {
         p_status: status,
         p_source: source,
@@ -19,6 +19,7 @@ export function createDb(rpc) {
         p_cursor_ts: cursorTs,
         p_cursor_id: cursorId,
         p_limit: limit,
+        p_flag: flag,
       }),
     statusCounts: () => rpc('lead_status_counts', {}),
     getLead: (id) => rpc('get_lead', { p_lead_id: id }),
@@ -44,6 +45,8 @@ export function createDb(rpc) {
     unreadCount: () => rpc('unread_count', {}),
     markSeen: (id) => rpc('mark_lead_seen', { p_lead_id: id }),
     deleteLead: (id) => rpc('delete_lead', { p_lead_id: id }),
+    dashboard: ({ range, from = null, to = null, now = null }) =>
+      rpc('dashboard', { p_range: range, p_from: from, p_to: to, p_now: now }),
     claimDueReminders: (hours) => rpc('claim_due_reminders', { p_hours: hours }),
   };
 }

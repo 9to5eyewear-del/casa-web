@@ -5,29 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="robots" content="noindex, nofollow"/>
 <meta name="referrer" content="no-referrer"/>
-<title>Casa Mancini · לידים</title>
+<title>Casa Mancini · LeadLive</title>
 <meta name="theme-color" content="#faf9f6"/>
 <link rel="manifest" href="/leadlive/manifest.webmanifest"/>
 <link rel="icon" href="/leadlive/icons/icon-192.png" type="image/png"/>
 <link rel="apple-touch-icon" href="/leadlive/icons/apple-touch-icon.png"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-title" content="לידים"/>
+<meta name="apple-mobile-web-app-title" content="LeadLive"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600&display=swap"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500&family=Heebo:wght@300;400;500;600&display=swap"/>
 <link rel="stylesheet" href="/leadlive/app.css"/>
 <script src="/leadlive/app.js" defer></script>
 </head>
 <body>
-<div id="offline" class="offline" hidden role="status">אין חיבור לאינטרנט</div>
+<div id="offline" class="offline" hidden role="status">אין חיבור לאינטרנט · מוצג המידע האחרון</div>
 
 <!-- Login -->
 <main id="login" class="login" hidden>
   <form id="loginForm" class="login-box" novalidate>
     <p class="brand">Casa Mancini</p>
-    <h1 class="login-title">מערכת לידים</h1>
+    <h1 class="login-title">LeadLive</h1>
     <label class="sr-only" for="password">סיסמה</label>
     <input id="password" name="password" type="password" autocomplete="current-password" placeholder="סיסמה" required/>
     <p id="loginError" class="form-error" role="alert"></p>
@@ -39,14 +39,15 @@
 <div id="app" hidden>
   <header class="topbar">
     <div class="topbar-row">
-      <a href="#/" class="brand-block" aria-label="לכל הלידים">
+      <a href="#/" class="brand-block" aria-label="LeadLive, למסך הבית">
         <span class="brand">Casa Mancini</span>
-        <span class="brand-sub">לידים</span>
+        <span class="brand-sub">LeadLive</span>
       </a>
       <button type="button" id="menuBtn" class="icon-btn" aria-haspopup="menu" aria-expanded="false" aria-label="תפריט">
-        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
       </button>
       <div id="menu" class="menu" role="menu" hidden>
+        <button type="button" role="menuitem" id="menuInstall" hidden>התקנת האפליקציה</button>
         <button type="button" role="menuitem" id="menuPush">הפעל התראות</button>
         <button type="button" role="menuitem" id="menuRefresh">רענון</button>
         <button type="button" role="menuitem" id="menuLogout">התנתקות</button>
@@ -54,52 +55,71 @@
     </div>
   </header>
 
-  <!-- List -->
-  <main id="listView" class="view">
-    <div class="search">
-      <label class="sr-only" for="search">חיפוש</label>
-      <input id="search" type="search" inputmode="search" placeholder="חיפוש לפי שם, טלפון או אימייל" autocomplete="off" enterkeyhint="search"/>
-    </div>
+  <div id="ptr" class="ptr" aria-hidden="true"><span class="ptr-dot"></span></div>
 
-    <button type="button" id="pushPrompt" class="push-prompt" hidden>
-      <span>🔔 הפעל התראות על לידים חדשים</span>
-      <span class="push-prompt-x" data-dismiss aria-label="סגירה">✕</span>
-    </button>
+  <button type="button" id="pushPrompt" class="push-prompt" hidden>
+    <span>הפעל התראות על לידים חדשים</span>
+    <span class="push-prompt-x" data-dismiss role="button" aria-label="סגירה">✕</span>
+  </button>
 
-    <div class="counters" id="counters">
-      <button type="button" class="counter" data-status="new"><b>–</b><span>לטיפול</span></button>
-      <button type="button" class="counter" data-status="in_progress"><b>–</b><span>בטיפול</span></button>
-      <button type="button" class="counter" data-status="won"><b>–</b><span>נסגרו</span></button>
-      <button type="button" class="counter" data-status="lost"><b>–</b><span>לא נסגרו</span></button>
-    </div>
+  <main id="homeView" class="view view-home" hidden></main>
 
-    <div class="chips" id="statusChips" role="group" aria-label="סינון לפי סטטוס">
-      <button type="button" class="chip" data-status="">הכול</button>
-      <button type="button" class="chip" data-status="new">לטיפול</button>
-      <button type="button" class="chip" data-status="in_progress">בטיפול</button>
-      <button type="button" class="chip" data-status="won">נסגר</button>
-      <button type="button" class="chip" data-status="lost">לא נסגר</button>
+  <main id="leadsView" class="view view-leads" hidden>
+    <h1 class="view-title">לידים</h1>
+    <div class="list-tools">
+      <div class="search">
+        <label class="sr-only" for="search">חיפוש</label>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 4a6.5 6.5 0 0 1 5.2 10.4l4.4 4.4-1.4 1.4-4.4-4.4A6.5 6.5 0 1 1 10.5 4zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z"/></svg>
+        <input id="search" type="search" inputmode="search" placeholder="שם, טלפון או אימייל" autocomplete="off" enterkeyhint="search"/>
+      </div>
+      <label class="sr-only" for="sourceFilter">מקור</label>
+      <select id="sourceFilter" class="select">
+        <option value="">כל המקורות</option>
+        <option value="website_form">טופס באתר</option>
+        <option value="lead_page">דף ליד</option>
+      </select>
     </div>
-    <div class="chips chips-sub" id="sourceChips" role="group" aria-label="סינון לפי מקור">
-      <button type="button" class="chip" data-source="">הכול</button>
-      <button type="button" class="chip" data-source="website_form">אתר</button>
-      <button type="button" class="chip" data-source="lead_page">דף ליד</button>
+    <div class="chips" id="quickChips" role="group" aria-label="סינון מהיר">
+      <button type="button" class="chip" data-filter="">הכול</button>
+      <button type="button" class="chip" data-filter="status:new">חדש <b data-count="new"></b></button>
+      <button type="button" class="chip" data-filter="flag:hot">HOT</button>
+      <button type="button" class="chip" data-filter="flag:repeat">פנייה חוזרת</button>
+      <button type="button" class="chip" data-filter="status:in_progress">בטיפול <b data-count="in_progress"></b></button>
+      <button type="button" class="chip" data-filter="status:won">נסגר</button>
+      <button type="button" class="chip" data-filter="status:lost">לא נסגר</button>
     </div>
-
     <ul id="leadList" class="lead-list" aria-live="polite"></ul>
-    <p id="listEmpty" class="empty" hidden>אין לידים להצגה</p>
+    <div id="listEmpty" class="empty-state" hidden></div>
     <button type="button" id="loadMore" class="btn btn-ghost btn-block" hidden>טען עוד</button>
   </main>
 
-  <!-- Lead details -->
-  <main id="detailView" class="view" hidden></main>
+  <main id="insightsView" class="view view-insights" hidden></main>
+
+  <main id="detailView" class="view view-detail" hidden></main>
+
+  <nav class="tabbar" aria-label="ניווט ראשי">
+    <a href="#/" data-tab="home">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 3 10v10.5h6.5v-6h5v6H21V10l-9-6.8zm7 15.3h-2.5v-6h-9v6H5v-7.5l7-5.3 7 5.3v7.5z"/></svg>
+      <span>בית</span>
+    </a>
+    <a href="#/leads" data-tab="leads">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v2H4zm0 6h16v2H4zm0 6h10v2H4z"/></svg>
+      <span>לידים</span>
+      <b id="navBadge" class="nav-badge" hidden></b>
+    </a>
+    <a href="#/insights" data-tab="insights">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16v2H2V3h2v16zm3-3V10h2.5v6H7zm4.5 0V5H14v11h-2.5zm4.5 0v-4h2.5v4H16z"/></svg>
+      <span>תובנות</span>
+    </a>
+  </nav>
 </div>
 
-<div id="sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
-  <div class="sheet-box">
+<div id="sheet" class="sheet" hidden>
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet-box" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <span class="sheet-grip" aria-hidden="true"></span>
     <h2 id="sheetTitle"></h2>
-    <p id="sheetText"></p>
-    <button type="button" class="btn btn-primary btn-block" id="sheetClose">הבנתי</button>
+    <div id="sheetBody"></div>
   </div>
 </div>
 

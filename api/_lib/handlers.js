@@ -3,6 +3,7 @@ import { STATUSES } from './catalog.js';
 import { validateLead, cleanText } from './validate.js';
 import { scoreLead } from './score.js';
 import { leadNotification } from './push.js';
+import { withPriority } from './priority.js';
 import { send, readJson, header, clientIp, hashIp, isSameOrigin, query } from './http.js';
 
 const RATE_LIMIT = { max: 5, windowSeconds: 600 };
@@ -112,6 +113,12 @@ export function createLeadsHandler(getDeps, { log = defaultLog, rateLimit = RATE
       filters.source = q.source;
     }
     if (q.q) filters.query = cleanText(q.q, 80);
+    // HOT is ranked in JS (priority.js), so it's one unpaged list of open leads.
+    const hotOnly = q.flag === 'hot';
+    if (q.flag) {
+      if (q.flag !== 'hot' && q.flag !== 'repeat') return send(res, 400, { error: 'invalid flag' });
+      filters.flag = hotOnly ? 'open' : 'repeat';
+    }
     if (q.limit) filters.limit = Math.min(Math.max(parseInt(q.limit, 10) || 30, 1), 100);
     if (q.cursor) {
       const c = decodeCursor(q.cursor);
@@ -119,11 +126,15 @@ export function createLeadsHandler(getDeps, { log = defaultLog, rateLimit = RATE
       Object.assign(filters, c);
     }
 
-    const [leads, counts] = await Promise.all([
+    if (hotOnly) { filters.limit = 200; delete filters.cursorTs; delete filters.cursorId; }
+    const [rows, counts] = await Promise.all([
       deps.db.listLeads(filters),
-      q.cursor ? null : deps.db.statusCounts(),
+      q.cursor && !hotOnly ? null : deps.db.statusCounts(),
     ]);
-    const nextCursor = leads.length === filters.limit ? encodeCursor(leads[leads.length - 1]) : null;
+    const at = now();
+    let leads = rows.map((l) => withPriority(l, at));
+    if (hotOnly) leads = leads.filter((l) => l.priority?.level === 'hot').sort((a, b) => b.priority.points - a.priority.points);
+    const nextCursor = !hotOnly && rows.length === filters.limit ? encodeCursor(rows[rows.length - 1]) : null;
     return send(res, 200, { leads, next_cursor: nextCursor, ...(counts && { counts }) });
   }
 
@@ -157,7 +168,7 @@ export function createLeadHandler(getDeps, { log = defaultLog } = {}) {
 
       if (req.method === 'GET') {
         const lead = await deps.db.getLead(id);
-        return lead ? send(res, 200, { lead }) : send(res, 404, { error: 'not_found' });
+        return lead ? send(res, 200, { lead: withPriority(lead, new Date()) }) : send(res, 404, { error: 'not_found' });
       }
 
       if (!isSameOrigin(req)) return send(res, 403, { error: 'forbidden' });
@@ -180,8 +191,9 @@ export function createLeadHandler(getDeps, { log = defaultLog } = {}) {
         return send(res, 400, { error: 'only {status} or {seen: true} can be updated', allowed: [...STATUSES] });
       }
 
-      const lead = await deps.db.setStatus(id, body.status, user);
-      if (!lead) return send(res, 404, { error: 'not_found' });
+      const updated = await deps.db.setStatus(id, body.status, user);
+      if (!updated) return send(res, 404, { error: 'not_found' });
+      const lead = withPriority(updated, new Date());
       log.info('lead_status_changed', { lead_id: id, status: body.status, by: user.email });
       return send(res, 200, { lead });
     } catch (err) {
