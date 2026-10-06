@@ -131,3 +131,19 @@ test('sql rpc: named arguments, JSON-encoded objects, safe function names', asyn
   assert.deepEqual(seen[0].params, ['{"a":1}', null, 5]);
   await assert.rejects(rpc('x; drop table leads', {}), /bad function name/);
 });
+
+test('every /api path the PWA and the forms call exists as a route', async () => {
+  const { readFileSync, existsSync } = await import('node:fs');
+  const files = ['leadlive/app.js', 'leadlive/sw.js', 'js/lead-submit.js'];
+  const paths = new Set();
+  for (const f of files) {
+    for (const m of readFileSync(new URL(`../${f}`, import.meta.url), 'utf8').matchAll(/\/api\/[a-z_/]+/g)) paths.add(m[0].replace(/\/$/, ''));
+  }
+  assert.ok(paths.has('/api/leads'));
+  for (const p of paths) {
+    const base = new URL(`..${p}`, import.meta.url);
+    const ok = existsSync(new URL(`${base.href}.js`)) || existsSync(new URL(`${base.href}/index.js`))
+      || existsSync(new URL(`${base.href}/[id].js`));
+    assert.ok(ok, `${p} has no route under api/`);
+  }
+});
