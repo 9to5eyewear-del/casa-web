@@ -29,6 +29,17 @@ export function createDb(rpc) {
         p_actor_id: actor?.id ?? null,
         p_actor_email: actor?.email ?? null,
       }),
+
+    loginGate: (ipHash, { ipMax, globalMax, windowSeconds }) =>
+      rpc('login_gate', { p_ip_hash: ipHash, p_ip_max: ipMax, p_global_max: globalMax, p_window_seconds: windowSeconds }),
+    recordLoginAttempt: (ipHash, success) =>
+      rpc('record_login_attempt', { p_ip_hash: ipHash, p_success: success }),
+
+    savePushSubscription: ({ endpoint, p256dh, auth, userAgent }) =>
+      rpc('save_push_subscription', { p_endpoint: endpoint, p_p256dh: p256dh, p_auth: auth, p_user_agent: userAgent }),
+    deletePushSubscription: (endpoint) => rpc('delete_push_subscription', { p_endpoint: endpoint }),
+    listPushSubscriptions: () => rpc('list_push_subscriptions', {}),
+    recordPushResults: (okIds, goneIds) => rpc('record_push_results', { p_ok: okIds, p_gone: goneIds }),
   };
 }
 
@@ -39,7 +50,10 @@ export function sqlRpc(query) {
     if (!/^[a-z_]+$/.test(fn)) throw new Error(`bad function name: ${fn}`);
     const keys = Object.keys(args);
     const text = `select public.${fn}(${keys.map((k, i) => `${k} => $${i + 1}`).join(', ')}) as r`;
-    const params = keys.map((k) => (args[k] !== null && typeof args[k] === 'object' ? JSON.stringify(args[k]) : args[k]));
+    const params = keys.map((k) => {
+      const v = args[k];
+      return v !== null && typeof v === 'object' && !Array.isArray(v) ? JSON.stringify(v) : v;
+    });
     const rows = await query(text, params);
     return rows[0].r;
   };

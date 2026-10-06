@@ -2,14 +2,15 @@ import { randomUUID } from 'node:crypto';
 import { STATUSES } from './catalog.js';
 import { validateLead, cleanText } from './validate.js';
 import { scoreLead } from './score.js';
+import { leadNotification } from './push.js';
 import { send, readJson, header, clientIp, hashIp, isSameOrigin, query } from './http.js';
 
 const RATE_LIMIT = { max: 5, windowSeconds: 600 };
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SOURCE_PATTERN = /^[a-z][a-z0-9_]{1,39}$/;
 
 // One JSON line per event, so Vercel logs are searchable by "event".
-const defaultLog = {
+export const defaultLog = {
   info: (event, data) => console.log(JSON.stringify({ level: 'info', event, ...data })),
   warn: (event, data) => console.warn(JSON.stringify({ level: 'warn', event, ...data })),
   error: (event, data) => console.error(JSON.stringify({ level: 'error', event, ...data })),
@@ -29,7 +30,7 @@ function decodeCursor(value) {
   return null;
 }
 
-async function withStaff(deps, req, res) {
+export async function withStaff(deps, req, res) {
   const auth = await deps.requireStaff(req);
   if (auth.user) return auth.user;
   send(res, auth.status, { error: auth.error });
@@ -46,7 +47,9 @@ export function createLeadsHandler(getDeps, { log = defaultLog, rateLimit = RATE
 
     const v = validateLead(body, { now: now(), userAgent: header(req, 'user-agent') });
     if (!v.ok) {
-      log.warn('lead_rejected', { errors: v.errors });
+      // Error level: if Web3Forms got this one, it's in the inbox but not the PWA.
+      const sid = typeof body?.submission_id === 'string' && UUID.test(body.submission_id) ? body.submission_id : null;
+      log.error('lead_rejected', { submission_id: sid, errors: v.errors });
       return send(res, 400, { error: 'invalid', fields: v.errors });
     }
 
@@ -60,9 +63,9 @@ export function createLeadsHandler(getDeps, { log = defaultLog, rateLimit = RATE
     const lead = { ...v.lead, lead_score: scoreLead(v.lead, now()) };
     const logCtx = { submission_id: submissionId, source: lead.source, lead_type: lead.lead_type, phone_tail: phoneTail(lead.phone) };
 
-    let out;
+    let out, deps;
     try {
-      const deps = getDeps();
+      deps = getDeps();
       out = await deps.db.ingestLead(lead, {
         submissionId,
         ipHash: hashIp(clientIp(req), deps.ipHashKey),
@@ -77,11 +80,18 @@ export function createLeadsHandler(getDeps, { log = defaultLog, rateLimit = RATE
     }
 
     if (out.result === 'rate_limited') {
-      log.warn('lead_rate_limited', logCtx);
+      log.error('lead_rate_limited', logCtx);
       return send(res, 429, { error: 'rate_limited', submission_id: submissionId });
     }
 
     log.info('lead_saved', { ...logCtx, result: out.result, lead_id: out.lead_id, submission_count: out.submission_count });
+
+    // Sent after the response, so a slow push service never delays the form.
+    const note = leadNotification(lead, out);
+    if (note && deps.notify) {
+      deps.waitUntil(deps.notify(note).catch((err) =>
+        log.error('push_notify_failed', { lead_id: out.lead_id, error: String(err && err.message || err) })));
+    }
     // Same response for new and repeat leads: the public can't probe who already inquired.
     return send(res, 201, { ok: true, submission_id: submissionId });
   }
@@ -149,6 +159,7 @@ export function createLeadHandler(getDeps, { log = defaultLog } = {}) {
         return lead ? send(res, 200, { lead }) : send(res, 404, { error: 'not_found' });
       }
 
+      if (!isSameOrigin(req)) return send(res, 403, { error: 'forbidden' });
       const { body, error } = readJson(req);
       if (error) return send(res, 400, { error });
       const keys = body && typeof body === 'object' ? Object.keys(body) : [];

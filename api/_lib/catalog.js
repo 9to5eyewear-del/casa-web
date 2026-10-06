@@ -8,3 +8,11 @@ export const LEAD_TYPES = new Set(['bridal', 'production', 'fashion', 'product',
 export const URGENCIES = new Set(['this_week', 'this_month', 'three_months', 'flexible']);
 
 export const STATUSES = new Set(['new', 'in_progress', 'won', 'lost']);
+
+export const LEAD_TYPE_LABELS = {
+  bridal: 'התארגנות כלה',
+  production: 'הפקת צילום',
+  fashion: 'צילום אופנה',
+  product: 'צילום מוצר',
+  other: 'אחר',
+};

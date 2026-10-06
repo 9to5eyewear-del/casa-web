@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { normalizePhone } from '../api/_lib/phone.js';
 import { validateLead } from '../api/_lib/validate.js';
 import { scoreLead } from '../api/_lib/score.js';
-import { parseEmailList, createStaffAuth } from '../api/_lib/auth.js';
 import { isSameOrigin } from '../api/_lib/http.js';
 import { sqlRpc } from '../api/_lib/db.js';
 
@@ -88,42 +87,32 @@ test('validate: honeypot', () => {
   assert.equal(validateLead({ ...base, botcheck: false }).spam, false);
 });
 
-test('score: null without timing + budget (simple site form)', () => {
-  assert.equal(scoreLead({ lead_type: 'bridal', event_date: '2026-10-20' }, NOW), null);
-  assert.equal(scoreLead({ lead_type: 'bridal', budget: 5000 }, NOW), null);
+test('score: null without a timing signal or a known service', () => {
+  assert.equal(scoreLead({ lead_type: 'bridal', email: 'a@b.co', budget: 9000 }, NOW), null); // no date / urgency
+  assert.equal(scoreLead({ event_date: '2026-10-20' }, NOW), null);                           // no service
+  assert.equal(scoreLead({ lead_type: 'other', urgency: 'this_week' }, NOW), null);            // service unclear
   assert.equal(scoreLead({}, NOW), null);
 });
 
-test('score: matches the weights lead.html used', () => {
-  // this_week 40 + budget 5000 → 25 + bridal 20 = 85
-  assert.equal(scoreLead({ urgency: 'this_week', budget: 5000, lead_type: 'bridal' }, NOW), 'hot');
-  // date in 60 days 20 + budget 2000 → 15 = 35
-  assert.equal(scoreLead({ event_date: '2026-12-05', budget: 2000, lead_type: 'fashion' }, NOW), 'warm');
-  // flexible 10 + budget 500 → 5 = 15
-  assert.equal(scoreLead({ urgency: 'flexible', budget: 500, lead_type: 'product' }, NOW), 'cold');
+test('score: budget is optional; a close date + clear intent is hot without it', () => {
+  // date in 10 days 45 + bridal 20 = 65
+  assert.equal(scoreLead({ lead_type: 'bridal', event_date: '2026-10-16' }, NOW), 'hot');
+  // this week 45 + production 15 = 60
+  assert.equal(scoreLead({ lead_type: 'production', urgency: 'this_week' }, NOW), 'hot');
+  // date in 60 days 20 + bridal 20 = 40
+  assert.equal(scoreLead({ lead_type: 'bridal', event_date: '2026-12-05' }, NOW), 'warm');
+  // flexible 5 + product 10 = 15
+  assert.equal(scoreLead({ lead_type: 'product', urgency: 'flexible' }, NOW), 'cold');
 });
 
-test('auth: email allowlist parsing', () => {
-  assert.deepEqual([...parseEmailList(' A@x.com, b@y.com;c@z.com\n')], ['a@x.com', 'b@y.com', 'c@z.com']);
-  assert.equal(parseEmailList('').size, 0);
-});
-
-test('auth: verifies the token with Supabase and enforces the allowlist', async () => {
-  const calls = [];
-  const fetchImpl = async (url, opts) => {
-    calls.push({ url, auth: opts.headers.Authorization });
-    const token = opts.headers.Authorization.slice(7);
-    if (token === 'staff') return new Response(JSON.stringify({ id: 'u1', email: 'Team@Casa.co' }));
-    if (token === 'other') return new Response(JSON.stringify({ id: 'u2', email: 'x@y.co' }));
-    return new Response('{}', { status: 401 });
-  };
-  const requireStaff = createStaffAuth({ url: 'https://p.supabase.co', anonKey: 'anon', allowedEmails: new Set(['team@casa.co']), fetchImpl });
-  const req = (h) => ({ headers: h ? { authorization: h } : {} });
-  assert.deepEqual(await requireStaff(req('Bearer staff')), { user: { id: 'u1', email: 'team@casa.co' } });
-  assert.deepEqual(await requireStaff(req('Bearer other')), { status: 403, error: 'forbidden' });
-  assert.deepEqual(await requireStaff(req('Bearer expired')), { status: 401, error: 'unauthorized' });
-  assert.deepEqual(await requireStaff(req()), { status: 401, error: 'unauthorized' });
-  assert.equal(calls[0].url, 'https://p.supabase.co/auth/v1/user');
+test('score: budget and completeness add on top', () => {
+  // 60 days 20 + bridal 20 = 40 → + budget 5000 (15) + email (5) = 60
+  const base = { lead_type: 'bridal', event_date: '2026-12-05' };
+  assert.equal(scoreLead({ ...base, budget: 5000, email: 'a@b.co' }, NOW), 'hot');
+  // flexible 5 + fashion 10 + email 5 + long message 5 + subtype 5 + budget 2000 (10) = 40
+  assert.equal(scoreLead({ lead_type: 'fashion', urgency: 'flexible', email: 'a@b.co',
+    message: 'אנחנו מחפשים לוקיישן לצילום קולקציה', lead_subtype: 'קמפיין', budget: 2000 }, NOW), 'warm');
+  assert.equal(scoreLead({ lead_type: 'product', urgency: 'flexible', budget: 500 }, NOW), 'cold');
 });
 
 test('same-origin check', () => {

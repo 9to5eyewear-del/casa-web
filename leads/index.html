@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="robots" content="noindex, nofollow"/>
+<meta name="referrer" content="no-referrer"/>
+<title>Casa Mancini · לידים</title>
+<meta name="theme-color" content="#faf9f6"/>
+<link rel="manifest" href="/leads/manifest.webmanifest"/>
+<link rel="icon" href="/leads/icons/icon-192.png" type="image/png"/>
+<link rel="apple-touch-icon" href="/leads/icons/apple-touch-icon.png"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="לידים"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600&display=swap"/>
+<link rel="stylesheet" href="/leads/app.css"/>
+<script src="/leads/app.js" defer></script>
+</head>
+<body>
+<div id="offline" class="offline" hidden role="status">אין חיבור לאינטרנט</div>
+
+<!-- Login -->
+<main id="login" class="login" hidden>
+  <form id="loginForm" class="login-box" novalidate>
+    <p class="brand">Casa Mancini</p>
+    <h1 class="login-title">מערכת לידים</h1>
+    <label class="sr-only" for="password">סיסמה</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" placeholder="סיסמה" required/>
+    <p id="loginError" class="form-error" role="alert"></p>
+    <button type="submit" class="btn btn-primary btn-block">כניסה</button>
+  </form>
+</main>
+
+<!-- App -->
+<div id="app" hidden>
+  <header class="topbar">
+    <div class="topbar-row">
+      <a href="#/" class="brand-block" aria-label="לכל הלידים">
+        <span class="brand">Casa Mancini</span>
+        <span class="brand-sub">לידים</span>
+      </a>
+      <button type="button" id="menuBtn" class="icon-btn" aria-haspopup="menu" aria-expanded="false" aria-label="תפריט">
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+      </button>
+      <div id="menu" class="menu" role="menu" hidden>
+        <button type="button" role="menuitem" id="menuPush">הפעל התראות</button>
+        <button type="button" role="menuitem" id="menuRefresh">רענון</button>
+        <button type="button" role="menuitem" id="menuLogout">התנתקות</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- List -->
+  <main id="listView" class="view">
+    <div class="search">
+      <label class="sr-only" for="search">חיפוש</label>
+      <input id="search" type="search" inputmode="search" placeholder="חיפוש לפי שם, טלפון או אימייל" autocomplete="off" enterkeyhint="search"/>
+    </div>
+
+    <button type="button" id="pushPrompt" class="push-prompt" hidden>
+      <span>🔔 הפעל התראות על לידים חדשים</span>
+      <span class="push-prompt-x" data-dismiss aria-label="סגירה">✕</span>
+    </button>
+
+    <div class="counters" id="counters">
+      <button type="button" class="counter" data-status="new"><b>–</b><span>לטיפול</span></button>
+      <button type="button" class="counter" data-status="in_progress"><b>–</b><span>בטיפול</span></button>
+      <button type="button" class="counter" data-status="won"><b>–</b><span>נסגרו</span></button>
+      <button type="button" class="counter" data-status="lost"><b>–</b><span>לא נסגרו</span></button>
+    </div>
+
+    <div class="chips" id="statusChips" role="group" aria-label="סינון לפי סטטוס">
+      <button type="button" class="chip" data-status="">הכול</button>
+      <button type="button" class="chip" data-status="new">לטיפול</button>
+      <button type="button" class="chip" data-status="in_progress">בטיפול</button>
+      <button type="button" class="chip" data-status="won">נסגר</button>
+      <button type="button" class="chip" data-status="lost">לא נסגר</button>
+    </div>
+    <div class="chips chips-sub" id="sourceChips" role="group" aria-label="סינון לפי מקור">
+      <button type="button" class="chip" data-source="">הכול</button>
+      <button type="button" class="chip" data-source="website_form">אתר</button>
+      <button type="button" class="chip" data-source="lead_page">דף ליד</button>
+    </div>
+
+    <ul id="leadList" class="lead-list" aria-live="polite"></ul>
+    <p id="listEmpty" class="empty" hidden>אין לידים להצגה</p>
+    <button type="button" id="loadMore" class="btn btn-ghost btn-block" hidden>טען עוד</button>
+  </main>
+
+  <!-- Lead details -->
+  <main id="detailView" class="view" hidden></main>
+</div>
+
+<div id="sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet-box">
+    <h2 id="sheetTitle"></h2>
+    <p id="sheetText"></p>
+    <button type="button" class="btn btn-primary btn-block" id="sheetClose">הבנתי</button>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>

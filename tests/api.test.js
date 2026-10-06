@@ -49,8 +49,8 @@ test('POST creates a lead with status new, and logs lead_created', async () => {
   const [lead] = await onlyLead();
   assert.equal(lead.status, 'new');
   assert.equal(lead.source, 'website_form');
-  assert.equal(lead.phone_normalized, undefined); // not exposed in list
-  assert.equal(lead.lead_score, null);            // simple form → no score
+  assert.equal(lead.phone_normalized, '972546787179'); // for the WhatsApp button
+  assert.equal(lead.lead_score, 'warm');                // date + service, no budget needed
   assert.equal(lead.submission_count, 1);
 
   const full = (await getOne(lead.id)).body.lead;
@@ -58,6 +58,11 @@ test('POST creates a lead with status new, and logs lead_created', async () => {
   assert.equal(full.companions, 3);
   assert.equal(full.event_date, '2027-05-14');
   assert.deepEqual(full.events.map((e) => e.type), ['lead_created']);
+});
+
+test('no date or urgency → no score', async () => {
+  await post(websiteLead({ event_date: null }));
+  assert.equal((await onlyLead())[0].lead_score, null);
 });
 
 test('lead_page lead is scored on the server; client-sent score is ignored', async () => {

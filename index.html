@@ -528,6 +528,7 @@
       body.scroll-locked .mobile-cta { transform: translateY(110%); }
       @media (min-width: 768px) { .mobile-cta { display: none; } }
     </style>
+<script src="/js/lead-submit.js" defer></script>
 </head>
 <body class="bg-surface text-on-surface selection:bg-primary-container selection:text-on-primary-container">
 <a href="#main" class="sr-only-focusable fixed top-2 right-2 z-[70] bg-primary text-on-primary px-4 py-2">דילוג לתוכן</a>
@@ -1838,14 +1839,22 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (form.elements.botcheck.checked) { showSuccess(d); return; }
 
     setLoading(true);
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 15000);
     try {
-      const res = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        signal: ctrl.signal,
-        body: JSON.stringify({
+      // Lead system (source of truth) + Web3Forms email backup — see js/lead-submit.js.
+      const bridal = d.service === 'bridal';
+      const { ok } = await window.CasaLeads.submit({
+        lead: {
+          source: 'website_form',
+          name: d.name,
+          phone: d.phone,
+          email: d.email || null,
+          lead_type: d.service,
+          event_date: (bridal ? d.wedding_date : d.production_date) || null,
+          companions: bridal && d.companions ? Number(d.companions) : null,
+          production_type: bridal ? null : d.production_type || null,
+          message: d.message || null,
+        },
+        web3: {
           access_key: WEB3_KEY,
           subject: `פנייה חדשה מהאתר – ${SERVICE_LABELS[d.service]} | ${d.name}`,
           from_name: 'Casa Mancini – אתר',
@@ -1853,17 +1862,14 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
           phone: d.phone,
           email: d.email || 'no-reply@casamancini.site',
           message: `פנייה חדשה – קאזה מנצ׳יני\n─────────────────────\n${summary(d)}\n─────────────────────\nזמן פנייה: ${new Date().toLocaleString('he-IL')}`,
-          botcheck: '',
-        }),
+        },
       });
-      const out = await res.json().catch(() => ({}));
-      if (!res.ok || !out.success) throw new Error(out.message || res.status);
+      if (!ok) throw new Error('not delivered');
       showSuccess(d);
     } catch (err) {
-      console.warn('Web3Forms:', err);
+      console.warn('Lead submit:', err);
       formError.innerHTML = `משהו השתבש בשליחה. אפשר לנסות שוב, או <a class="underline" target="_blank" rel="noopener noreferrer" href="${waLink(d)}">לשלוח את הפרטים בוואטסאפ</a>.`;
     } finally {
-      clearTimeout(t);
       setLoading(false);
     }
   });

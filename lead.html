@@ -669,6 +669,7 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
   margin-top: 0.3rem;
 }
 </style>
+<script src="/js/lead-submit.js" defer></script>
 </head>
 <body>
 
@@ -1361,6 +1362,7 @@ function calcScore() {
 //  SUBMIT
 // ═══════════════════════════════
 function submitForm() {
+  if (submitting) return;
   collectStep();
 
   // Get sub other texts
@@ -1395,11 +1397,24 @@ function submitForm() {
     `ניקוד ליד: ${scoreLabel}\n` +
     `זמן פנייה: ${new Date().toLocaleString('he-IL')}`;
 
-  // Web3Forms
-  fetch('https://api.web3forms.com/submit', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({
+  // Lead system (source of truth) + Web3Forms email backup — see js/lead-submit.js.
+  // Success is shown only once at least one of them really received it.
+  setSubmitting(true);
+  window.CasaLeads.submit({
+    lead: {
+      source: 'lead_page',
+      name: s.name,
+      phone: s.phone,
+      email: s.email || null,
+      lead_type: LEAD_TYPE[s.service] || 'other',
+      lead_subtype: s.service === 'other' ? serviceDetail : (subDetail || null),
+      event_date: s.date || null,
+      urgency: URGENCY_CODE[s.urgency] || null,
+      companions: s.service === 'bride' ? s.companions : null,
+      budget: s.budgetSkipped ? null : s.budget,
+      message: s.notes || null,
+    },
+    web3: {
       access_key: WEB3_KEY,
       subject: `ליד חדש – ${serviceDetail} | ${s.name} | ${scoreLabel}`,
       from_name: 'Casa Mancini – דף פנייה',
@@ -1407,23 +1422,55 @@ function submitForm() {
       name: s.name,
       phone: s.phone,
       email: s.email || 'no-reply@casamancini.site',
-      botcheck: '',
-    }),
-  })
-  .then(r => r.json())
-  .then(d => { if (!d.success) console.warn('Web3Forms:', d); })
-  .catch(console.error);
+    },
+  }).then(({ ok }) => {
+    if (!ok) throw new Error('not delivered');
 
-  // Save to localStorage
-  try { localStorage.removeItem('casa_partial'); } catch(e) {}
+    // Save to localStorage
+    try { localStorage.removeItem('casa_partial'); } catch(e) {}
 
-  // Show success
-  document.getElementById('formCard').style.display = 'none';
-  document.getElementById('reviewsSection').style.display = 'none';
-  const sc = document.getElementById('successCard');
-  sc.style.display = 'block';
-  sc.classList.add('active');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Show success
+    document.getElementById('formCard').style.display = 'none';
+    document.getElementById('reviewsSection').style.display = 'none';
+    const sc = document.getElementById('successCard');
+    sc.style.display = 'block';
+    sc.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }).catch(err => {
+    console.warn('Lead submit:', err);
+    setSubmitting(false);
+    showSubmitError(msg);
+  });
+}
+
+// lead.html service / urgency values → the lead system's codes
+const LEAD_TYPE = { bride:'bridal', fashion:'fashion', product:'product', production:'production', other:'other' };
+const URGENCY_CODE = { 'השבוע':'this_week', 'חודש הקרוב':'this_month', '3 חודשים':'three_months', 'גמיש':'flexible' };
+
+let submitting = false;
+function setSubmitting(on) {
+  submitting = on;
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = on;
+  btn.setAttribute('aria-busy', String(on));
+  btn.textContent = on ? 'שולחת…' : 'שליחה';
+  btn.parentElement.querySelectorAll('.btn-skip').forEach(el => { el.style.pointerEvents = on ? 'none' : ''; });
+  if (on) { const e = document.getElementById('submit-error'); if (e) e.remove(); }
+}
+function showSubmitError(summaryText) {
+  const btn = document.getElementById('submit-btn');
+  const p = document.createElement('p');
+  p.id = 'submit-error';
+  p.setAttribute('role', 'alert');
+  p.style.cssText = 'margin-top:0.9rem;font-size:0.85rem;color:#9e422c;text-align:center;line-height:1.6;';
+  const wa = document.createElement('a');
+  wa.href = `https://wa.me/972546787179?text=${encodeURIComponent(summaryText)}`;
+  wa.target = '_blank';
+  wa.rel = 'noopener noreferrer';
+  wa.style.textDecoration = 'underline';
+  wa.textContent = 'לשלוח את הפרטים בוואטסאפ';
+  p.append('משהו השתבש בשליחה. אפשר לנסות שוב, או ', wa, '.');
+  btn.insertAdjacentElement('afterend', p);
 }
 
 // ═══════════════════════════════
