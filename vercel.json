@@ -13,13 +13,13 @@
       "destination": "/lead.html"
     },
     {
-      "source": "/leads",
-      "destination": "/leads/index.html"
+      "source": "/leadlive",
+      "destination": "/leadlive/index.html"
     }
   ],
   "headers": [
     {
-      "source": "/leads",
+      "source": "/leadlive",
       "headers": [
         {
           "key": "X-Robots-Tag",
@@ -44,7 +44,7 @@
       ]
     },
     {
-      "source": "/leads/(.*)",
+      "source": "/leadlive/(.*)",
       "headers": [
         {
           "key": "X-Robots-Tag",
@@ -72,8 +72,21 @@
       "source": "/leads/sw.js",
       "headers": [
         {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/leadlive/sw.js",
+      "headers": [
+        {
           "key": "Service-Worker-Allowed",
-          "value": "/leads"
+          "value": "/leadlive"
         }
       ]
     },
@@ -85,6 +98,18 @@
           "value": "noindex, nofollow"
         }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/leads",
+      "destination": "/leadlive",
+      "permanent": true
+    },
+    {
+      "source": "/leads/:path((?!sw\\.js$).*)",
+      "destination": "/leadlive",
+      "permanent": true
     }
   ]
 }

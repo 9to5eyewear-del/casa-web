@@ -151,7 +151,7 @@
     try { await api('/api/auth/logout', { method: 'POST', allow401: true }); } catch {}
     state.leads = [];
     $('#leadList').replaceChildren();
-    history.replaceState(null, '', '/leads');
+    history.replaceState(null, '', '/leadlive');
     showLogin();
   }
 
@@ -204,7 +204,7 @@
     if (more && state.cursor) params.set('cursor', state.cursor);
 
     try {
-      const data = await api(`/api/leads?${params}`);
+      const data = await api(`/api/leadlive?${params}`);
       if (seq !== state.listSeq) return; // a newer request superseded this one
       state.leads = more ? state.leads.concat(data.leads) : data.leads;
       state.cursor = data.next_cursor;
@@ -258,7 +258,7 @@
     const buttons = picker.querySelectorAll('button');
     buttons.forEach((b) => { b.disabled = true; });
     try {
-      const { lead } = await api(`/api/leads/${l.id}`, { method: 'PATCH', body: { status } });
+      const { lead } = await api(`/api/leadlive/${l.id}`, { method: 'PATCH', body: { status } });
       toast(`הסטטוס עודכן: ${STATUS[lead.status]}`);
       state.leads = []; // list + counters reload when going back
       await openLead(l.id, { keepScroll: true });
@@ -278,7 +278,7 @@
     }
     let l;
     try {
-      ({ lead: l } = await api(`/api/leads/${encodeURIComponent(id)}`));
+      ({ lead: l } = await api(`/api/leadlive/${encodeURIComponent(id)}`));
     } catch (err) {
       if (err.status === 401) return;
       view.replaceChildren(backBtn(), h('p', { class: 'empty' }, err.status === 404 ? 'הליד לא נמצא' : 'טעינת הליד נכשלה'));
@@ -482,7 +482,7 @@
     if (!navigator.onLine) setOffline(true);
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/leads/sw.js', { scope: '/leads' }).catch(() => {});
+      navigator.serviceWorker.register('/leadlive/sw.js', { scope: '/leadlive' }).catch(() => {});
       navigator.serviceWorker.addEventListener('message', (e) => {
         if (e.data?.type === 'open' && e.data.url) {
           const hash = new URL(e.data.url, location.origin).hash;

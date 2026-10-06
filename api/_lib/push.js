@@ -11,7 +11,7 @@ const ddmm = (isoDate) => {
 
 /** The notification for a saved submission, or null when none is due. */
 export function leadNotification(lead, out) {
-  const url = `/leads#/lead/${out.lead_id}`;
+  const url = `/leadlive#/lead/${out.lead_id}`;
   const tag = `lead-${out.lead_id}`;
   if (out.result === 'created') {
     const body = [lead.name, LEAD_TYPE_LABELS[lead.lead_type], lead.event_date && ddmm(lead.event_date)]

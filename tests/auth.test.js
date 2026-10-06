@@ -211,7 +211,7 @@ test('push: new lead and repeat inquiry go to every device; dead ones are remove
   await Promise.all(pending);
   const id = (await call(api.leads, withCookie(cookie, { method: 'GET' }))).body.leads[0].id;
   assert.equal(pushCalls.length, 3);
-  assert.deepEqual(pushCalls[0].payload, { title: 'ליד חדש – Casa Mancini', body: 'דנה | התארגנות כלה | 14.05', url: `/leads#/lead/${id}`, tag: `lead-${id}` });
+  assert.deepEqual(pushCalls[0].payload, { title: 'ליד חדש – Casa Mancini', body: 'דנה | התארגנות כלה | 14.05', url: `/leadlive#/lead/${id}`, tag: `lead-${id}` });
 
   // The 410 endpoint is gone; the others were marked as working.
   const subs = await t.db.listPushSubscriptions();
@@ -223,7 +223,7 @@ test('push: new lead and repeat inquiry go to every device; dead ones are remove
   await call(api.leads, { method: 'POST', body: newLead({ phone: '+972546787179' }) });
   await Promise.all(pending);
   assert.equal(pushCalls.length, 2);
-  assert.deepEqual(pushCalls[0].payload, { title: 'פנייה חוזרת – Casa Mancini', body: 'דנה פנתה שוב · פנייה ×2', url: `/leads#/lead/${id}`, tag: `lead-${id}` });
+  assert.deepEqual(pushCalls[0].payload, { title: 'פנייה חוזרת – Casa Mancini', body: 'דנה פנתה שוב · פנייה ×2', url: `/leadlive#/lead/${id}`, tag: `lead-${id}` });
 });
 
 test('push: nothing for spam, rate-limited or retried submissions; push failure never fails the lead', async () => {
