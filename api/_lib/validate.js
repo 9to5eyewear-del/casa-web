@@ -1,0 +1,117 @@
+// Turns an untrusted public submission into a clean lead.
+//
+// Only name, phone and source are required. An invalid optional field is
+// dropped (and listed in metadata.dropped_fields) rather than rejecting the
+// whole inquiry: losing a lead over a malformed date is worse than losing the date.
+
+import { SOURCES, LEAD_TYPES, URGENCIES } from './catalog.js';
+import { normalizePhone } from './phone.js';
+
+// C0/C1 control chars, zero-width chars and bidi overrides (but not \n / \t).
+const INVISIBLE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F​-‏‪-‮⁦-⁩﻿]/g;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const METADATA_KEYS = ['page', 'referrer', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+
+export function cleanText(value, max, { multiline = false } = {}) {
+  if (value == null || typeof value === 'object') return null;
+  let s = String(value).normalize('NFC').replace(INVISIBLE, '');
+  s = multiline
+    ? s.replace(/\r\n?/g, '\n').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n')
+    : s.replace(/\s+/g, ' ');
+  s = s.trim().slice(0, max).trim();
+  return s || null;
+}
+
+function cleanInt(value, min, max) {
+  if (value == null || value === '') return null;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= min && n <= max ? n : undefined;
+}
+
+function cleanDate(value, now) {
+  if (value == null || value === '') return null;
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+  const t = Date.parse(value + 'T00:00:00Z');
+  if (Number.isNaN(t) || new Date(t).toISOString().slice(0, 10) !== value) return undefined;
+  const days = (t - now.getTime()) / 86400000;
+  return days >= -2 && days <= 365 * 5 ? value : undefined;
+}
+
+/**
+ * @returns {{ ok: true, lead, submissionId, spam }} or {{ ok: false, errors }}
+ */
+export function validateLead(body, { now = new Date(), userAgent = null } = {}) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { ok: false, errors: { body: 'expected a JSON object' } };
+  }
+
+  const errors = {};
+  const dropped = [];
+  const optional = (field, value) => {
+    if (value === undefined) { dropped.push(field); return null; }
+    return value;
+  };
+
+  const source = typeof body.source === 'string' && SOURCES.has(body.source) ? body.source : null;
+  if (!source) errors.source = 'unknown source';
+
+  const name = cleanText(body.name, 120);
+  if (!name || name.length < 2) errors.name = 'required';
+
+  const phone = cleanText(body.phone, 40);
+  const phoneDigits = phone ? phone.replace(/\D/g, '') : '';
+  if (phoneDigits.length < 7) errors.phone = 'required';
+
+  if (Object.keys(errors).length) return { ok: false, errors };
+
+  const emailRaw = cleanText(body.email, 254);
+  const email = emailRaw ? (EMAIL.test(emailRaw) ? emailRaw.toLowerCase() : optional('email', undefined)) : null;
+
+  const leadType = body.lead_type == null || body.lead_type === ''
+    ? null
+    : optional('lead_type', LEAD_TYPES.has(body.lead_type) ? body.lead_type : undefined);
+  const urgency = body.urgency == null || body.urgency === ''
+    ? null
+    : optional('urgency', URGENCIES.has(body.urgency) ? body.urgency : undefined);
+
+  const phoneNormalized = normalizePhone(phone);
+
+  const metadata = {};
+  if (body.metadata && typeof body.metadata === 'object' && !Array.isArray(body.metadata)) {
+    for (const key of METADATA_KEYS) {
+      const v = cleanText(body.metadata[key], key === 'referrer' ? 500 : 200);
+      if (v) metadata[key] = v;
+    }
+  }
+  const ua = cleanText(userAgent, 300);
+  if (ua) metadata.user_agent = ua;
+  if (!phoneNormalized) metadata.phone_unrecognized = true;
+
+  const lead = {
+    source,
+    name,
+    phone,
+    phone_normalized: phoneNormalized,
+    email,
+    lead_type: leadType,
+    lead_subtype: cleanText(body.lead_subtype, 80),
+    event_date: optional('event_date', cleanDate(body.event_date, now)),
+    urgency,
+    companions: optional('companions', cleanInt(body.companions, 0, 20)),
+    production_type: cleanText(body.production_type, 120),
+    budget: optional('budget', cleanInt(body.budget, 0, 1_000_000)),
+    message: cleanText(body.message, 4000, { multiline: true }),
+    metadata,
+  };
+  if (dropped.length) metadata.dropped_fields = dropped;
+
+  const submissionId = typeof body.submission_id === 'string' && UUID.test(body.submission_id)
+    ? body.submission_id.toLowerCase()
+    : null;
+
+  // Honeypot: the hidden "botcheck" checkbox only bots fill in.
+  const spam = Boolean(body.botcheck) && body.botcheck !== 'false';
+
+  return { ok: true, lead, submissionId, spam };
+}

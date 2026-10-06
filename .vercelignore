@@ -9,3 +9,5 @@ DESIGN.md
 scripts/
 .DS_Store
 .env*
+supabase/
+tests/
