@@ -24,6 +24,18 @@ export function leadNotification(lead, out) {
   return null;
 }
 
+/** Reminder for a lead still 'לטיפול' a day after it came in. */
+export function reminderNotification(lead) {
+  const body = [lead.name, LEAD_TYPE_LABELS[lead.lead_type], lead.event_date && ddmm(lead.event_date)]
+    .filter(Boolean).join(' | ');
+  return {
+    title: `ליד ממתין 24 שעות – ${BRAND}`,
+    body: `${body} · עדיין לטיפול`,
+    url: `/leadlive#/lead/${lead.id}`,
+    tag: `lead-${lead.id}`,
+  };
+}
+
 /**
  * @param webpush  the `web-push` module (or a stand-in in tests)
  * @returns notify(payload) → { sent, removed, failed }

@@ -1,7 +1,7 @@
 /* Casa Mancini leads (/leadlive) — service worker.
  * The app shell works offline (network first, cache fallback); the API is
  * never cached, so lead data and status changes always hit the server. */
-const CACHE = 'casa-leadlive-v2';
+const CACHE = 'casa-leadlive-v3';
 const SHELL = [
   '/leadlive',
   '/leadlive/app.css',
@@ -57,6 +57,10 @@ self.addEventListener('push', (event) => {
       dir: 'rtl',
       data: { url: data.url || '/leadlive' },
     });
+    // Red number on the app icon (iPhone home screen, installed desktop app).
+    if (typeof data.unread === 'number' && self.navigator.setAppBadge) {
+      await (data.unread > 0 ? self.navigator.setAppBadge(data.unread) : self.navigator.clearAppBadge()).catch(() => {});
+    }
     // Let an open app refresh its list.
     for (const client of await self.clients.matchAll({ type: 'window' })) client.postMessage({ type: 'lead' });
   })());

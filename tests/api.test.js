@@ -236,7 +236,7 @@ test('list: counters, filters, search by name / phone / email', async () => {
   await patch(noa.id, { status: 'won' });
 
   const all = await list();
-  assert.deepEqual(all.body.counts, { new: 2, in_progress: 0, won: 1, lost: 0 });
+  assert.deepEqual(all.body.counts, { new: 2, in_progress: 0, won: 1, lost: 0, unread: 3 });
   assert.equal((await list({ status: 'won' })).body.leads.length, 1);
   assert.equal((await list({ source: 'lead_page' })).body.leads.length, 1);
   assert.equal((await list({ status: 'nope' })).statusCode, 400);

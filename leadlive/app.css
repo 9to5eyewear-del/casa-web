@@ -197,3 +197,10 @@ a { color: inherit; }
 @media (min-width: 720px) {
   .lead-list { grid-template-columns: 1fr 1fr; }
 }
+
+/* Unread lead */
+.card.is-unread { box-shadow: inset -3px 0 0 var(--hot), 0 1px 2px rgba(47, 52, 48, .06); }
+.unread-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #d33a2c; margin-inline-end: 7px; vertical-align: middle; }
+
+.btn-danger { margin-top: 18px; background: transparent; border: 1px solid rgba(158, 66, 44, .35); color: var(--hot); }
+.btn-danger:active { background: #fbe9e4; }

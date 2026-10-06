@@ -27,6 +27,7 @@ export function productionDeps() {
     get ipHashKey() { return required('IP_HASH_SECRET'); },
     get sessionSecret() { return required('SESSION_SECRET'); },
     get passwordHash() { return required('LEADS_PASSWORD_HASH'); },
+    get cronSecret() { return required('CRON_SECRET'); },
     get requireStaff() { return createRequireSession(required('SESSION_SECRET')); },
     vapidPublicKey: vapid?.publicKey ?? null,
     // Push is best-effort: without VAPID keys leads are still saved.

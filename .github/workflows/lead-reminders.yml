@@ -1,0 +1,19 @@
+# Hourly check for leads still "לטיפול" 24 hours after they came in; the API
+# sends one reminder push per lead. (Vercel Hobby crons only run daily — that
+# daily run in vercel.json is the backup.)
+name: Lead reminders
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Send due reminders
+        run: |
+          curl -fsS --max-time 60 -X POST https://www.casamancini.site/api/cron/reminders \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

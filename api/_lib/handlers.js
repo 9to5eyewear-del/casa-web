@@ -89,7 +89,8 @@ export function createLeadsHandler(getDeps, { log = defaultLog, rateLimit = RATE
     // Sent after the response, so a slow push service never delays the form.
     const note = leadNotification(lead, out);
     if (note && deps.notify) {
-      deps.waitUntil(deps.notify(note).catch((err) =>
+      // The unread count rides along so the app icon badge stays current.
+      deps.waitUntil(deps.db.unreadCount().then((unread) => deps.notify({ ...note, unread })).catch((err) =>
         log.error('push_notify_failed', { lead_id: out.lead_id, error: String(err && err.message || err) })));
     }
     // Same response for new and repeat leads: the public can't probe who already inquired.
@@ -139,12 +140,12 @@ export function createLeadsHandler(getDeps, { log = defaultLog, rateLimit = RATE
   };
 }
 
-/** /api/leads/:id — GET (staff): one lead with its history. PATCH (staff): change status. */
+/** /api/leads/:id — GET (staff): one lead with its history. PATCH (staff): {status} or {seen: true}. DELETE (staff). */
 export function createLeadHandler(getDeps, { log = defaultLog } = {}) {
   return async function handler(req, res) {
     try {
-      if (req.method !== 'GET' && req.method !== 'PATCH') {
-        res.setHeader('Allow', 'GET, PATCH');
+      if (!['GET', 'PATCH', 'DELETE'].includes(req.method)) {
+        res.setHeader('Allow', 'GET, PATCH, DELETE');
         return send(res, 405, { error: 'method_not_allowed' });
       }
       const deps = getDeps();
@@ -160,11 +161,23 @@ export function createLeadHandler(getDeps, { log = defaultLog } = {}) {
       }
 
       if (!isSameOrigin(req)) return send(res, 403, { error: 'forbidden' });
+
+      if (req.method === 'DELETE') {
+        const out = await deps.db.deleteLead(id);
+        if (!out) return send(res, 404, { error: 'not_found' });
+        log.info('lead_deleted', { lead_id: id, by: user.id });
+        return send(res, 200, out);
+      }
+
       const { body, error } = readJson(req);
       if (error) return send(res, 400, { error });
       const keys = body && typeof body === 'object' ? Object.keys(body) : [];
+      if (keys.length === 1 && keys[0] === 'seen' && body.seen === true) {
+        const out = await deps.db.markSeen(id);
+        return out ? send(res, 200, out) : send(res, 404, { error: 'not_found' });
+      }
       if (keys.length !== 1 || keys[0] !== 'status' || !STATUSES.has(body.status)) {
-        return send(res, 400, { error: 'only {status} can be updated', allowed: [...STATUSES] });
+        return send(res, 400, { error: 'only {status} or {seen: true} can be updated', allowed: [...STATUSES] });
       }
 
       const lead = await deps.db.setStatus(id, body.status, user);

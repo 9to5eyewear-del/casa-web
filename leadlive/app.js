@@ -69,6 +69,12 @@
   const sourceLabel = (s) => SOURCE[s] || s;
   const relevantDate = (l) => (l.event_date ? fmtDate(l.event_date) : URGENCY[l.urgency] || '');
 
+  // Red number on the app icon = unread leads.
+  function setBadge(n) {
+    if (!('setAppBadge' in navigator)) return;
+    (n > 0 ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {});
+  }
+
   // Prefer the normalized number (972…); fall back to the digits typed.
   function phoneDigits(l) {
     const d = l.phone_normalized || String(l.phone || '').replace(/\D/g, '');
@@ -157,6 +163,7 @@
 
   // ── List ──
   function renderCounts(c) {
+    if (typeof c.unread === 'number') setBadge(c.unread);
     document.querySelectorAll('.counter').forEach((el) => {
       el.querySelector('b').textContent = c[el.dataset.status] ?? 0;
       el.classList.toggle('is-active', state.status === el.dataset.status);
@@ -171,10 +178,10 @@
   function card(l) {
     const wa = waHref(l), tel = telHref(l);
     const what = [typeLabel(l), relevantDate(l)].filter(Boolean).join(' · ');
-    return h('li', { class: 'card' },
+    return h('li', { class: l.seen_at ? 'card' : 'card is-unread' },
       h('a', { class: 'card-main', href: `#/lead/${l.id}` },
         h('div', { class: 'card-top' },
-          h('h2', { class: 'card-name' }, l.name),
+          h('h2', { class: 'card-name' }, !l.seen_at && h('span', { class: 'unread-dot', 'aria-label': 'לא נקרא' }), l.name),
           l.lead_score && h('span', { class: `score score-${l.lead_score}` }, SCORE[l.lead_score])),
         h('p', { class: 'card-what' }, what),
         h('p', { class: 'card-meta' },
@@ -285,6 +292,11 @@
       return;
     }
     if (location.hash !== `#/lead/${id}`) return; // navigated away meanwhile
+    if (!l.seen_at) {
+      api(`/api/leads/${l.id}`, { method: 'PATCH', body: { seen: true } })
+        .then((r) => { setBadge(r.unread); state.leads = []; })
+        .catch(() => {});
+    }
 
     const wa = waHref(l), tel = telHref(l);
     const picker = h('div', { class: 'status-picker', role: 'group', 'aria-label': 'סטטוס' },
@@ -325,7 +337,24 @@
       l.message && h('section', { class: 'section' }, h('h2', null, 'הודעה / הערות'), h('p', { class: 'message' }, l.message)),
       h('section', { class: 'section' }, h('h2', null, 'פרטים'), dl(meta)),
       h('section', { class: 'section' }, h('h2', null, 'היסטוריה'),
-        h('ul', { class: 'timeline' }, [...(l.events || [])].reverse().map(eventItem))));
+        h('ul', { class: 'timeline' }, [...(l.events || [])].reverse().map(eventItem))),
+      h('button', { type: 'button', class: 'btn btn-danger btn-block', onclick: (e) => deleteLead(l, e.currentTarget) }, 'מחיקת ליד'));
+  }
+
+  async function deleteLead(l, btn) {
+    if (!window.confirm(`למחוק את הליד של ${l.name}?\nהמחיקה סופית, כולל ההיסטוריה, ואי אפשר לשחזר.`)) return;
+    btn.disabled = true;
+    try {
+      const r = await api(`/api/leads/${l.id}`, { method: 'DELETE' });
+      setBadge(r.unread);
+      state.leads = [];
+      toast('הליד נמחק');
+      location.hash = '#/';
+    } catch (err) {
+      btn.disabled = false;
+      if (err.status === 404) { toast('הליד כבר נמחק'); location.hash = '#/'; }
+      else if (err.status !== 401) toast(err.status ? 'המחיקה נכשלה, נסו שוב' : 'אין חיבור — הליד לא נמחק');
+    }
   }
 
   const backBtn = () => h('button', { type: 'button', class: 'back', onclick: () => { location.hash = '#/'; } }, '→ כל הלידים');

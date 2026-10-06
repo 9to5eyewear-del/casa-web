@@ -10,6 +10,7 @@ import {
   createRequireSession, createSessionToken, hashPassword, SESSION_COOKIE,
 } from '../api/_lib/session.js';
 import { createNotifier, leadNotification } from '../api/_lib/push.js';
+import { createRemindersHandler } from '../api/_lib/cron.js';
 import { createTestDb, mockReq, mockRes, silentLog } from './helpers.js';
 
 const PASSWORD = 'test-only-password';
@@ -41,6 +42,7 @@ beforeEach(async () => {
     ipHashKey: 'ip-key',
     sessionSecret: SECRET,
     passwordHash,
+    cronSecret: 'cron-secret',
     requireStaff: createRequireSession(SECRET),
     vapidPublicKey: 'BPublicKey',
     notify: createNotifier({ db: t.db, webpush: fakeWebpush, vapid: { subject: 'https://x', publicKey: 'p', privateKey: 'k' }, log }),
@@ -53,6 +55,7 @@ beforeEach(async () => {
     logout: createLogoutHandler({ log }),
     session: createSessionHandler(deps, { log }),
     push: createPushSubscribeHandler(deps, { log }),
+    reminders: createRemindersHandler(deps, { log }),
   };
 });
 
@@ -211,7 +214,7 @@ test('push: new lead and repeat inquiry go to every device; dead ones are remove
   await Promise.all(pending);
   const id = (await call(api.leads, withCookie(cookie, { method: 'GET' }))).body.leads[0].id;
   assert.equal(pushCalls.length, 3);
-  assert.deepEqual(pushCalls[0].payload, { title: 'ליד חדש – Casa Mancini', body: 'דנה | התארגנות כלה | 14.05', url: `/leadlive#/lead/${id}`, tag: `lead-${id}` });
+  assert.deepEqual(pushCalls[0].payload, { title: 'ליד חדש – Casa Mancini', body: 'דנה | התארגנות כלה | 14.05', url: `/leadlive#/lead/${id}`, tag: `lead-${id}`, unread: 1 });
 
   // The 410 endpoint is gone; the others were marked as working.
   const subs = await t.db.listPushSubscriptions();
@@ -223,7 +226,7 @@ test('push: new lead and repeat inquiry go to every device; dead ones are remove
   await call(api.leads, { method: 'POST', body: newLead({ phone: '+972546787179' }) });
   await Promise.all(pending);
   assert.equal(pushCalls.length, 2);
-  assert.deepEqual(pushCalls[0].payload, { title: 'פנייה חוזרת – Casa Mancini', body: 'דנה פנתה שוב · פנייה ×2', url: `/leadlive#/lead/${id}`, tag: `lead-${id}` });
+  assert.deepEqual(pushCalls[0].payload, { title: 'פנייה חוזרת – Casa Mancini', body: 'דנה פנתה שוב · פנייה ×2', url: `/leadlive#/lead/${id}`, tag: `lead-${id}`, unread: 1 });
 });
 
 test('push: nothing for spam, rate-limited or retried submissions; push failure never fails the lead', async () => {
@@ -238,9 +241,11 @@ test('push: nothing for spam, rate-limited or retried submissions; push failure 
   assert.equal(pushCalls.length, 1);
 
   // A push service that throws for everything: the lead is still saved (201).
+  const realSend = fakeWebpush.sendNotification;
   fakeWebpush.sendNotification = async () => { throw Object.assign(new Error('boom'), { statusCode: 500 }); };
   const res = await call(api.leads, { method: 'POST', body: newLead({ phone: '0521234567' }) });
   await Promise.all(pending);
+  fakeWebpush.sendNotification = realSend;
   assert.equal(res.statusCode, 201);
   assert.ok(log.entries.some((e) => e.event === 'push_send_failed'));
 });
@@ -250,4 +255,97 @@ test('push notification text', () => {
   assert.deepEqual([created.title, created.body], ['ליד חדש – Casa Mancini', 'נועה כהן | הפקת צילום']);
   assert.equal(leadNotification({ name: 'x' }, { result: 'duplicate_submission', lead_id: 'x' }), null);
   assert.equal(leadNotification({ name: 'x' }, { result: 'rate_limited' }), null);
+});
+
+// ── Unread badge ──
+
+test('unread: new leads are unread, opening marks read, a repeat makes it unread again; push carries the count', async () => {
+  const cookie = await loggedIn();
+  await call(api.push, withCookie(cookie, { method: 'POST', body: sub(1) }));
+  await call(api.leads, { method: 'POST', body: newLead() });
+  await call(api.leads, { method: 'POST', body: newLead({ phone: '0521234567', name: 'נועה' }) });
+  await Promise.all(pending);
+  assert.deepEqual(pushCalls.map((c) => c.payload.unread), [1, 2]);
+
+  let list = (await call(api.leads, withCookie(cookie, { method: 'GET' }))).body;
+  assert.equal(list.counts.unread, 2);
+  assert.ok(list.leads.every((l) => l.seen_at === null));
+  const dana = list.leads.find((l) => l.name === 'דנה');
+
+  assert.equal((await call(api.lead, { method: 'PATCH', query: { id: dana.id }, body: { seen: true } })).statusCode, 401);
+  const seen = await call(api.lead, withCookie(cookie, { method: 'PATCH', query: { id: dana.id }, body: { seen: true } }));
+  assert.deepEqual(seen.body, { unread: 1 });
+  assert.equal((await call(api.lead, withCookie(cookie, { method: 'PATCH', query: { id: dana.id }, body: { seen: false } }))).statusCode, 400);
+  assert.equal((await call(api.lead, withCookie(cookie, { method: 'PATCH', query: { id: '7d3b1e70-0000-4000-8000-000000000000' }, body: { seen: true } }))).statusCode, 404);
+
+  pushCalls = [];
+  await call(api.leads, { method: 'POST', body: newLead({ phone: '+972546787179' }) }); // Dana again
+  await Promise.all(pending);
+  assert.equal(pushCalls[0].payload.unread, 2);
+  list = (await call(api.leads, withCookie(cookie, { method: 'GET' }))).body;
+  assert.equal(list.counts.unread, 2);
+  assert.equal(list.leads.find((l) => l.name === 'דנה').seen_at, null);
+});
+
+// ── 24h reminder ──
+
+test('reminder: once per lead still "new" after 24h, only with the cron secret', async () => {
+  const cookie = await loggedIn();
+  await call(api.push, withCookie(cookie, { method: 'POST', body: sub(1) }));
+  await call(api.leads, { method: 'POST', body: newLead({ name: 'ותיקה' }) });
+  await call(api.leads, { method: 'POST', body: newLead({ name: 'טופלה', phone: '0521234567' }) });
+  await call(api.leads, { method: 'POST', body: newLead({ name: 'טרייה', phone: '0531234567' }) });
+  await Promise.all(pending);
+  const leads = (await call(api.leads, withCookie(cookie, { method: 'GET' }))).body.leads;
+  const id = (n) => leads.find((l) => l.name === n).id;
+  await t.pg.query(`update leads set created_at = now() - interval '25 hours' where name in ('ותיקה', 'טופלה')`);
+  await call(api.lead, withCookie(cookie, { method: 'PATCH', query: { id: id('טופלה') }, body: { status: 'in_progress' } }));
+
+  assert.equal((await call(api.reminders, { method: 'POST' })).statusCode, 401);
+  assert.equal((await call(api.reminders, { method: 'POST', headers: { authorization: 'Bearer wrong' } })).statusCode, 401);
+
+  pushCalls = [];
+  const run = () => call(api.reminders, { method: 'POST', headers: { authorization: 'Bearer cron-secret' } });
+  const first = await run();
+  assert.equal(first.statusCode, 200);
+  assert.equal(first.body.reminded, 1);
+  assert.equal(pushCalls.length, 1);
+  assert.deepEqual(pushCalls[0].payload, {
+    title: 'ליד ממתין 24 שעות – Casa Mancini',
+    body: 'ותיקה | התארגנות כלה | 14.05 · עדיין לטיפול',
+    url: `/leadlive#/lead/${id('ותיקה')}`,
+    tag: `lead-${id('ותיקה')}`,
+    unread: 3,
+  });
+
+  // Hourly runs never remind twice; Vercel's daily GET works too.
+  assert.equal((await run()).body.reminded, 0);
+  assert.equal((await call(api.reminders, { method: 'GET', headers: { authorization: 'Bearer cron-secret' } })).body.reminded, 0);
+  assert.equal(pushCalls.length, 1);
+});
+
+// ── Delete ──
+
+test('delete: owner only, same-origin, permanent (history too), updates unread', async () => {
+  const cookie = await loggedIn();
+  await call(api.leads, { method: 'POST', body: newLead() });
+  await call(api.leads, { method: 'POST', body: newLead({ phone: '0521234567', name: 'נועה' }) });
+  const leads = (await call(api.leads, withCookie(cookie, { method: 'GET' }))).body.leads;
+  const dana = leads.find((l) => l.name === 'דנה');
+  // A lead flagged as a possible duplicate of Dana's keeps existing after the delete.
+  await call(api.leads, { method: 'POST', body: newLead({ phone: '0539999999', name: 'כפילות', email: 'dup@example.com' }) });
+  await t.pg.query(`update leads set possible_duplicate_of = $1 where name = 'כפילות'`, [dana.id]);
+
+  assert.equal((await call(api.lead, { method: 'DELETE', query: { id: dana.id } })).statusCode, 401);
+  assert.equal((await call(api.lead, withCookie(cookie, { method: 'DELETE', query: { id: dana.id }, headers: { origin: 'https://evil.example' } }))).statusCode, 403);
+
+  const del = await call(api.lead, withCookie(cookie, { method: 'DELETE', query: { id: dana.id } }));
+  assert.equal(del.statusCode, 200);
+  assert.deepEqual(del.body, { deleted: true, unread: 2 });
+  assert.equal((await call(api.lead, withCookie(cookie, { method: 'GET', query: { id: dana.id } }))).statusCode, 404);
+  assert.equal((await call(api.lead, withCookie(cookie, { method: 'DELETE', query: { id: dana.id } }))).statusCode, 404);
+
+  const { rows } = await t.pg.query('select (select count(*)::int from lead_events where lead_id = $1) events, (select possible_duplicate_of from leads where name = $2) dup', [dana.id, 'כפילות']);
+  assert.deepEqual(rows[0], { events: 0, dup: null });
+  assert.ok(log.entries.some((e) => e.event === 'lead_deleted' && e.lead_id === dana.id));
 });

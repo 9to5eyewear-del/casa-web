@@ -40,6 +40,11 @@ export function createDb(rpc) {
     deletePushSubscription: (endpoint) => rpc('delete_push_subscription', { p_endpoint: endpoint }),
     listPushSubscriptions: () => rpc('list_push_subscriptions', {}),
     recordPushResults: (okIds, goneIds) => rpc('record_push_results', { p_ok: okIds, p_gone: goneIds }),
+
+    unreadCount: () => rpc('unread_count', {}),
+    markSeen: (id) => rpc('mark_lead_seen', { p_lead_id: id }),
+    deleteLead: (id) => rpc('delete_lead', { p_lead_id: id }),
+    claimDueReminders: (hours) => rpc('claim_due_reminders', { p_hours: hours }),
   };
 }
 
