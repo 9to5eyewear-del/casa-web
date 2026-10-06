@@ -1,0 +1,11 @@
+# Source assets – the site serves the optimized versions in img/ and media/
+casa pic bride/
+סרטון לאתר casa.mp4
+WhatsApp Image *.jpeg
+judith-hoffman.png
+screen.png
+code.html
+DESIGN.md
+scripts/
+.DS_Store
+.env*
