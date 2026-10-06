@@ -1,7 +1,7 @@
 /* Casa Mancini leads (/leadlive) — service worker.
  * The app shell works offline (network first, cache fallback); the API is
  * never cached, so lead data and status changes always hit the server. */
-const CACHE = 'casa-leadlive-v1';
+const CACHE = 'casa-leadlive-v2';
 const SHELL = [
   '/leadlive',
   '/leadlive/app.css',
@@ -69,8 +69,9 @@ self.addEventListener('notificationclick', (event) => {
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     const app = windows.find((c) => new URL(c.url).pathname.startsWith('/leadlive'));
     if (app) {
-      await app.focus();
+      // Message first: if the browser refuses focus(), the lead still opens.
       app.postMessage({ type: 'open', url });
+      await app.focus().catch(() => {});
       return;
     }
     await self.clients.openWindow(url);
