@@ -123,7 +123,8 @@ export function createChatHandler(getDeps, { log = defaultLog, now = () => new D
     log.info('judith_turn', {
       session_id: sessionId, turn: (session?.turns || 0) + 1, ms: Date.now() - started,
       qualified, handoff: Boolean(saved.handoff_token), intent: state.intent, lead_type: state.lead_type,
-      input_tokens: u.input_tokens ?? null, cache_read: u.cache_read_input_tokens ?? null, output_tokens: u.output_tokens ?? null,
+      model: deps.judithModel, input_tokens: u.input_tokens ?? null, cache_write: u.cache_creation_input_tokens ?? null,
+      cache_read: u.cache_read_input_tokens ?? null, output_tokens: u.output_tokens ?? null,
     });
     // Only show the button when Judith actually offered it this turn.
     return send(res, 200, {
