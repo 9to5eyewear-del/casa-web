@@ -851,8 +851,8 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
           <span class="companions-val" id="companions-display">0</span>
           <button type="button" class="companions-btn" onclick="changeCompanions(1)" aria-label="הוספה">+</button>
         </div>
-        <div class="field-hint" style="margin-top:0.5rem">עד 8 מלוות. האירוח כולל כלה אחת + מלוות.</div>
-        <div class="field-error" id="e-companions">ניתן לבחור עד 8 מלוות בלבד</div>
+        <div class="field-hint" style="margin-top:0.5rem">החבילה כוללת עד 4 מלוות ללא תוספת תשלום. אפשר לצרף עד 2 מלוות נוספות בתוספת תשלום.</div>
+        <div class="field-error" id="e-companions">ניתן לבחור עד 6 מלוות בלבד</div>
       </div>
 
       <!-- Sub: Fashion -->
@@ -1296,10 +1296,12 @@ function liveValidateEmail() {
 }
 
 // ── Companions +/- ──
+// Package: up to 4 companions included, up to 2 more for an extra fee.
+const MAX_COMPANIONS = 6;
 function changeCompanions(delta) {
   const next = s.companions + delta;
-  if (next < 0 || next > 8) {
-    if (next > 8) {
+  if (next < 0 || next > MAX_COMPANIONS) {
+    if (next > MAX_COMPANIONS) {
       document.getElementById('e-companions').classList.add('show');
     }
     return;
@@ -1309,7 +1311,7 @@ function changeCompanions(delta) {
   document.getElementById('companions-display').textContent = next;
   // Update button states
   document.querySelector('.companions-btn[aria-label="הפחתה"]').disabled = next === 0;
-  document.querySelector('.companions-btn[aria-label="הוספה"]').disabled = next === 8;
+  document.querySelector('.companions-btn[aria-label="הוספה"]').disabled = next === MAX_COMPANIONS;
 }
 
 // ═══════════════════════════════
