@@ -202,6 +202,7 @@ test('persona: the prompt keeps her honest when sincerely asked, and never calls
   const ui = readFileSync(new URL('../js/judith.js', import.meta.url), 'utf8') + readFileSync(new URL('../js/judith-loader.js', import.meta.url), 'utf8');
   assert.doesNotMatch(ui, /העוזרת הדיגיטלית/);
   assert.match(ui, /בעזרת AI/, 'the small AI note stays in the chat');
+  assert.match(SYSTEM_PROMPT, /Never refer to Judith in the third person/);
 });
 
 // ── Source, LeadLive, push, funnel ──

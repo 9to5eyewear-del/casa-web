@@ -181,7 +181,7 @@
       const wrap = el('div', { class: 'jd-cta-wrap' });
       const a = el('a', { class: 'jd-wa', href: safeWhatsappUrl(item.whatsapp_url), target: '_blank', rel: 'noopener noreferrer' });
       a.innerHTML = ICONS.wa;
-      a.appendChild(document.createTextNode('להמשך בוואטסאפ עם יהודית'));
+      a.appendChild(document.createTextNode('להמשך איתי בוואטסאפ'));
       wrap.appendChild(a);
       frag.appendChild(wrap);
     }
