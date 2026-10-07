@@ -176,11 +176,13 @@ export function buildDashboard(raw, now = new Date()) {
  */
 export function buildJudith(f) {
   if (!f || (!f.conversations && !f.leads)) return null;
+  f = { whatsapp_shown: 0, ...f };
   return {
     ...f,
     qualified_rate: rate(f.qualified, f.conversations),
     handoff_rate: rate(f.handoff_shown, f.conversations),
     click_rate: rate(f.handoff_clicked, f.handoff_shown),
+    whatsapp_rate: rate(f.whatsapp_shown, f.conversations),
     lead_rate: rate(f.leads, f.conversations),
     won_rate: rate(f.won, f.leads),
   };

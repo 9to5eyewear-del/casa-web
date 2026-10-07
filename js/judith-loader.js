@@ -1,36 +1,36 @@
-/* Judith AI — homepage launcher (small; the chat itself is /js/judith.js).
+/* Judith — homepage entry points (small; the chat itself is /js/judith.js).
  *
- * Runs only after the page has loaded and gone idle, asks the server whether
- * Judith is on (no API key → no button at all), then shows the launcher. The
- * chat code is fetched on first intent (hover / touch / focus) or click. */
+ * Runs only after the page has loaded and gone idle, and asks the server
+ * whether Judith is on. If she is, her photo takes the place of the floating
+ * WhatsApp button (desktop) and of the WhatsApp button in the bottom bar
+ * (phones); WhatsApp stays reachable from inside the chat. If she's off (no
+ * API key, or JUDITH_ENABLED=0), nothing on the page changes. */
 (function () {
   'use strict';
 
   const STORE = 'casa-judith';
+  const PHOTO = '/img/judith-avatar-192.webp';
+  const PHOTO_SM = '/img/judith-avatar-96.webp';
   const CSS = `
-.jd-launcher{position:fixed;z-index:44;left:2rem;bottom:2rem;display:flex;align-items:center;gap:.7rem;
-  padding:.45rem 1.1rem .45rem .45rem;background:#fff;color:#2f3430;border:1px solid rgba(98,94,81,.16);border-radius:999px;
-  box-shadow:0 6px 24px rgba(47,52,48,.12);font:inherit;cursor:pointer;opacity:0;transform:translateY(8px);
-  transition:opacity .5s ease,transform .5s cubic-bezier(.16,1,.3,1),box-shadow .2s ease}
+.jd-launcher{position:fixed;z-index:44;right:2rem;bottom:2rem;width:62px;height:62px;padding:0;border:0;border-radius:50%;
+  background:#f3efe6;cursor:pointer;box-shadow:0 0 0 2px #fff,0 0 0 3.5px rgba(201,169,110,.85),0 8px 26px rgba(47,52,48,.22);
+  opacity:0;transform:translateY(8px) scale(.96);transition:opacity .5s ease,transform .5s cubic-bezier(.16,1,.3,1),box-shadow .2s ease}
 .jd-launcher.is-in{opacity:1;transform:none}
-.jd-launcher:hover{box-shadow:0 10px 30px rgba(47,52,48,.18)}
-.jd-launcher:focus-visible{outline:2px solid #625e51;outline-offset:3px}
-.jd-avatar{flex:none;width:2.6rem;height:2.6rem;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  background:#f3efe6;color:#8a672a;box-shadow:inset 0 0 0 1px rgba(201,169,110,.55)}
-.jd-avatar svg{width:58%;height:58%}
-.jd-launcher-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;text-align:right}
-.jd-launcher-text b{font-weight:500;font-size:.92rem}
-.jd-launcher-text span{font-size:.72rem;color:#777c77;font-weight:300}
-.jd-launcher[hidden],html.jd-open .jd-launcher,body.scroll-locked .jd-launcher{display:none}
-.jd-launcher.in-hero{opacity:0;pointer-events:none;transform:translateY(8px)}
-@media (max-width:767px){
-  .jd-launcher{left:.85rem;bottom:calc(76px + env(safe-area-inset-bottom));padding:.3rem}
-  .jd-launcher-text{display:none}
-  .jd-avatar{width:2.85rem;height:2.85rem}
-}
-@media (prefers-reduced-motion:reduce){.jd-launcher{transition:none}}`;
+.jd-launcher:hover{transform:scale(1.05)}
+.jd-launcher:focus-visible{outline:2px solid #625e51;outline-offset:5px}
+.jd-launcher img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.jd-hint{position:fixed;z-index:44;right:calc(2rem + 76px);bottom:calc(2rem + 12px);max-width:220px;padding:.55rem .85rem;background:#fff;color:#2f3430;
+  border:1px solid rgba(98,94,81,.14);border-radius:14px;border-end-end-radius:4px;box-shadow:0 8px 24px rgba(47,52,48,.12);
+  font-size:.86rem;line-height:1.45;cursor:pointer;opacity:0;transform:translateX(6px);transition:opacity .4s ease,transform .4s ease}
+.jd-hint.is-in{opacity:1;transform:none}
+.jd-hint b{font-weight:500}
+html.jd-open .jd-launcher,html.jd-open .jd-hint,body.scroll-locked .jd-launcher,body.scroll-locked .jd-hint{display:none}
+.mobile-cta .cta-judith{color:#433f33;border:1px solid rgba(201,169,110,.75);background:rgba(201,169,110,.08)}
+.mobile-cta .cta-judith img{width:28px;height:28px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 1.5px rgba(201,169,110,.9)}
+@media (max-width:767px){.jd-launcher,.jd-hint{display:none}}
+@media (prefers-reduced-motion:reduce){.jd-launcher,.jd-hint{transition:none}}`;
 
-  let btn, loading;
+  let loading;
 
   function loadChat() {
     if (!loading) {
@@ -46,44 +46,77 @@
     return loading;
   }
 
-  function open() {
-    btn.setAttribute('aria-busy', 'true');
-    loadChat().then((j) => j.open({ launcher: btn }))
+  function open(from) {
+    from.setAttribute('aria-busy', 'true');
+    loadChat().then((j) => j.open({ launcher: from }))
       .catch(() => { location.href = '/lead?source=judith_ai'; }) // never lose the visitor
-      .finally(() => btn.removeAttribute('aria-busy'));
+      .finally(() => from.removeAttribute('aria-busy'));
+  }
+
+  function wire(btn) {
+    btn.addEventListener('click', () => open(btn));
+    ['pointerenter', 'touchstart', 'focus'].forEach((ev) => btn.addEventListener(ev, () => loadChat().catch(() => {}), { once: true, passive: true }));
+    return btn;
+  }
+
+  function img(src, size) {
+    const i = document.createElement('img');
+    i.src = src; i.alt = ''; i.width = size; i.height = size; i.decoding = 'async';
+    return i;
   }
 
   function mount() {
     const style = document.createElement('style');
     style.textContent = CSS;
     document.head.appendChild(style);
+    const label = 'צ׳אט עם יהודית מ-Casa Mancini';
 
-    btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'jd-launcher';
-    btn.setAttribute('aria-label', 'שיחה עם יהודית, העוזרת הדיגיטלית של Casa Mancini');
-    btn.setAttribute('aria-haspopup', 'dialog');
-    btn.innerHTML = '<span class="jd-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V9"/><path d="M12 13c-3.5 0-6-2.4-6-6 3.5 0 6 2.4 6 6z"/><path d="M12 10c0-3.6 2.5-6 6-6 0 3.6-2.5 6-6 6z"/><path d="M12 17c2.6 0 4.6-1.7 4.6-4.4-2.6 0-4.6 1.7-4.6 4.4z"/></svg></span>'
-      + '<span class="jd-launcher-text" aria-hidden="true"><b>יהודית</b><span>העוזרת הדיגיטלית · יש שאלה?</span></span>';
-    btn.addEventListener('click', open);
-    ['pointerenter', 'touchstart', 'focus'].forEach((ev) => btn.addEventListener(ev, () => loadChat().catch(() => {}), { once: true, passive: true }));
-    document.body.appendChild(btn);
-    requestAnimationFrame(() => requestAnimationFrame(() => btn.classList.add('is-in')));
+    // Desktop: her photo where the floating WhatsApp button was.
+    const waFloat = document.getElementById('waFloat');
+    if (waFloat) waFloat.style.display = 'none';
+    const desk = wire(document.createElement('button'));
+    desk.type = 'button';
+    desk.className = 'jd-launcher';
+    desk.setAttribute('aria-label', label);
+    desk.setAttribute('aria-haspopup', 'dialog');
+    desk.appendChild(img(PHOTO, 62));
+    document.body.appendChild(desk);
+    requestAnimationFrame(() => requestAnimationFrame(() => desk.classList.add('is-in')));
 
-    // Phones: the hero has its own big CTAs, so the button waits below it
-    // instead of sitting on top of them.
-    const hero = document.getElementById('top');
-    if (hero && 'IntersectionObserver' in window) {
-      const phone = window.matchMedia('(max-width: 767px)');
-      new IntersectionObserver(([e]) => {
-        btn.classList.toggle('in-hero', phone.matches && e.intersectionRatio > 0.35);
-      }, { threshold: [0, 0.35, 1] }).observe(hero);
+    // A one-time hello next to the photo (desktop, once per visit).
+    let greeted = false;
+    try { greeted = sessionStorage.getItem('casa-judith-hint') === '1'; } catch (_) {}
+    if (!greeted && window.matchMedia('(min-width: 768px)').matches) {
+      const hint = document.createElement('div');
+      hint.className = 'jd-hint';
+      hint.setAttribute('aria-hidden', 'true');
+      hint.innerHTML = '<b>היי, אני יהודית 👋</b><br>יש שאלה על הבית? אני כאן.';
+      hint.addEventListener('click', () => { hint.remove(); open(desk); });
+      setTimeout(() => {
+        document.body.appendChild(hint);
+        requestAnimationFrame(() => hint.classList.add('is-in'));
+        setTimeout(() => { hint.classList.remove('is-in'); setTimeout(() => hint.remove(), 450); }, 7000);
+      }, 2500);
+      try { sessionStorage.setItem('casa-judith-hint', '1'); } catch (_) {}
+    }
+
+    // Phones: the bottom bar's WhatsApp button becomes Judith.
+    const waBar = document.querySelector('#mobileCta .cta-wa');
+    let bar = null;
+    if (waBar) {
+      bar = wire(document.createElement('button'));
+      bar.type = 'button';
+      bar.className = 'cta-judith flex-1';
+      bar.setAttribute('aria-label', label);
+      bar.setAttribute('aria-haspopup', 'dialog');
+      bar.append(img(PHOTO_SM, 28), document.createTextNode('יהודית'));
+      waBar.replaceWith(bar);
     }
 
     // A conversation that was open before a reload comes back open.
     try {
       const saved = JSON.parse(sessionStorage.getItem(STORE) || 'null');
-      if (saved && saved.open) open();
+      if (saved && saved.open) open(window.matchMedia('(min-width: 768px)').matches || !bar ? desk : bar);
     } catch (_) {}
   }
 

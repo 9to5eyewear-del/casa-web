@@ -513,7 +513,8 @@
         stage('נסגרו', j.won, 'won', j.won_rate)),
       h('div', { class: 'metrics' },
         h('div', { class: 'metric' }, h('b', null, j.lead_rate.rate == null ? '—' : pct(j.lead_rate.rate)), h('span', null, 'שיחה → ליד')),
-        h('div', { class: 'metric' }, h('b', null, j.won_rate.rate == null ? '—' : pct(j.won_rate.rate)), h('span', null, 'ליד → סגירה'))));
+        h('div', { class: 'metric' }, h('b', null, j.won_rate.rate == null ? '—' : pct(j.won_rate.rate)), h('span', null, 'ליד → סגירה')),
+        h('div', { class: 'metric' }, h('b', null, j.whatsapp_shown ?? 0), h('span', null, 'הופנו לוואטסאפ'))));
   }
 
   function breakdownBlock(rows, nameOf, emptyText) {

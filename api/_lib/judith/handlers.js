@@ -25,10 +25,12 @@ export const DEFAULT_LIMITS = {
 };
 
 export const LEAD_URL = '/lead?source=judith_ai';
-export const FALLBACK_MESSAGE = 'נראה שאני לא זמינה לרגע, אבל אני לא רוצה לעכב אותך. אפשר להשאיר כאן כמה פרטים ונחזור אלייך.';
+export const FALLBACK_MESSAGE = 'נראה שאני לא זמינה לרגע, אבל אני לא רוצה לעכב אותך. אפשר להשאיר כאן כמה פרטים ונחזור אלייך, או לכתוב לנו ישר בוואטסאפ.';
 const SESSION_LIMIT_MESSAGE = 'נראה שכבר דיברנו לא מעט 🌿 כדי שנוכל לתת לך תשובות מדויקות, הכי טוב להשאיר כמה פרטים — ונחזור אלייך.';
 
 const handoffUrl = (token) => `${LEAD_URL}&h=${encodeURIComponent(token)}`;
+// The same WhatsApp number as the rest of the site.
+export const WHATSAPP_URL = `https://wa.me/972546787179?text=${encodeURIComponent('היי יהודית, הגעתי מהצ׳אט באתר 🙂')}`;
 
 // Browsers send Origin on every fetch POST; a missing or foreign one is not our page.
 export function isOwnPage(req) {
@@ -63,7 +65,7 @@ export function createChatHandler(getDeps, { log = defaultLog, now = () => new D
   newToken = () => randomBytes(24).toString('base64url') } = {}) {
 
   const unavailable = (res, status, extra = {}) =>
-    send(res, status, { error: 'unavailable', message: FALLBACK_MESSAGE, handoff_url: LEAD_URL, ...extra });
+    send(res, status, { error: 'unavailable', message: FALLBACK_MESSAGE, handoff_url: LEAD_URL, whatsapp_url: WHATSAPP_URL, ...extra });
 
   async function turn(req, res, deps) {
     const { body, error } = readJson(req);
@@ -88,7 +90,7 @@ export function createChatHandler(getDeps, { log = defaultLog, now = () => new D
       log.warn('judith_rate_limited', { reason: gate.reason, ip_hash: ipHash, session_id: sessionId });
       if (gate.retry_after_seconds) res.setHeader('Retry-After', String(gate.retry_after_seconds));
       return send(res, 429, {
-        error: 'rate_limited', session_id: sessionId, handoff_url: LEAD_URL,
+        error: 'rate_limited', session_id: sessionId, handoff_url: LEAD_URL, whatsapp_url: WHATSAPP_URL,
         message: gate.reason === 'session_limit' ? SESSION_LIMIT_MESSAGE : FALLBACK_MESSAGE,
       });
     }
@@ -117,12 +119,13 @@ export function createChatHandler(getDeps, { log = defaultLog, now = () => new D
       leadSummary: qualified ? out.lead_summary : null,
       handoffToken: newToken(),
       handoffTtlSeconds: HANDOFF_TTL_SECONDS,
+      whatsapp: out.whatsapp,
     });
 
     const u = out.usage || {};
     log.info('judith_turn', {
       session_id: sessionId, turn: (session?.turns || 0) + 1, ms: Date.now() - started,
-      qualified, handoff: Boolean(saved.handoff_token), intent: state.intent, lead_type: state.lead_type,
+      qualified, handoff: Boolean(saved.handoff_token), whatsapp: out.whatsapp, intent: state.intent, lead_type: state.lead_type,
       model: deps.judithModel, input_tokens: u.input_tokens ?? null, cache_write: u.cache_creation_input_tokens ?? null,
       cache_read: u.cache_read_input_tokens ?? null, output_tokens: u.output_tokens ?? null,
     });
@@ -131,6 +134,7 @@ export function createChatHandler(getDeps, { log = defaultLog, now = () => new D
       session_id: sessionId,
       message: out.message,
       handoff_url: out.handoff_ready && saved.handoff_token ? handoffUrl(saved.handoff_token) : null,
+      whatsapp_url: out.whatsapp ? WHATSAPP_URL : null,
     });
   }
 

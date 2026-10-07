@@ -60,11 +60,11 @@ export function createDb(rpc) {
         p_ip_daily_max: ipDailyMax, p_global_daily_max: globalDailyMax, p_session_max_turns: sessionMaxTurns,
       }),
     judithLoad: (sessionId) => rpc('judith_load', { p_session_id: sessionId }),
-    judithSaveTurn: ({ sessionId, ipHash, messages, state, qualified, handoffReady, leadSummary, handoffToken, handoffTtlSeconds }) =>
+    judithSaveTurn: ({ sessionId, ipHash, messages, state, qualified, handoffReady, leadSummary, handoffToken, handoffTtlSeconds, whatsapp = false }) =>
       rpc('judith_save_turn', {
         p_session_id: sessionId, p_ip_hash: ipHash, p_messages: jsonArg(messages), p_state: state,
         p_qualified: qualified, p_handoff_ready: handoffReady, p_lead_summary: leadSummary,
-        p_handoff_token: handoffToken, p_handoff_ttl_seconds: handoffTtlSeconds,
+        p_handoff_token: handoffToken, p_handoff_ttl_seconds: handoffTtlSeconds, p_whatsapp: whatsapp,
       }),
     judithHandoff: (token) => rpc('judith_handoff', { p_token: token }),
     judithAttachLead: (token, leadId) => rpc('judith_attach_lead', { p_token: token, p_lead_id: leadId }),

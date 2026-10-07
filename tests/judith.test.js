@@ -37,7 +37,7 @@ const state = (over = {}) => ({
   intent: null, lead_type: null, lead_subtype: null, customer_name: null, event_date: null, event_date_text: null,
   urgency: null, companions: null, production_type: null, budget: null, special_request: null, ...over,
 });
-const turnOut = (message, over = {}) => ({ message, state: state(over.state), qualified: false, handoff_ready: false, lead_summary: null, ...over, state: state(over.state) });
+const turnOut = (message, over = {}) => ({ message, state: state(over.state), qualified: false, handoff_ready: false, whatsapp: false, lead_summary: null, ...over, state: state(over.state) });
 
 let t, log, claude, chat, handoff, leadsApi, leadApi, dashApi, tokenN;
 
@@ -174,6 +174,34 @@ test('handoff: unknown, malformed and expired tokens give nothing', async () => 
   await t.pg.query(`update judith_sessions set handoff_expires_at = now() - interval '1 minute'`);
   const token = new URL(r.body.handoff_url, 'https://x').searchParams.get('h');
   assert.equal((await call(handoff, { query: { token } })).statusCode, 404);
+});
+
+test('WhatsApp: when Judith offers it, the reply carries our wa.me link and the funnel counts it once', async () => {
+  claude.reply(turnOut('בשמחה, הנה קישור לוואטסאפ 🌿', { whatsapp: true }));
+  const r = await say('אפשר לדבר עם יהודית בוואטסאפ?');
+  assert.match(r.body.whatsapp_url, /^https:\/\/wa\.me\/972546787179\?text=/);
+  assert.equal(r.body.handoff_url, null);
+  claude.reply(turnOut('בטח', { whatsapp: true }));
+  await say('תודה', r.body.session_id);
+  assert.deepEqual(await events(), ['chat_started', 'whatsapp_shown']);
+  claude.reply(turnOut('בכיף'));
+  assert.equal((await say('ועוד שאלה', r.body.session_id)).body.whatsapp_url, null);
+  const dash = (await call(dashApi, { method: 'GET', query: { range: '30d' }, headers: { authorization: 'Bearer good' } })).body;
+  assert.equal(dash.judith.whatsapp_shown, 1);
+});
+
+test('fallbacks also offer WhatsApp, since Judith took its place on the page', async () => {
+  claude.fail(new Error('down'));
+  const res = await say('היי');
+  assert.equal(res.statusCode, 503);
+  assert.match(res.body.whatsapp_url, /^https:\/\/wa\.me\/972546787179/);
+});
+
+test('persona: the prompt keeps her honest when sincerely asked, and never calls her a digital assistant in the UI', () => {
+  assert.match(SYSTEM_PROMPT, /never claim or imply that you are a human/);
+  const ui = readFileSync(new URL('../js/judith.js', import.meta.url), 'utf8') + readFileSync(new URL('../js/judith-loader.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(ui, /העוזרת הדיגיטלית/);
+  assert.match(ui, /בעזרת AI/, 'the small AI note stays in the chat');
 });
 
 // ── Source, LeadLive, push, funnel ──

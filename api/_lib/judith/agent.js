@@ -50,9 +50,10 @@ export const OUTPUT_SCHEMA = {
     },
     qualified: { type: 'boolean' },
     handoff_ready: { type: 'boolean' },
+    whatsapp: { type: 'boolean' },
     lead_summary: str,
   },
-  required: ['message', 'state', 'qualified', 'handoff_ready', 'lead_summary'],
+  required: ['message', 'state', 'qualified', 'handoff_ready', 'whatsapp', 'lead_summary'],
   additionalProperties: false,
 };
 
@@ -149,7 +150,7 @@ export class JudithUnavailable extends Error {
 }
 
 /**
- * Parses Claude's response into { message, state, qualified, handoff_ready, lead_summary }.
+ * Parses Claude's response into { message, state, qualified, handoff_ready, whatsapp, lead_summary }.
  * Throws JudithUnavailable when there's nothing safe to show.
  */
 export function parseResponse(response, now = new Date()) {
@@ -165,6 +166,7 @@ export function parseResponse(response, now = new Date()) {
     state: sanitizeState(out.state, now),
     qualified: out.qualified === true,
     handoff_ready: out.handoff_ready === true,
+    whatsapp: out.whatsapp === true,
     lead_summary: cleanText(out.lead_summary, 400, { multiline: true }),
   };
 }
