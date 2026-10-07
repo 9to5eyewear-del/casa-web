@@ -10,11 +10,13 @@ const positiveInt = (v, fallback) => (Number.isInteger(Number(v)) && Number(v) >
 export function judithDeps() {
   const base = productionDeps();
   const env = process.env;
-  const on = Boolean(env.ANTHROPIC_API_KEY) && env.JUDITH_ENABLED !== '0';
+  // A key pasted into the dashboard can carry a stray space or newline.
+  const apiKey = (env.ANTHROPIC_API_KEY || '').trim();
+  const on = Boolean(apiKey) && env.JUDITH_ENABLED !== '0';
   return {
     db: base.db,
     get ipHashKey() { return base.ipHashKey; },
-    anthropic: on ? new Anthropic({ apiKey: env.ANTHROPIC_API_KEY }) : null,
+    anthropic: on ? new Anthropic({ apiKey }) : null,
     judithModel: env.JUDITH_MODEL || DEFAULT_MODEL,
     judithLimits: { ...DEFAULT_LIMITS, globalDailyMax: positiveInt(env.JUDITH_DAILY_LIMIT, DEFAULT_LIMITS.globalDailyMax) },
   };
