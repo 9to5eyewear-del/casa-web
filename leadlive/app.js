@@ -273,7 +273,7 @@
     try {
       const data = await api(`/api/dashboard?${key}`);
       if (seq !== state.dashSeq) return;
-      state.dash = data; state.dashKey = key;
+      state.dash = data; state.dashKey = key; state.dashAt = Date.now();
       setNavBadge(data.summary.open_now.new);
       setBadge(data.summary.open_now.unread);
     } catch (err) {
@@ -321,51 +321,99 @@
     return h('span', { class: `delta ${up ? 'up' : 'down'}` }, up ? '↑' : '↓', points ? `${v} נק׳` : `${v}%`);
   }
 
+  // ── Micro visuals: each KPI shows the shape behind its number ──
+
+  // Tiny trend line of one series from the period's trend points.
+  function spark(values, cls) {
+    if (values.length < 2 || !values.some(Boolean)) return null;
+    const W = 120, H = 30, max = Math.max(...values, 1);
+    // RTL: oldest on the right, like the main chart.
+    const pts = values.map((v, i) => [W - (i * W) / (values.length - 1), H - 2 - (v / max) * (H - 4)]);
+    const line = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join('');
+    return s('svg', { class: `spark ${cls}`, viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'none', 'aria-hidden': 'true' },
+      s('path', { class: 'spark-area', d: `${line}L0,${H}L${W},${H}Z` }), s('path', { class: 'spark-line', d: line }));
+  }
+
+  // Conversion ring; fills to the rate on render.
+  function ring(rate) {
+    const r = 22, c = 2 * Math.PI * r;
+    const arc = s('circle', { class: 'ring-val', cx: 26, cy: 26, r, 'stroke-dasharray': c.toFixed(1), 'stroke-dashoffset': c.toFixed(1) });
+    requestAnimationFrame(() => requestAnimationFrame(() => arc.setAttribute('stroke-dashoffset', (c * (1 - (rate || 0))).toFixed(1))));
+    return s('svg', { class: 'ring', viewBox: '0 0 52 52', 'aria-hidden': 'true' }, s('circle', { class: 'ring-track', cx: 26, cy: 26, r }), arc);
+  }
+
+  // new | in progress split, for "needs attention".
+  function split(a, b) {
+    const total = a + b;
+    if (!total) return null;
+    const i1 = h('i', { class: 'split-new' }), i2 = h('i', { class: 'split-prog' });
+    requestAnimationFrame(() => { i1.style.flexGrow = String(a); i2.style.flexGrow = String(b); });
+    return h('div', { class: 'split', 'aria-hidden': 'true' }, i1, i2);
+  }
+
   // KPI tiles are a list, so a future "Revenue won" / "Deal value" tile is one more entry.
   function kpiStrip(d) {
-    const sm = d.summary, vs = VS[d.range.key];
-    const conv = sm.conversion;
+    const sm = d.summary, vs = VS[d.range.key], conv = sm.conversion, pts = d.trend.points;
     const tiles = [
-      { label: 'לידים חדשים', tone: 'gold', value: sm.leads.value,
+      { label: 'לידים חדשים', tone: 'gold', value: sm.leads.value, viz: spark(pts.map((p) => p.leads), 'gold'),
         sub: [delta(sm.leads.change), sm.leads.change != null ? ` ${vs}` : `${sm.leads.prev} בתקופה הקודמת`] },
       { label: 'דורשים טיפול', value: sm.open_now.value, tone: sm.open_now.waiting_24h > 0 ? 'alert' : 'warm',
+        viz: split(sm.open_now.new, sm.open_now.in_progress),
         sub: `${sm.open_now.new} לטיפול · ${sm.open_now.in_progress} בטיפול` },
-      { label: 'נסגרו', tone: 'won', value: sm.won.value,
+      { label: 'נסגרו', tone: 'won', value: sm.won.value, viz: spark(pts.map((p) => p.won), 'won'),
         sub: [delta(sm.won.change), sm.won.change != null ? ` ${vs}` : `מהלידים שנכנסו בתקופה`] },
       { label: 'המרה', tone: 'dark', value: conv.rate, fmt: (x) => Math.round(x * 100), suffix: '%',
+        viz: conv.rate == null ? null : ring(conv.rate), side: true,
         sub: conv.rate == null ? 'אין עדיין לידים בתקופה'
-          : [`${conv.num} נסגרו מתוך ${conv.den}`, conv.delta != null ? h('br') : null, delta(conv.delta, { points: true }), conv.delta != null ? ` ${vs}` : null] },
+          : [`${conv.num} מתוך ${conv.den}`, conv.delta != null ? h('br') : null, delta(conv.delta, { points: true }), conv.delta != null ? ` ${vs}` : null] },
     ];
     return h('div', { class: 'kpis' }, tiles.map((t) => {
       const val = h('b', { class: 'kpi-value' + (t.value == null ? ' is-empty' : '') }, '–', t.suffix && t.value != null ? h('small', null, t.suffix) : null);
       if (t.value != null) countTo(val, t.fmt ? t.fmt(t.value) : t.value, (x) => String(Math.round(x)));
-      return h('div', { class: 'kpi', 'data-tone': t.tone },
-        h('span', { class: 'kpi-label' }, t.label), val, h('span', { class: 'kpi-sub' }, t.sub));
+      return h('div', { class: 'kpi' + (t.side ? ' has-side' : ''), 'data-tone': t.tone },
+        h('span', { class: 'kpi-label' }, t.label),
+        t.side ? h('div', { class: 'kpi-row' }, val, t.viz) : val,
+        !t.side && t.viz,
+        h('span', { class: 'kpi-sub' }, t.sub));
     }));
   }
 
+  // ── Compact lead rows (home): avatar · who · why · actions ──
+
+  const AVATAR_TONES = ['gold', 'olive', 'sage', 'slate', 'brick', 'ochre'];
+  function avatar(l, tone) {
+    const parts = String(l.name || '?').trim().split(/\s+/);
+    const initials = (parts[0][0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '');
+    let hash = 0;
+    for (const ch of String(l.id || l.name)) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+    return h('span', { class: `avatar av-${tone || AVATAR_TONES[hash % AVATAR_TONES.length]}`, 'aria-hidden': 'true' }, initials);
+  }
+
+  function leadRow(l, { kind, line } = {}) {
+    const wa = waHref(l), tel = telHref(l);
+    return h('li', { class: 'lrow' + (l.seen_at ? '' : ' is-unread'), 'data-kind': kind || null },
+      h('a', { class: 'lrow-main', href: `#/lead/${l.id}` },
+        avatar(l, kind ? { waiting: 'brick', hot: 'brick', repeat: 'ochre', date_soon: 'slate' }[kind] : null),
+        h('span', { class: 'lrow-text' },
+          h('span', { class: 'lrow-top' }, h('b', null, l.name), prioMark(l)),
+          h('span', { class: 'lrow-line' }, line || [typeLabel(l), whenText(l)].filter(Boolean).join(' · ')),
+          h('span', { class: 'lrow-when' }, rel(l.last_submission_at)))),
+      h('span', { class: 'lrow-actions' },
+        wa && h('a', { class: 'act wa', href: wa, target: '_blank', rel: 'noopener', 'aria-label': `WhatsApp ל${l.name}` }, icon('wa')),
+        tel && h('a', { class: 'act call', href: tel, 'aria-label': `התקשרות ל${l.name}` }, icon('call'))));
+  }
+
   function attentionBlock(items) {
-    if (!items.length) {
-      return emptyState('הכול מטופל', 'אין כרגע לידים שדורשים תשומת לב.');
-    }
-    return h('ul', { class: 'attention' }, items.map((l) => {
+    if (!items.length) return emptyState('הכול מטופל', 'אין כרגע לידים שדורשים תשומת לב.');
+    return h('ul', { class: 'lrows panel' }, items.map((l) => {
       const kind = l.priority.reasons[0];
-      const extra = {
+      const why = {
         waiting: `ממתין ${rel(l.created_at).replace('לפני ', '')}`,
-        hot: null,
+        hot: 'ליד חם',
         repeat: `פנה ${l.submission_count} פעמים`,
-        date_soon: untilText(l.priority.days_to_event) && `התאריך ${untilText(l.priority.days_to_event)}`,
+        date_soon: untilText(l.priority.days_to_event) ? `התאריך ${untilText(l.priority.days_to_event)}` : 'תאריך קרוב',
       }[kind];
-      const wa = waHref(l), tel = telHref(l);
-      return h('li', { class: 'att', 'data-kind': kind },
-        h('a', { class: 'att-main', href: `#/lead/${l.id}` },
-          h('p', { class: 'att-kind' }, ATTENTION[kind].label, extra ? ` · ${extra}` : ''),
-          h('p', { class: 'att-name' }, l.name),
-          h('p', { class: 'att-what' }, [typeLabel(l), whenText(l)].filter(Boolean).join(' · ')),
-          h('p', { class: 'att-when' }, `פנייה ${rel(l.last_submission_at)}`)),
-        h('div', { class: 'att-actions' },
-          wa && h('a', { class: 'act wa', href: wa, target: '_blank', rel: 'noopener', 'aria-label': `WhatsApp ל${l.name}` }, icon('wa')),
-          tel && h('a', { class: 'act call', href: tel, 'aria-label': `התקשרות ל${l.name}` }, icon('call'))));
+      return leadRow(l, { kind, line: [h('span', { class: 'why' }, why), ` · ${typeLabel(l)}`] });
     }));
   }
 
@@ -400,6 +448,8 @@
     const cols = pts.map((p, i) => s('g', { class: 'col', 'data-i': i },
       p.leads ? s('rect', { class: 'col-all', x: cx(i) - colW / 2, y: y(p.leads), width: colW, height: y(0) - y(p.leads), rx: Math.min(3, colW / 3) }) : null,
       p.won ? s('rect', { class: 'col-won', x: cx(i) - colW / 2, y: y(p.won), width: colW, height: y(0) - y(p.won), rx: Math.min(3, colW / 3) }) : null));
+    // Columns grow in from the oldest day (CSSOM styles are allowed by the CSP).
+    cols.forEach((g, i) => { g.style.animationDelay = `${Math.min(i * 14, 420)}ms`; });
     const labelIdx = [...new Set([0, Math.floor((pts.length - 1) / 2), pts.length - 1])];
     const labels = labelIdx.map((i) => s('text', { class: 'axis', x: cx(i), y: H - 4, 'text-anchor': 'middle' }, fmtShort(pts[i].start)));
     const hi = s('rect', { class: 'col-hi', y: top, height: y(0) - top, width: slot, visibility: 'hidden' });
@@ -505,9 +555,12 @@
     }
     const urgent = d.summary.open_now.waiting_24h > 0;
     const inAttention = new Set(d.attention.map((l) => l.id));
-    const newLeads = d.recent.filter((l) => !inAttention.has(l.id)).slice(0, 3);
-    view.replaceChildren(h('div', { class: 'home-grid' },
+    const newLeads = d.recent.filter((l) => !inAttention.has(l.id)).slice(0, 4);
+    const first = state.homeKey !== state.dashKey;   // entrance plays once per period, not on every refresh
+    state.homeKey = state.dashKey;
+    view.replaceChildren(h('div', { class: 'home-grid' + (first ? ' is-entering' : '') },
       h('section', { class: 'greet', 'data-area': 'greet' },
+        liveTag(),
         h('h1', null, greeting()),
         h('p', { class: urgent ? 'is-urgent' : '' }, d.headline),
         h('div', { class: 'greet-stats' },
@@ -516,24 +569,35 @@
           h('a', { href: '#/leads', onclick: () => presetFilter('status:in_progress') }, h('b', null, d.summary.open_now.in_progress), ' בטיפול'),
           d.summary.hot_open > 0 && h('a', { href: '#/leads', class: 'is-gold', onclick: () => presetFilter('flag:hot') },
             h('b', null, d.summary.hot_open), ' HOT'))),
-      block('attention', 'דורש תשומת לב', attentionBlock(d.attention)),
+      block('attention', 'עכשיו', attentionBlock(d.attention)),
+      block('period', 'ביצועים', h('div', null, rangeControl(), kpiStrip(d))),
+      block('trend', 'לידים לאורך זמן', trendChart(d.trend)),
+      block('insights', 'תובנות', insightsBlock(d.insights, 3), h('a', { class: 'more', href: '#/insights' }, 'הכול')),
       block('recent', 'נכנסו לאחרונה',
-        newLeads.length ? h('ul', { class: 'lead-list' }, newLeads.map(leadCard))
+        newLeads.length ? h('ul', { class: 'lrows panel' }, newLeads.map((l) => leadRow(l)))
           : emptyState('אין לידים נוספים', d.attention.length ? 'כל הלידים האחרונים מופיעים למעלה.' : 'לידים חדשים יופיעו כאן.'),
         h('a', { class: 'more', href: '#/leads' }, 'כל הלידים')),
-      block('period', 'סיכום התקופה', h('div', null, rangeControl(), kpiStrip(d))),
-      block('insights', 'תובנות', insightsBlock(d.insights, 3), h('a', { class: 'more', href: '#/insights' }, 'עוד')),
-      block('trend', 'לידים לאורך זמן', trendChart(d.trend)),
       block('pipeline', 'המשפך', pipelineBlock(d.pipeline)),
-      block('sources', 'מאיפה מגיעים הלידים?', breakdownBlock(d.sources, (r) => sourceLabel(r.source), 'אין לידים בתקופה.'))));
+      block('sources', 'מקורות', breakdownBlock(d.sources, (r) => sourceLabel(r.source), 'אין לידים בתקופה.'))));
   }
+
+  // "LIVE · עודכן לפני 2 דק׳" — ticks without refetching.
+  function liveTag() {
+    return h('span', { class: 'live' }, h('i', { 'aria-hidden': 'true' }), 'LIVE', h('span', { class: 'live-time' }, liveText()));
+  }
+  function liveText() {
+    if (!state.dashAt) return '';
+    const m = Math.floor((Date.now() - state.dashAt) / 60000);
+    return m < 1 ? ' · עודכן עכשיו' : ` · עודכן לפני ${m} דק׳`;
+  }
+  setInterval(() => document.querySelectorAll('.live-time').forEach((el) => { el.textContent = liveText(); }), 20000);
 
   // ══════════════════ Insights ══════════════════
 
   function renderInsights() {
     const view = $('#insightsView');
     const d = state.dash;
-    const head = [h('h1', { class: 'view-title' }, 'תובנות'), rangeControl()];
+    const head = [h('div', { class: 'view-head' }, h('h1', { class: 'view-title' }, 'תובנות'), d && liveTag()), rangeControl()];
     if (!d) {
       if (state.dashError) return view.replaceChildren(...head, h('div', { class: 'block' }, errorState('בדקו את החיבור ונסו שוב.', () => loadDash({ force: true }))));
       return view.replaceChildren(...head, h('div', { class: 'kpis' }, [1, 2, 3, 4].map(() => h('div', { class: 'sk sk-kpi' }))),
@@ -568,6 +632,7 @@
     const render = () => li.replaceChildren(
       h('a', { class: 'card-main', href: `#/lead/${l.id}` },
         h('div', { class: 'card-top' },
+          avatar(l),
           h('h3', { class: 'card-name' }, !l.seen_at && h('span', { class: 'sr-only' }, 'לא נקרא: '), l.name),
           prioMark(l)),
         h('p', { class: 'card-what' }, [typeLabel(l), whenText(l)].filter(Boolean).join(' · ')),
