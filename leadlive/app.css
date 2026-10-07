@@ -367,6 +367,7 @@ h1, h2, h3, p { margin: 0; }
 [data-status="won"] { --st: var(--sage); }
 [data-status="lost"] { --st: var(--slate); }
 .tag { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 12px; font-weight: 500; background: var(--ochre-wash); color: var(--ochre); }
+.tag-judith { background: var(--gold-wash); color: var(--gold-ink); }
 .tag-dup { background: var(--linen); color: var(--ink-soft); }
 
 /* ── Empty / error ── */

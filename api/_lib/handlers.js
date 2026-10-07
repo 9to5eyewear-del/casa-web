@@ -87,6 +87,17 @@ export function createLeadsHandler(getDeps, { log = defaultLog, rateLimit = RATE
 
     log.info('lead_saved', { ...logCtx, result: out.result, lead_id: out.lead_id, submission_count: out.submission_count });
 
+    // Came through Judith: put the chat summary on the lead and close the
+    // funnel. Best effort — the lead itself is already safe.
+    if (v.judithHandoff && out.lead_id) {
+      try {
+        const j = await deps.db.judithAttachLead(v.judithHandoff, out.lead_id);
+        log.info('judith_lead_attached', { lead_id: out.lead_id, attached: j.attached });
+      } catch (err) {
+        log.error('judith_attach_failed', { lead_id: out.lead_id, error: String(err && err.message || err) });
+      }
+    }
+
     // Sent after the response, so a slow push service never delays the form.
     const note = leadNotification(lead, out);
     if (note && deps.notify) {

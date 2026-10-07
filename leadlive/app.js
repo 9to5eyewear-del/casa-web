@@ -496,6 +496,26 @@
       p.open ? stage('עדיין פתוחים', p.open, 'open', pct(p.open / p.entered)) : null);
   }
 
+  // Judith AI: conversations → lead → won. All counts and rates come from the server.
+  function judithBlock(j) {
+    if (!j) return emptyState('אין עדיין שיחות עם יהודית בתקופה', 'כשמבקרים ידברו עם יהודית באתר, המשפך שלה יופיע כאן.');
+    const top = Math.max(j.conversations, j.leads, 1);
+    const stage = (label, n, cls, r) => h('div', null,
+      h('div', { class: 'stage-top' }, h('span', null, label), h('span', null, r && r.rate != null && `${pct(r.rate)} · `, h('b', null, n))),
+      bar(n / top, cls));
+    return h('div', null,
+      h('div', { class: 'funnel panel' },
+        stage('שיחות', j.conversations, 'entered'),
+        stage('לקוחות רלוונטיים', j.qualified, '', j.qualified_rate),
+        stage('הוצעה השארת פרטים', j.handoff_shown, '', j.handoff_rate),
+        stage('עברו לטופס', j.handoff_clicked, '', j.click_rate),
+        stage('לידים', j.leads, '', j.lead_rate),
+        stage('נסגרו', j.won, 'won', j.won_rate)),
+      h('div', { class: 'metrics' },
+        h('div', { class: 'metric' }, h('b', null, j.lead_rate.rate == null ? '—' : pct(j.lead_rate.rate)), h('span', null, 'שיחה → ליד')),
+        h('div', { class: 'metric' }, h('b', null, j.won_rate.rate == null ? '—' : pct(j.won_rate.rate)), h('span', null, 'ליד → סגירה'))));
+  }
+
   function breakdownBlock(rows, nameOf, emptyText) {
     if (!rows.length) return emptyState('אין עדיין נתונים', emptyText);
     return h('div', { class: 'rows panel' }, rows.map((r) => h('div', { class: 'row' },
@@ -610,6 +630,7 @@
         block('pipeline', 'המשפך', pipelineBlock(d.pipeline)),
         block('sources', 'מאיפה מגיעים הלידים?', breakdownBlock(d.sources, (r) => sourceLabel(r.source), 'אין לידים בתקופה.')),
         block('services', 'מה הלקוחות מחפשים?', breakdownBlock(d.services, (r) => TYPE[r.lead_type] || r.lead_type, 'אין לידים בתקופה.')),
+        block('judith', 'יהודית AI', judithBlock(d.judith)),
         h('section', { class: 'block wide' }, h('div', { class: 'block-head' }, h('h2', null, 'מדדים נוספים'),
           h('span', { class: 'block-note' }, 'המרה = נסגרו ÷ לידים שנכנסו בתקופה')), metricsBlock(d))));
   }
@@ -638,6 +659,7 @@
         h('p', { class: 'card-what' }, [typeLabel(l), whenText(l)].filter(Boolean).join(' · ')),
         h('p', { class: 'card-when' },
           h('span', null, `פנייה ${rel(l.last_submission_at)}`),
+          l.source === 'judith_ai' && h('span', { class: 'tag tag-judith' }, SOURCE.judith_ai),
           l.submission_count > 1 && h('span', { class: 'tag' }, `פנייה חוזרת ×${l.submission_count}`))),
       h('div', { class: 'card-foot' },
         statusButton(l, (next) => { Object.assign(l, next); render(); }),
@@ -850,6 +872,7 @@
       l.possible_duplicate_of && h('p', { class: 'section block-note' }, 'ייתכן שזה לקוח קיים · ',
         h('button', { type: 'button', class: 'link-btn', onclick: () => { location.hash = `#/lead/${l.possible_duplicate_of}`; } }, 'לליד הקודם')),
       fields.length && h('section', { class: 'section' }, h('h2', null, 'הפנייה'), dl(fields)),
+      l.metadata?.judith_summary && h('section', { class: 'section' }, h('h2', null, 'סיכום השיחה עם יהודית'), h('p', { class: 'message' }, l.metadata.judith_summary)),
       l.message && h('section', { class: 'section' }, h('h2', null, 'הודעה'), h('p', { class: 'message' }, l.message)),
       h('section', { class: 'section' }, h('h2', null, 'פרטים'), dl(contact)),
       h('section', { class: 'section' }, h('h2', null, 'פעילות'),

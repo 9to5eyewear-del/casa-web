@@ -143,7 +143,7 @@ test('public POST rejects bad input, cross-site origins; honeypot is silently dr
   assert.equal(bad.statusCode, 400);
   assert.deepEqual(Object.keys(bad.body.fields).sort(), ['name', 'phone']);
 
-  assert.equal((await post(websiteLead({ source: 'judith_ai' }))).statusCode, 400);
+  assert.equal((await post(websiteLead({ source: 'not_a_source' }))).statusCode, 400);
   assert.equal((await post(websiteLead(), { origin: 'https://evil.example' })).statusCode, 403);
   assert.equal((await post('{not json')).statusCode, 400);
   assert.equal((await post('x'.repeat(30_000))).statusCode, 413);

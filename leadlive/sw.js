@@ -1,7 +1,7 @@
 /* Casa Mancini leads (/leadlive) — service worker.
  * The app shell works offline (network first, cache fallback); the API is
  * never cached, so lead data and status changes always hit the server. */
-const CACHE = 'casa-leadlive-v6';
+const CACHE = 'casa-leadlive-v7';
 const SHELL = [
   '/leadlive',
   '/leadlive/app.css',

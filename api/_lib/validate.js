@@ -11,6 +11,7 @@ import { normalizePhone } from './phone.js';
 const INVISIBLE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F​-‏‪-‮⁦-⁩﻿]/g;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const JUDITH_TOKEN = /^[A-Za-z0-9_-]{20,64}$/;
 const METADATA_KEYS = ['page', 'referrer', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
 
 export function cleanText(value, max, { multiline = false } = {}) {
@@ -39,7 +40,7 @@ function cleanDate(value, now) {
 }
 
 /**
- * @returns {{ ok: true, lead, submissionId, spam }} or {{ ok: false, errors }}
+ * @returns {{ ok: true, lead, submissionId, spam, judithHandoff }} or {{ ok: false, errors }}
  */
 export function validateLead(body, { now = new Date(), userAgent = null } = {}) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
@@ -106,6 +107,11 @@ export function validateLead(body, { now = new Date(), userAgent = null } = {}) 
   };
   if (dropped.length) metadata.dropped_fields = dropped;
 
+  // The Judith handoff token (not stored on the lead): links it to the chat.
+  const judithHandoff = source === 'judith_ai' && typeof body.judith_handoff === 'string' && JUDITH_TOKEN.test(body.judith_handoff)
+    ? body.judith_handoff
+    : null;
+
   const submissionId = typeof body.submission_id === 'string' && UUID.test(body.submission_id)
     ? body.submission_id.toLowerCase()
     : null;
@@ -113,5 +119,5 @@ export function validateLead(body, { now = new Date(), userAgent = null } = {}) 
   // Honeypot: the hidden "botcheck" checkbox only bots fill in.
   const spam = Boolean(body.botcheck) && body.botcheck !== 'false';
 
-  return { ok: true, lead, submissionId, spam };
+  return { ok: true, lead, submissionId, spam, judithHandoff };
 }

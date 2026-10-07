@@ -169,6 +169,23 @@ export function buildDashboard(raw, now = new Date()) {
   };
 }
 
+/**
+ * The Judith AI funnel for the period, or null when there's nothing yet (the
+ * app shows an empty state). Each rate is against the step before it, plus
+ * the two end-to-end ones: conversation → lead and lead → won.
+ */
+export function buildJudith(f) {
+  if (!f || (!f.conversations && !f.leads)) return null;
+  return {
+    ...f,
+    qualified_rate: rate(f.qualified, f.conversations),
+    handoff_rate: rate(f.handoff_shown, f.conversations),
+    click_rate: rate(f.handoff_clicked, f.handoff_shown),
+    lead_rate: rate(f.leads, f.conversations),
+    won_rate: rate(f.won, f.leads),
+  };
+}
+
 /** GET /api/dashboard?range=7d|30d|this_month|previous_month|custom[&from=YYYY-MM-DD&to=YYYY-MM-DD] */
 export function createDashboardHandler(getDeps, { log = defaultLog, now = () => new Date() } = {}) {
   return async function handler(req, res) {
@@ -192,8 +209,16 @@ export function createDashboardHandler(getDeps, { log = defaultLog, now = () => 
       }
 
       const at = now();
-      const raw = await deps.db.dashboard({ range, from, to, now: at.toISOString() });
-      return send(res, 200, buildDashboard(raw, at));
+      const args = { range, from, to, now: at.toISOString() };
+      const [raw, funnel] = await Promise.all([
+        deps.db.dashboard(args),
+        // Judith's numbers are an extra; if they fail, the dashboard still loads.
+        deps.db.judithFunnel(args).catch((err) => {
+          log.error('judith_funnel_failed', { error: String(err && err.message || err) });
+          return null;
+        }),
+      ]);
+      return send(res, 200, { ...buildDashboard(raw, at), judith: buildJudith(funnel) });
     } catch (err) {
       log.error('dashboard_api_error', { error: String(err && err.message || err) });
       return send(res, 500, { error: 'server_error' });

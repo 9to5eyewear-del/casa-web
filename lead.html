@@ -530,6 +530,26 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
 .btn-arrow { transition: transform 0.2s; }
 .btn-primary:hover .btn-arrow { transform: translateX(-3px); }
 
+/* Judith AI handoff: what the visitor already told Judith */
+.judith-note {
+  display: flex; align-items: center; gap: 0.75rem;
+  margin: 0 0 1.25rem; padding: 0.75rem 0.9rem;
+  background: rgba(201,169,110,0.09); border: 1px solid rgba(201,169,110,0.35); border-radius: 4px;
+  font-size: 0.85rem; line-height: 1.5; color: var(--on-surface, #2f3430);
+}
+.judith-note[hidden] { display: none; }
+.judith-note-mark {
+  flex: none; width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: #f3efe6; color: #8a672a; box-shadow: inset 0 0 0 1px rgba(201,169,110,.55);
+}
+.judith-note-mark svg { width: 58%; height: 58%; }
+.judith-note-body { flex: 1; min-width: 0; }
+.judith-note-body strong { display: block; font-weight: 600; font-size: 0.78rem; color: #625e51; }
+.judith-note-edit {
+  flex: none; min-height: 44px; padding: 0 0.5rem; background: none; border: 0;
+  color: #625e51; text-decoration: underline; font: inherit; font-size: 0.8rem; cursor: pointer;
+}
+
 .btn-skip {
   display: block;
   text-align: center;
@@ -767,6 +787,13 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
       </div>
     </div>
 
+    <!-- Came from Judith AI: what's already filled in -->
+    <div class="judith-note" id="judithNote" role="status" hidden>
+      <span class="judith-note-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V9"/><path d="M12 13c-3.5 0-6-2.4-6-6 3.5 0 6 2.4 6 6z"/><path d="M12 10c0-3.6 2.5-6 6-6 0 3.6-2.5 6-6 6z"/><path d="M12 17c2.6 0 4.6-1.7 4.6-4.4-2.6 0-4.6 1.7-4.6 4.4z"/></svg></span>
+      <div class="judith-note-body"><strong>מהשיחה עם יהודית</strong><span id="judithNoteText"></span></div>
+      <button type="button" class="judith-note-edit" onclick="editJudithPrefill()">שינוי</button>
+    </div>
+
     <!-- Back -->
     <button class="btn-back" id="backBtn" onclick="goBack()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg>
@@ -928,7 +955,7 @@ input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.2); cursor
       <div class="field">
         <label class="field-label" for="f-date">בחרי תאריך</label>
         <input type="date" id="f-date" oninput="onDateInput(this)"/>
-        <div class="field-hint">בחרי תאריך או טווח משוער ונבדוק זמינות</div>
+        <div class="field-hint" id="date-hint">בחרי תאריך או טווח משוער ונבדוק זמינות</div>
         <div class="field-error" id="e-date">אנא בחרי תאריך עתידי</div>
       </div>
       <div class="field">
@@ -1130,7 +1157,15 @@ const s = {
   date:'', urgency:'',
   budget: 2000, budgetSkipped: false,
   notes:'',
+  productionType: '',
+  done: new Set(),   // steps already answered in the chat with Judith (skipped)
 };
+
+// Arrived from Judith AI (the homepage assistant): the lead keeps that source,
+// and the handoff token loads what the visitor already told her.
+const PARAMS = new URLSearchParams(location.search);
+const LEAD_SOURCE = PARAMS.get('source') === 'judith_ai' ? 'judith_ai' : 'lead_page';
+const JUDITH_TOKEN = LEAD_SOURCE === 'judith_ai' && /^[A-Za-z0-9_-]{20,64}$/.test(PARAMS.get('h') || '') ? PARAMS.get('h') : null;
 
 const WEB3_KEY = '6aae6eda-4942-498e-879b-44b541f04334';
 
@@ -1142,13 +1177,17 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('f-date').setAttribute('min', today);
   updateProgress();
   restoreLocal();
+  prefillFromJudith();
 });
 
 // ═══════════════════════════════
 //  PROGRESS
 // ═══════════════════════════════
 // Bridal prep has no budget question; it's only for productions / shoots.
-function flow() { return s.service === 'bride' ? [1, 2, 3, 4, 6] : [1, 2, 3, 4, 5, 6]; }
+function flow() {
+  const all = s.service === 'bride' ? [1, 2, 3, 4, 6] : [1, 2, 3, 4, 5, 6];
+  return all.filter(n => n === s.step || !s.done.has(n));
+}
 function stepAfter(n) { return flow()[flow().indexOf(n) + 1]; }
 function stepBefore(n) { return flow()[flow().indexOf(n) - 1]; }
 
@@ -1160,7 +1199,7 @@ function updateProgress() {
   document.getElementById('progLabel').textContent = `שלב ${pos} מתוך ${total}`;
   const num = document.querySelector(`.step[data-step="${s.step}"] .step-num`);
   if (num) num.textContent = `שלב ${pos} מתוך ${total}`;
-  document.getElementById('backBtn').style.display = s.step > 1 ? 'flex' : 'none';
+  document.getElementById('backBtn').style.display = flow().indexOf(s.step) > 0 ? 'flex' : 'none';
 }
 
 // ═══════════════════════════════
@@ -1471,6 +1510,7 @@ function submitForm() {
     `תאריך: ${dateStr}\n` +
     (s.service !== 'bride' ? `תקציב: ${budgetStr}\n` : '') +
     `הערות: ${s.notes || '—'}\n` +
+    (LEAD_SOURCE === 'judith_ai' ? `מקור: יהודית AI\n` : '') +
     `─────────────────────\n` +
     `ניקוד ליד: ${scoreLabel}\n` +
     `זמן פנייה: ${new Date().toLocaleString('he-IL')}`;
@@ -1480,7 +1520,8 @@ function submitForm() {
   setSubmitting(true);
   window.CasaLeads.submit({
     lead: {
-      source: 'lead_page',
+      source: LEAD_SOURCE,
+      judith_handoff: JUDITH_TOKEN,
       name: s.name,
       phone: s.phone,
       email: s.email || null,
@@ -1490,12 +1531,13 @@ function submitForm() {
       urgency: URGENCY_CODE[s.urgency] || null,
       companions: s.service === 'bride' ? s.companions : null,
       budget: s.service === 'bride' || s.budgetSkipped ? null : s.budget,
+      production_type: s.productionType || null,
       message: s.notes || null,
     },
     web3: {
       access_key: WEB3_KEY,
       subject: `ליד חדש – ${serviceDetail} | ${s.name} | ${scoreLabel}`,
-      from_name: 'Casa Mancini – דף פנייה',
+      from_name: LEAD_SOURCE === 'judith_ai' ? 'Casa Mancini – יהודית AI' : 'Casa Mancini – דף פנייה',
       message: msg,
       name: s.name,
       phone: s.phone,
@@ -1549,6 +1591,92 @@ function showSubmitError(summaryText) {
   wa.textContent = 'לשלוח את הפרטים בוואטסאפ';
   p.append('משהו השתבש בשליחה. אפשר לנסות שוב, או ', wa, '.');
   btn.insertAdjacentElement('afterend', p);
+}
+
+// ═══════════════════════════════
+//  JUDITH AI PREFILL
+// ═══════════════════════════════
+// Fills in what the visitor already told Judith and skips those steps, so
+// only what's missing is asked. Anything uncertain is left for the visitor.
+async function prefillFromJudith() {
+  if (!JUDITH_TOKEN) return;
+  let p;
+  try {
+    const r = await fetch(`/api/judith/handoff?token=${encodeURIComponent(JUDITH_TOKEN)}`, { headers: { Accept: 'application/json' } });
+    if (!r.ok) return;
+    p = (await r.json()).prefill;
+  } catch (e) { return; }
+  if (!p || s.step !== 1) return; // the visitor already started typing on their own
+
+  const known = [];
+  if (p.name && p.name.trim().length >= 2) {
+    document.getElementById('f-name').value = p.name.trim();
+    s.name = p.name.trim();
+    s.done.add(1);
+  }
+
+  const service = { bridal:'bride', fashion:'fashion', product:'product', production:'production', other:'other' }[p.lead_type];
+  if (service) {
+    selectService(service, document.getElementById(`chip-${service}`));
+    known.push(serviceLabel(service));
+    let complete = false;
+    if (service === 'bride') {
+      if (Number.isInteger(p.companions) && p.companions >= 0 && p.companions <= MAX_COMPANIONS) {
+        changeCompanions(p.companions - s.companions);
+        known.push(`${p.companions} מלוות`);
+        complete = true;
+      }
+    } else if (service === 'other') {
+      if (p.lead_subtype) { document.getElementById('service-other-text').value = p.lead_subtype; known.push(p.lead_subtype); complete = true; }
+    } else if (p.lead_subtype) {
+      const chips = [...document.querySelectorAll(`#${service}-sub-chips .sub-chip`)];
+      const chip = chips.find(c => c.textContent.trim() === p.lead_subtype) || chips.find(c => c.textContent.trim() === 'אחר');
+      selectSubChip(service, chip.textContent.trim(), chip);
+      if (chip.textContent.trim() === 'אחר') document.getElementById(`${service}-other-text`).value = p.lead_subtype;
+      known.push(p.lead_subtype);
+      complete = true;
+    }
+    if (complete) s.done.add(3);
+  }
+  s.productionType = p.production_type || '';
+
+  const today = new Date().toISOString().split('T')[0];
+  const dateEl = document.getElementById('f-date');
+  if (p.event_date && p.event_date >= today) {
+    dateEl.value = p.event_date;
+    s.date = p.event_date;
+    onDateInput(dateEl);
+    known.push(formatDate(p.event_date));
+    s.done.add(4);
+  } else if (p.urgency) {
+    const label = Object.keys(URGENCY_CODE).find(k => URGENCY_CODE[k] === p.urgency);
+    const chip = [...document.querySelectorAll('.urgency-chips .sub-chip')].find(c => c.textContent.trim() === label);
+    if (chip) { selectUrgency(label, chip); known.push(label); s.done.add(4); }
+  } else if (p.event_date_text) {
+    document.getElementById('date-hint').textContent = `סיפרת ליהודית: ${p.event_date_text} — בחרי תאריך או טווח ונבדוק זמינות`;
+  }
+
+  if (service && service !== 'bride' && Number.isInteger(p.budget)) {
+    const range = document.getElementById('budget-range');
+    range.value = Math.min(10000, Math.max(500, Math.round(p.budget / 250) * 250));
+    updateBudget(range);
+    s.budget = parseInt(range.value);
+    s.done.add(5);
+  }
+
+  if (!known.length && !s.done.size) return;
+  document.getElementById('judithNoteText').textContent = known.length ? known.join(' · ') : 'הפרטים שסיפרת כבר כאן';
+  document.getElementById('judithNote').hidden = false;
+  const first = flow().find(n => !s.done.has(n));
+  if (first && first !== s.step) showStep(first);
+  else updateProgress();
+}
+
+// "שינוי": go through every step again, with Judith's answers still filled in.
+function editJudithPrefill() {
+  s.done.clear();
+  document.getElementById('judithNote').hidden = true;
+  updateProgress();
 }
 
 // ═══════════════════════════════

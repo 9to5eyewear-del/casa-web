@@ -1,7 +1,9 @@
 // The values the public API accepts. The database stores source / lead_type as
-// open text, so adding one here (e.g. 'judith_ai') needs no migration.
+// open text, so adding one here needs no migration.
 
-export const SOURCES = new Set(['website_form', 'lead_page']);
+// judith_ai: the visitor came through Judith (the homepage AI assistant); the
+// form on /lead keeps that source even though it's the page that submits.
+export const SOURCES = new Set(['website_form', 'lead_page', 'judith_ai']);
 
 export const LEAD_TYPES = new Set(['bridal', 'production', 'fashion', 'product', 'other']);
 
@@ -17,8 +19,7 @@ export const LEAD_TYPE_LABELS = {
   other: 'אחר',
 };
 
-// Display names; an unknown source (e.g. a future 'judith_ai' before it is
-// listed here) still shows up everywhere under its raw key.
+// Display names; an unknown source still shows up everywhere under its raw key.
 export const SOURCE_LABELS = {
   website_form: 'טופס באתר',
   lead_page: 'דף ליד',

@@ -1,6 +1,10 @@
 // All lead data access goes through the SQL functions in db/migrations, so
 // dedupe / status rules run atomically in Postgres.
 
+// sqlRpc serializes objects but passes arrays through (for uuid[] args);
+// a jsonb array has to go as text.
+const jsonArg = (v) => JSON.stringify(v);
+
 export function createDb(rpc) {
   return {
     ingestLead: (lead, { submissionId, ipHash, rateMax, rateWindowSeconds }) =>
@@ -48,6 +52,25 @@ export function createDb(rpc) {
     dashboard: ({ range, from = null, to = null, now = null }) =>
       rpc('dashboard', { p_range: range, p_from: from, p_to: to, p_now: now }),
     claimDueReminders: (hours) => rpc('claim_due_reminders', { p_hours: hours }),
+
+    // Judith AI (db/migrations/005)
+    judithGate: (ipHash, sessionId, { ipMax, ipWindowSeconds, ipDailyMax, globalDailyMax, sessionMaxTurns }) =>
+      rpc('judith_gate', {
+        p_ip_hash: ipHash, p_session_id: sessionId, p_ip_max: ipMax, p_ip_window_seconds: ipWindowSeconds,
+        p_ip_daily_max: ipDailyMax, p_global_daily_max: globalDailyMax, p_session_max_turns: sessionMaxTurns,
+      }),
+    judithLoad: (sessionId) => rpc('judith_load', { p_session_id: sessionId }),
+    judithSaveTurn: ({ sessionId, ipHash, messages, state, qualified, handoffReady, leadSummary, handoffToken, handoffTtlSeconds }) =>
+      rpc('judith_save_turn', {
+        p_session_id: sessionId, p_ip_hash: ipHash, p_messages: jsonArg(messages), p_state: state,
+        p_qualified: qualified, p_handoff_ready: handoffReady, p_lead_summary: leadSummary,
+        p_handoff_token: handoffToken, p_handoff_ttl_seconds: handoffTtlSeconds,
+      }),
+    judithHandoff: (token) => rpc('judith_handoff', { p_token: token }),
+    judithAttachLead: (token, leadId) => rpc('judith_attach_lead', { p_token: token, p_lead_id: leadId }),
+    judithReset: (sessionId) => rpc('judith_reset', { p_session_id: sessionId }),
+    judithFunnel: ({ range, from = null, to = null, now = null }) =>
+      rpc('judith_funnel', { p_range: range, p_from: from, p_to: to, p_now: now }),
   };
 }
 

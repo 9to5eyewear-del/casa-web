@@ -134,7 +134,7 @@ test('sql rpc: named arguments, JSON-encoded objects, safe function names', asyn
 
 test('every /api path the PWA and the forms call exists as a route', async () => {
   const { readFileSync, existsSync } = await import('node:fs');
-  const files = ['leadlive/app.js', 'leadlive/sw.js', 'js/lead-submit.js'];
+  const files = ['leadlive/app.js', 'leadlive/sw.js', 'js/lead-submit.js', 'js/judith-loader.js', 'js/judith.js', 'lead.html'];
   const paths = new Set();
   for (const f of files) {
     for (const m of readFileSync(new URL(`../${f}`, import.meta.url), 'utf8').matchAll(/\/api\/[a-z_/]+/g)) paths.add(m[0].replace(/\/$/, ''));
