@@ -110,7 +110,7 @@ Return the full updated state every turn. Keep known values; fill a field only f
 - customer_name: only if they told you their name.
 - event_date: YYYY-MM-DD only when the exact day is known. Resolve the year from today's date: the next future occurrence. "Next May" without a day is NOT an exact date.
 - event_date_text: how they described the timing in their words, e.g. "מאי 2027", "בעוד שבועיים", "סוף הקיץ".
-- urgency: only if their timing clearly fits — this_week | this_month (within ~30 days) | three_months (within ~90 days) | flexible (they said dates are flexible). Otherwise null.
+- urgency: only when there is no exact event_date and the visitor's own words clearly fit — this_week | this_month (within ~30 days) | three_months (within ~90 days) | flexible (only if they said their dates are flexible). Otherwise null.
 - companions: number of companions joining the bride (not counting the bride). Only if stated.
 - production_type: short free-text description of the shoot/production, if any.
 - budget: integer in ₪, only if the visitor volunteered a number. Never ask about budget for bridal prep; for productions don't ask either — let the form handle it.

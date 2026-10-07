@@ -341,6 +341,9 @@ test('model output is validated: bad enums, past/invalid dates and absurd number
   assert.equal(sanitizeState({ event_date: '2027-02-30' }, NOW).event_date, null);
   assert.equal(sanitizeState({ event_date: '2027-05-14' }, NOW).event_date, '2027-05-14');
   assert.deepEqual(mergeState({ companions: 4 }, sanitizeState({}, NOW)).companions, 4);
+  // an exact date drops a time frame the model added on its own
+  assert.equal(mergeState({}, sanitizeState({ event_date: '2027-05-14', urgency: 'flexible' }, NOW)).urgency, null);
+  assert.equal(mergeState({}, sanitizeState({ urgency: 'this_month' }, NOW)).urgency, 'this_month');
 });
 
 test('parseResponse reads the text block by type (a leading thinking block is skipped)', () => {

@@ -134,6 +134,9 @@ export function sanitizeState(raw, now = new Date()) {
 export function mergeState(prev, next) {
   const out = {};
   for (const k of STATE_FIELDS) out[k] = next[k] ?? prev?.[k] ?? null;
+  // An exact date says it all; a time frame is only for when there's none
+  // (the model sometimes adds "flexible" the visitor never said).
+  if (out.event_date) out.urgency = null;
   return out;
 }
 
