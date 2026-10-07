@@ -21,3 +21,25 @@ export function judithDeps() {
     judithLimits: { ...DEFAULT_LIMITS, globalDailyMax: positiveInt(env.JUDITH_DAILY_LIMIT, DEFAULT_LIMITS.globalDailyMax) },
   };
 }
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+// For the Claude card in LeadLive (usage.js). ANTHROPIC_ADMIN_KEY (optional,
+// organizations only) turns on Anthropic's Cost API. ANTHROPIC_CREDIT_BUDGET
+// (USD) with ANTHROPIC_CREDIT_SINCE (YYYY-MM-DD) turns on the estimated balance.
+export function claudeUsageDeps() {
+  const base = productionDeps();
+  const env = process.env;
+  const budget = Number((env.ANTHROPIC_CREDIT_BUDGET || '').trim());
+  const since = (env.ANTHROPIC_CREDIT_SINCE || '').trim();
+  return {
+    db: base.db,
+    get requireStaff() { return base.requireStaff; },
+    claude: {
+      enabled: Boolean((env.ANTHROPIC_API_KEY || '').trim()) && env.JUDITH_ENABLED !== '0',
+      adminKey: (env.ANTHROPIC_ADMIN_KEY || '').trim() || null,
+      creditBudget: (env.ANTHROPIC_CREDIT_BUDGET || '').trim() && Number.isFinite(budget) && budget >= 0 ? budget : null,
+      creditSince: ISO_DATE.test(since) && !Number.isNaN(Date.parse(since)) ? since : null,
+    },
+  };
+}

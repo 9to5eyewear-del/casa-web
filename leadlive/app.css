@@ -316,6 +316,26 @@ h1, h2, h3, p { margin: 0; }
 .metric span { font-size: 13px; color: var(--ink-soft); }
 
 /* ── Lead list tools ── */
+/* Claude API card, under the Judith funnel */
+.judith-stack { display: grid; gap: 12px; }
+.claude { display: grid; gap: 8px; }
+.claude-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.claude-head h3 { font-size: 15px; font-weight: 500; color: var(--olive); direction: ltr; }
+.claude-head .link-btn { font-size: 13px; }
+.claude-head .link-btn:disabled { color: var(--ink-faint); text-decoration: none; }
+.claude-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 14px; }
+.claude-row span { color: var(--ink-soft); }
+.claude-row b { font-weight: 500; font-variant-numeric: tabular-nums; }
+.claude-row b.is-ok { color: var(--sage); }
+.claude-row b.is-warn { color: var(--ochre); }
+.claude-row b.is-bad { color: var(--brick); }
+.claude-alert { font-size: 13px; padding: 6px 10px; border-radius: var(--r-sm); }
+.claude-alert.is-ok { background: var(--sage-wash); color: var(--sage); }
+.claude-alert.is-warn { background: var(--ochre-wash); color: var(--ochre); }
+.claude-alert.is-bad { background: var(--brick-wash); color: var(--brick); }
+.claude-na { font-size: 14px; color: var(--ink-soft); }
+.claude-note { font-size: 12px; line-height: 1.5; color: var(--ink-soft); border-top: 1px solid var(--ghost); padding-top: 8px; margin-top: 2px; }
+
 .list-tools { display: flex; gap: 8px; }
 .search { position: relative; flex: 1; }
 .search svg { position: absolute; inset-inline-start: 12px; top: 50%; width: 19px; height: 19px; transform: translateY(-50%); fill: var(--ink-faint); pointer-events: none; }

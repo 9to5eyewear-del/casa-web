@@ -519,6 +519,74 @@
 
   function breakdownBlock(rows, nameOf, emptyText) {
     if (!rows.length) return emptyState('אין עדיין נתונים', emptyText);
+  // ── Claude API card (inside the Judith block) ──
+  // Loaded on its own, so a slow or failing Anthropic never holds up the
+  // dashboard. The server caches what it gets from Anthropic; there is no API
+  // for the real credit balance, so only an estimate is ever shown.
+  const CLAUDE_STALE_MS = 5 * 60000;
+  const CLAUDE_STATE = {
+    active: ['פעיל', 'ok'], idle: ['מוגדר · עדיין אין שיחות', ''], off: ['כבוי', ''],
+    no_credit: ['הקרדיט נגמר', 'bad'], auth_error: ['מפתח API לא תקין', 'bad'], error: ['שגיאה בקריאה האחרונה', 'warn'],
+  };
+  const CREDIT_LEVEL = {
+    ok: ['🟢 תקין', 'ok'], low: ['🟠 קרדיט נמוך', 'warn'],
+    critical: ['🔴 קרדיט כמעט נגמר', 'bad'], empty: ['🔴 יהודית עלולה להיות לא זמינה', 'bad'],
+  };
+  const usd = (x) => (x > 0 && x < 0.01 ? '<$0.01' : `${x < 0 ? '−' : ''}$${Math.abs(x).toFixed(2)}`);
+  function agoText(ts) {
+    const m = Math.floor((Date.now() - Date.parse(ts)) / 60000);
+    return m < 1 ? 'עכשיו' : m < 60 ? `לפני ${m} דק׳` : `לפני ${Math.floor(m / 60)} שע׳`;
+  }
+
+  function loadClaude({ refresh = false } = {}) {
+    if (state.claudeLoading) return;
+    if (!refresh && state.claude && Date.now() - state.claudeAt < CLAUDE_STALE_MS) return;
+    state.claudeLoading = true;
+    paintClaude();
+    api(`/api/judith/usage${refresh ? '?refresh=1' : ''}`)
+      .then((d) => { state.claude = d; state.claudeAt = Date.now(); state.claudeError = false; })
+      .catch((err) => { if (err.status !== 401) state.claudeError = true; })
+      .finally(() => { state.claudeLoading = false; paintClaude(); });
+  }
+  function paintClaude() { document.querySelectorAll('.claude').forEach((el) => el.replaceWith(claudeCard())); }
+
+  function claudeCard() {
+    const c = state.claude;
+    const row = (label, value, tone) => h('div', { class: 'claude-row' }, h('span', null, label), h('b', { class: tone ? `is-${tone}` : null }, value));
+    const head = h('div', { class: 'claude-head' }, h('h3', null, 'Claude API'),
+      h('button', { type: 'button', class: 'link-btn', disabled: state.claudeLoading, onclick: () => loadClaude({ refresh: true }) },
+        state.claudeLoading ? 'מרענן…' : 'רענון'));
+    if (!c) {
+      return h('div', { class: 'claude panel' }, head, state.claudeError
+        ? h('p', { class: 'claude-na' }, 'נתוני Claude אינם זמינים כרגע')
+        : h('div', { class: 'sk sk-line' }));
+    }
+    const [stateText, stateTone] = CLAUDE_STATE[c.status.state] || [c.status.state, ''];
+    const u = c.usage, b = c.budget;
+    const notes = [];
+    if (state.claudeError) notes.push('הרענון האחרון נכשל — מוצגים הנתונים הקודמים.');
+    if (u.stale) notes.push('Anthropic לא זמין כרגע — מוצגים הנתונים האחרונים שהתקבלו.');
+    if (u.anthropic_error) notes.push('Anthropic לא זמין כרגע — הנתונים לפי ספירת יהודית.');
+    notes.push(u.source === 'anthropic'
+      ? 'עלויות לפי Cost API של Anthropic (כל הארגון).'
+      : 'עלויות לפי הטוקנים ש-Anthropic מדווח על כל שיחה של יהודית, לפי המחירון הרשמי.');
+    if (u.unpriced_calls) notes.push(`${u.unpriced_calls} קריאות במודל ללא מחיר ידוע אינן כלולות בסכום.`);
+    if (b) notes.push(`היתרה המשוערת היא ${usd(b.budget_usd)} שהוגדרו, פחות השימוש מאז ${fmtDate(b.since)}. קרדיט שנוסף ידנית ב-Console לא נכלל.`);
+    else notes.push('יתרת קרדיט אינה זמינה דרך ה-API של Anthropic.');
+    const [levelText, levelTone] = b ? CREDIT_LEVEL[b.level] : [];
+    return h('div', { class: 'claude panel' }, head,
+      row('סטטוס', stateText, stateTone),
+      b && row('יתרה משוערת', usd(b.remaining_usd), levelTone),
+      b && h('p', { class: `claude-alert is-${levelTone}` }, levelText),
+      row('שימוש החודש', usd(u.month_usd)),
+      row('היום', usd(u.today_usd)),
+      row('קריאות API החודש', u.calls_month),
+      row('קריאות API היום', u.calls_today),
+      row('עודכן', h('span', { class: 'claude-time', 'data-ts': c.updated_at }, agoText(c.updated_at))),
+      h('p', { class: 'claude-note' }, notes.join(' ')));
+  }
+  setInterval(() => document.querySelectorAll('.claude-time').forEach((el) => { el.textContent = agoText(el.dataset.ts); }), 20000);
+
     return h('div', { class: 'rows panel' }, rows.map((r) => h('div', { class: 'row' },
       h('div', { class: 'row-top' }, h('span', { class: 'row-name' }, nameOf(r)), h('span', { class: 'row-share' }, pct(r.share.rate))),
       bar(r.share.rate),
@@ -631,12 +699,13 @@
         block('pipeline', 'המשפך', pipelineBlock(d.pipeline)),
         block('sources', 'מאיפה מגיעים הלידים?', breakdownBlock(d.sources, (r) => sourceLabel(r.source), 'אין לידים בתקופה.')),
         block('services', 'מה הלקוחות מחפשים?', breakdownBlock(d.services, (r) => TYPE[r.lead_type] || r.lead_type, 'אין לידים בתקופה.')),
-        block('judith', 'יהודית AI', judithBlock(d.judith)),
+        block('judith', 'יהודית AI', h('div', { class: 'judith-stack' }, judithBlock(d.judith), claudeCard())),
         h('section', { class: 'block wide' }, h('div', { class: 'block-head' }, h('h2', null, 'מדדים נוספים'),
           h('span', { class: 'block-note' }, 'המרה = נסגרו ÷ לידים שנכנסו בתקופה')), metricsBlock(d))));
   }
 
   // ══════════════════ Lead list ══════════════════
+    loadClaude();
 
   function prioMark(l) {
     return l.priority ? h('span', { class: `prio prio-${l.priority.level}` }, PRIO[l.priority.level]) : null;

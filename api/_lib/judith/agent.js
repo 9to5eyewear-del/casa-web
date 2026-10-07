@@ -179,5 +179,12 @@ export async function runTurn({ client, model = DEFAULT_MODEL, history, message,
   } catch (err) {
     throw new JudithUnavailable('api_error', err);
   }
-  return { ...parseResponse(response, now), usage: response.usage || null };
+  // A reply we can't use (refusal, truncated, bad JSON) was still billed.
+  const usage = response.usage || null;
+  try {
+    return { ...parseResponse(response, now), usage, model: response.model || model };
+  } catch (err) {
+    if (err instanceof JudithUnavailable) Object.assign(err, { usage, model: response.model || model });
+    throw err;
+  }
 }

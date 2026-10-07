@@ -9,6 +9,7 @@ import { send, readJson, header, clientIp, hashIp, query } from '../http.js';
 import { defaultLog, UUID } from '../handlers.js';
 import { cleanText } from '../validate.js';
 import { runTurn, mergeState, JudithUnavailable, DEFAULT_MODEL } from './agent.js';
+import { classifyError, callCost } from './usage.js';
 
 export const MAX_MESSAGE_CHARS = 600;
 const STORED_MESSAGES = 40;
@@ -67,6 +68,22 @@ export function createChatHandler(getDeps, { log = defaultLog, now = () => new D
   const unavailable = (res, status, extra = {}) =>
     send(res, status, { error: 'unavailable', message: FALLBACK_MESSAGE, handoff_url: LEAD_URL, whatsapp_url: WHATSAPP_URL, ...extra });
 
+  // One row per Claude request, for the usage card in LeadLive. Best effort:
+  // a failure here must never cost the visitor their reply.
+  async function recordCall(deps, { model, usage, error }) {
+    const u = usage || {};
+    try {
+      await deps.db.claudeRecordCall({
+        model, ok: !error, error,
+        input: u.input_tokens ?? 0, cacheWrite: u.cache_creation_input_tokens ?? 0,
+        cacheRead: u.cache_read_input_tokens ?? 0, output: u.output_tokens ?? 0,
+        estCostUsd: error ? 0 : callCost(model, u),
+      });
+    } catch (err) {
+      log.error('claude_record_failed', { error: String(err && err.message || err).slice(0, 200) });
+    }
+  }
+
   async function turn(req, res, deps) {
     const { body, error } = readJson(req);
     if (error) return send(res, error === 'too_large' ? 413 : 400, { error });
@@ -104,11 +121,16 @@ export function createChatHandler(getDeps, { log = defaultLog, now = () => new D
     } catch (err) {
       const reason = err instanceof JudithUnavailable ? err.reason : 'unexpected';
       const cause = err?.cause || err;
+      // api_error: the request failed. Anything else: Claude answered (and billed) but the reply was unusable.
+      await recordCall(deps, reason === 'api_error' || reason === 'unexpected'
+        ? { model: deps.judithModel, usage: null, error: reason === 'api_error' ? classifyError(cause) : 'other' }
+        : { model: err.model || deps.judithModel, usage: err.usage, error: null });
       log.error('judith_claude_failed', { session_id: sessionId, reason, status: cause?.status ?? null,
         error: String(cause?.message || cause).slice(0, 300) });
       return unavailable(res, 503, { session_id: sessionId });
     }
 
+    await recordCall(deps, { model: out.model || deps.judithModel, usage: out.usage, error: null });
     const state = mergeState(prevState, out.state);
     const qualified = Boolean(session?.qualified) || out.qualified;
     const messages = [...history, { role: 'user', content: message }, { role: 'assistant', content: out.message }]
@@ -128,6 +150,7 @@ export function createChatHandler(getDeps, { log = defaultLog, now = () => new D
       qualified, handoff: Boolean(saved.handoff_token), whatsapp: out.whatsapp, intent: state.intent, lead_type: state.lead_type,
       model: deps.judithModel, input_tokens: u.input_tokens ?? null, cache_write: u.cache_creation_input_tokens ?? null,
       cache_read: u.cache_read_input_tokens ?? null, output_tokens: u.output_tokens ?? null,
+      est_cost_usd: callCost(out.model || deps.judithModel, u),
     });
     // Only show the button when Judith actually offered it this turn.
     return send(res, 200, {

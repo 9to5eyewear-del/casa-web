@@ -71,6 +71,16 @@ export function createDb(rpc) {
     judithReset: (sessionId) => rpc('judith_reset', { p_session_id: sessionId }),
     judithFunnel: ({ range, from = null, to = null, now = null }) =>
       rpc('judith_funnel', { p_range: range, p_from: from, p_to: to, p_now: now }),
+
+    // Claude usage for LeadLive (db/migrations/007)
+    claudeRecordCall: ({ model, ok, error = null, input = 0, cacheWrite = 0, cacheRead = 0, output = 0, estCostUsd = null }) =>
+      rpc('claude_record_call', {
+        p_model: model, p_ok: ok, p_error: error, p_input: input,
+        p_cache_write: cacheWrite, p_cache_read: cacheRead, p_output: output, p_est_cost: estCostUsd,
+      }),
+    claudeUsage: ({ now, since = null }) => rpc('claude_usage', { p_now: now, p_since: since }),
+    claudeCostCacheGet: () => rpc('claude_cost_cache_get', {}),
+    claudeCostCachePut: (data, fetchedAt) => rpc('claude_cost_cache_put', { p_data: data, p_fetched_at: fetchedAt }),
   };
 }
 
