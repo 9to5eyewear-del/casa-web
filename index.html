@@ -507,6 +507,44 @@
       .svc-chip:has(input:focus-visible) { outline: 2px solid #625e51; outline-offset: 3px; }
       .svc-group[aria-invalid="true"] .svc-chip { border-color: #9e422c; }
       .cond-fields { animation: fade-up .45s ease-out; }
+      /* ── Contact wizard (same 6-step flow as /lead) ── */
+      .wz { max-width: 36rem; margin: 0 auto; scroll-margin-top: 7.5rem; } /* clears the fixed header */
+      .wz-progress-meta { display: flex; justify-content: space-between; font-size: .75rem; letter-spacing: .12em; color: #78716c; margin-bottom: .6rem; }
+      .wz-track { height: 2px; background: rgba(98,94,81,0.15); }
+      .wz-fill { height: 100%; width: 0; background: #625e51; transition: width .5s cubic-bezier(.16,1,.3,1); }
+      .wz-back { display: inline-flex; align-items: center; gap: .35rem; margin-top: 1rem; min-height: 44px; padding: 0; font-size: .85rem; color: #78716c; background: none; border: 0; cursor: pointer; }
+      .wz-back:hover { color: #625e51; }
+      .wz-step { display: none; padding-top: 1.75rem; }
+      .wz-step.is-active { display: block; animation: fade-up .45s ease-out; }
+      .wz-title { font-size: 1.9rem; line-height: 1.25; margin-bottom: 2rem; outline: none; }
+      .wz-title strong { font-weight: 400; color: #625e51; }
+      @media (min-width: 768px) { .wz-title { font-size: 2.4rem; } }
+      .wz-field { margin-bottom: 1.75rem; }
+      .wz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+      .wz-grid .svc-chip { width: 100%; background: transparent; color: #2f3430; }
+      .wz-grid .svc-chip.wide { grid-column: 1 / -1; }
+      .svc-chip[aria-pressed="true"] { background: #625e51; color: #fef7e6; border-color: #625e51; }
+      .svc-chip:focus-visible, .wz-chip:focus-visible, .wz-counter button:focus-visible { outline: 2px solid #625e51; outline-offset: 3px; }
+      .wz-sub { margin-top: 1.75rem; animation: fade-up .35s ease-out; }
+      .wz-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+      .wz-chip { min-height: 44px; padding: .5rem 1.1rem; border: 1px solid rgba(98,94,81,0.25); border-radius: 2px; background: transparent; font-size: .9rem; color: #2f3430; cursor: pointer; transition: all .2s; }
+      .wz-chip:hover { border-color: rgba(98,94,81,0.55); }
+      .wz-chip[aria-pressed="true"] { background: #625e51; border-color: #625e51; color: #fef7e6; }
+      .wz-other { margin-top: .75rem; }
+      .wz-counter { display: flex; align-items: center; gap: 1.25rem; margin: .25rem 0 .5rem; }
+      .wz-counter button { width: 44px; height: 44px; border: 1px solid rgba(98,94,81,0.3); border-radius: 50%; background: transparent; font-size: 1.25rem; line-height: 1; color: #625e51; cursor: pointer; }
+      .wz-counter button:disabled { opacity: .3; cursor: not-allowed; }
+      .wz-counter output { min-width: 2ch; text-align: center; font-size: 1.6rem; font-weight: 300; }
+      .wz-budget { font-size: 2.4rem; font-weight: 300; text-align: center; margin-bottom: 1.25rem; color: #2f3430; }
+      .wz-range { width: 100%; height: 4px; border-radius: 2px; appearance: none; -webkit-appearance: none; cursor: pointer; }
+      .wz-range::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #625e51; border: 3px solid #faf9f6; box-shadow: 0 1px 4px rgba(47,52,48,0.25); }
+      .wz-range::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #625e51; border: 3px solid #faf9f6; }
+      .wz-range-labels { display: flex; justify-content: space-between; font-size: .75rem; color: #a8a29e; margin-top: .6rem; }
+      .wz-actions { margin-top: 2.25rem; text-align: center; }
+      .wz-skip { display: block; margin: .75rem auto 0; min-height: 44px; padding: 0 .5rem; background: none; border: 0; font-size: .85rem; color: #78716c; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+      .wz-skip:hover { color: #625e51; }
+      .wz-count { text-align: left; font-size: .75rem; color: #a8a29e; margin-top: .3rem; }
+      @media (prefers-reduced-motion: reduce) { .wz-step.is-active, .wz-sub { animation: none; } .wz-fill { transition: none; } }
       .spinner { width: 16px; height: 16px; border: 2px solid rgba(254,247,230,0.35); border-top-color: #fef7e6; border-radius: 50%; animation: spin .8s linear infinite; }
       @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -858,80 +896,170 @@
       <p class="text-on-surface-variant font-light">השאירו פרטים ונחזור אליכם בהקדם.</p>
     </div>
 
-    <form id="contactForm" class="space-y-9" novalidate>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-        <div>
+    <!-- Same 6-step flow as /lead, styled for the main site -->
+    <form id="contactForm" class="wz" novalidate>
+      <div class="wz-progress" aria-hidden="true">
+        <div class="wz-progress-meta"><span id="wzLabel">שלב 1 מתוך 6</span><span id="wzPct">0%</span></div>
+        <div class="wz-track"><div class="wz-fill" id="wzFill"></div></div>
+      </div>
+      <button type="button" class="wz-back" id="wzBack" hidden>
+        <span aria-hidden="true">→</span> חזרה
+      </button>
+
+      <!-- Step 1: name -->
+      <div class="wz-step is-active" data-step="1" role="group" aria-labelledby="wz-t1">
+        <h3 id="wz-t1" class="wz-title font-headline font-light" tabindex="-1">שלום! <strong>איך קוראים לך?</strong></h3>
+        <div class="wz-field">
           <label for="f-name" class="field-label">שם מלא *</label>
-          <input id="f-name" name="name" type="text" class="field-input" autocomplete="name" required aria-describedby="e-name" placeholder="הכניסי את שמך"/>
+          <input id="f-name" name="name" type="text" class="field-input" autocomplete="name" placeholder="שמך המלא" aria-describedby="e-name"/>
           <p id="e-name" class="field-error" aria-live="polite"></p>
         </div>
-        <div>
+        <div class="wz-actions"><button type="button" class="btn-primary w-full sm:w-auto sm:px-20 min-h-[56px]" data-next>המשך <span aria-hidden="true">←</span></button></div>
+      </div>
+
+      <!-- Step 2: phone + email -->
+      <div class="wz-step" data-step="2" role="group" aria-labelledby="wz-t2">
+        <h3 id="wz-t2" class="wz-title font-headline font-light" tabindex="-1">מה <strong>פרטי הקשר שלך</strong>?</h3>
+        <div class="wz-field">
           <label for="f-phone" class="field-label">טלפון *</label>
-          <input id="f-phone" name="phone" type="tel" inputmode="tel" class="field-input" autocomplete="tel" required aria-describedby="e-phone" placeholder="050-0000000" dir="ltr" style="text-align:right"/>
+          <input id="f-phone" name="phone" type="tel" inputmode="tel" class="field-input" autocomplete="tel" placeholder="050-0000000" dir="ltr" style="text-align:right" aria-describedby="e-phone"/>
           <p id="e-phone" class="field-error" aria-live="polite"></p>
         </div>
-        <div class="md:col-span-2">
-          <label for="f-email" class="field-label">אימייל</label>
-          <input id="f-email" name="email" type="email" inputmode="email" class="field-input" autocomplete="email" aria-describedby="e-email" placeholder="email@example.com" dir="ltr" style="text-align:right"/>
+        <div class="wz-field">
+          <label for="f-email" class="field-label">אימייל *</label>
+          <input id="f-email" name="email" type="email" inputmode="email" class="field-input" autocomplete="email" placeholder="email@example.com" dir="ltr" style="text-align:right" aria-describedby="e-email"/>
           <p id="e-email" class="field-error" aria-live="polite"></p>
         </div>
+        <div class="wz-actions"><button type="button" class="btn-primary w-full sm:w-auto sm:px-20 min-h-[56px]" data-next>המשך <span aria-hidden="true">←</span></button></div>
       </div>
 
-      <fieldset class="svc-group" id="svcGroup" aria-describedby="e-service">
-        <legend class="field-label mb-3">בחירת שירות *</legend>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="svc-chip"><input type="radio" name="service" value="bridal" required/><span>התארגנות כלה</span></label>
-          <label class="svc-chip"><input type="radio" name="service" value="production"/><span>הפקת צילום</span></label>
+      <!-- Step 3: service -->
+      <div class="wz-step" data-step="3" role="group" aria-labelledby="wz-t3">
+        <h3 id="wz-t3" class="wz-title font-headline font-light" tabindex="-1">מה <strong>השירות שאת מחפשת</strong>?</h3>
+        <div class="wz-grid" id="svcGroup" role="group" aria-label="בחירת שירות" aria-describedby="e-service">
+          <button type="button" class="svc-chip" data-service="bride" aria-pressed="false">התארגנות כלה</button>
+          <button type="button" class="svc-chip" data-service="fashion" aria-pressed="false">צילום אופנה</button>
+          <button type="button" class="svc-chip" data-service="product" aria-pressed="false">צילום מוצר</button>
+          <button type="button" class="svc-chip" data-service="production" aria-pressed="false">הפקות</button>
+          <button type="button" class="svc-chip wide" data-service="other" aria-pressed="false">אחר</button>
         </div>
         <p id="e-service" class="field-error" aria-live="polite"></p>
-      </fieldset>
 
-      <div class="cond-fields grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8" data-when="bridal" hidden>
-        <div>
-          <label for="f-wedding-date" class="field-label">תאריך החתונה</label>
-          <input id="f-wedding-date" name="wedding_date" type="date" class="field-input" disabled/>
+        <div class="wz-sub" data-sub-for="bride" hidden>
+          <p class="field-label">כמה מלוות מגיעות?</p>
+          <div class="wz-counter">
+            <button type="button" data-companions="-1" aria-label="פחות מלוות" disabled>−</button>
+            <output id="wzCompanions" aria-live="polite">0</output>
+            <button type="button" data-companions="1" aria-label="עוד מלווה">+</button>
+          </div>
+          <p class="field-hint">החבילה כוללת עד 4 מלוות ללא תוספת תשלום. אפשר לצרף עד 2 מלוות נוספות בתוספת תשלום.</p>
         </div>
-        <div>
-          <label for="f-companions" class="field-label">מספר מלוות</label>
-          <select id="f-companions" name="companions" class="field-input" disabled aria-describedby="h-companions">
-            <option value="">בחרי</option>
-            <option value="0">ללא מלוות</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
-          </select>
-          <p id="h-companions" class="field-hint">החבילה כוללת עד 4 מלוות ללא תוספת תשלום. אפשר לצרף עד 2 מלוות נוספות בתוספת תשלום.</p>
+
+        <div class="wz-sub" data-sub-for="fashion" hidden>
+          <p class="field-label">סוג הצילום</p>
+          <div class="wz-chips">
+            <button type="button" class="wz-chip" data-sub="לוק בוק" aria-pressed="false">לוק בוק</button>
+            <button type="button" class="wz-chip" data-sub="קמפיין" aria-pressed="false">קמפיין</button>
+            <button type="button" class="wz-chip" data-sub="אינסטגרם" aria-pressed="false">אינסטגרם</button>
+            <button type="button" class="wz-chip" data-sub="אחר" aria-pressed="false">אחר</button>
+          </div>
+          <div class="wz-other" hidden>
+            <label for="fashion-other-text" class="sr-only">פרטי בקצרה</label>
+            <input id="fashion-other-text" type="text" class="field-input" placeholder="פרטי בקצרה" aria-describedby="e-fashion-other"/>
+            <p id="e-fashion-other" class="field-error" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <div class="wz-sub" data-sub-for="product" hidden>
+          <p class="field-label">קטגוריית המוצר</p>
+          <div class="wz-chips">
+            <button type="button" class="wz-chip" data-sub="ביוטי / קוסמטיקה" aria-pressed="false">ביוטי / קוסמטיקה</button>
+            <button type="button" class="wz-chip" data-sub="אופנה" aria-pressed="false">אופנה</button>
+            <button type="button" class="wz-chip" data-sub="אוכל ושתייה" aria-pressed="false">אוכל ושתייה</button>
+            <button type="button" class="wz-chip" data-sub="אחר" aria-pressed="false">אחר</button>
+          </div>
+          <div class="wz-other" hidden>
+            <label for="product-other-text" class="sr-only">פרטי בקצרה</label>
+            <input id="product-other-text" type="text" class="field-input" placeholder="פרטי בקצרה" aria-describedby="e-product-other"/>
+            <p id="e-product-other" class="field-error" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <div class="wz-sub" data-sub-for="production" hidden>
+          <p class="field-label">סוג ההפקה</p>
+          <div class="wz-chips">
+            <button type="button" class="wz-chip" data-sub="אירוע פרטי" aria-pressed="false">אירוע פרטי</button>
+            <button type="button" class="wz-chip" data-sub="קליפ / פרסומת" aria-pressed="false">קליפ / פרסומת</button>
+            <button type="button" class="wz-chip" data-sub="Workshop" aria-pressed="false">Workshop</button>
+            <button type="button" class="wz-chip" data-sub="אחר" aria-pressed="false">אחר</button>
+          </div>
+          <div class="wz-other" hidden>
+            <label for="production-other-text" class="sr-only">פרטי בקצרה</label>
+            <input id="production-other-text" type="text" class="field-input" placeholder="פרטי בקצרה" aria-describedby="e-production-other"/>
+            <p id="e-production-other" class="field-error" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <div class="wz-sub" data-sub-for="other" hidden>
+          <label for="other-other-text" class="field-label">פרטי בקצרה *</label>
+          <input id="other-other-text" type="text" class="field-input" placeholder="במה נוכל לעזור?" aria-describedby="e-other-other"/>
+          <p id="e-other-other" class="field-error" aria-live="polite"></p>
+        </div>
+
+        <div class="wz-actions"><button type="button" class="btn-primary w-full sm:w-auto sm:px-20 min-h-[56px]" data-next>המשך <span aria-hidden="true">←</span></button></div>
+      </div>
+
+      <!-- Step 4: date -->
+      <div class="wz-step" data-step="4" role="group" aria-labelledby="wz-t4">
+        <h3 id="wz-t4" class="wz-title font-headline font-light" tabindex="-1"><strong>תאריך האירוע</strong> המבוקש</h3>
+        <div class="wz-field">
+          <label for="f-date" class="field-label">בחרי תאריך</label>
+          <input id="f-date" type="date" class="field-input" aria-describedby="h-date e-date"/>
+          <p id="h-date" class="field-hint">בחרי תאריך או טווח משוער ונבדוק זמינות</p>
+        </div>
+        <div class="wz-field">
+          <p class="field-label">או בערך:</p>
+          <div class="wz-chips" role="group" aria-label="טווח משוער">
+            <button type="button" class="wz-chip" data-urgency="השבוע" aria-pressed="false">השבוע</button>
+            <button type="button" class="wz-chip" data-urgency="חודש הקרוב" aria-pressed="false">חודש הקרוב</button>
+            <button type="button" class="wz-chip" data-urgency="3 חודשים" aria-pressed="false">3 חודשים</button>
+            <button type="button" class="wz-chip" data-urgency="גמיש" aria-pressed="false">גמיש</button>
+          </div>
+          <p id="e-date" class="field-error" aria-live="polite"></p>
+        </div>
+        <div class="wz-actions"><button type="button" class="btn-primary w-full sm:w-auto sm:px-20 min-h-[56px]" data-next>המשך <span aria-hidden="true">←</span></button></div>
+      </div>
+
+      <!-- Step 5: budget -->
+      <div class="wz-step" data-step="5" role="group" aria-labelledby="wz-t5">
+        <h3 id="wz-t5" class="wz-title font-headline font-light" tabindex="-1"><strong>תקציב</strong> משוער</h3>
+        <p class="wz-budget" aria-live="polite">₪<span id="wzBudgetVal">2,000</span><span id="wzBudgetSfx"> ומעלה</span></p>
+        <label for="f-budget" class="sr-only">תקציב משוער</label>
+        <input id="f-budget" type="range" class="wz-range" min="500" max="10000" step="250" value="2000"/>
+        <div class="wz-range-labels"><span>₪500</span><span>₪10,000+</span></div>
+        <div class="wz-actions">
+          <button type="button" class="btn-primary w-full sm:w-auto sm:px-20 min-h-[56px]" data-next>המשך <span aria-hidden="true">←</span></button>
+          <button type="button" class="wz-skip" data-skip>דלגי על שאלה זו</button>
         </div>
       </div>
 
-      <div class="cond-fields grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8" data-when="production" hidden>
-        <div>
-          <label for="f-prod-date" class="field-label">תאריך מבוקש</label>
-          <input id="f-prod-date" name="production_date" type="date" class="field-input" disabled/>
+      <!-- Step 6: notes + send -->
+      <div class="wz-step" data-step="6" role="group" aria-labelledby="wz-t6">
+        <h3 id="wz-t6" class="wz-title font-headline font-light" tabindex="-1">עוד <strong>משהו שנדע</strong>?</h3>
+        <div class="wz-field">
+          <label for="f-message" class="field-label">הערות נוספות</label>
+          <textarea id="f-message" name="message" rows="4" maxlength="500" class="field-input resize-none" placeholder="כל פרט שחשוב לך..."></textarea>
+          <p class="wz-count"><span id="wzCount">0</span>/500</p>
         </div>
-        <div>
-          <label for="f-prod-type" class="field-label">סוג ההפקה</label>
-          <input id="f-prod-type" name="production_type" type="text" class="field-input" disabled placeholder="אופנה, קמפיין, תוכן מסחרי, צילום מוצר…"/>
+        <div class="wz-actions">
+          <button type="submit" id="submitBtn" class="btn-primary w-full sm:w-auto sm:px-20 min-h-[56px]"><span class="btn-label">שליחה</span></button>
+          <button type="submit" class="wz-skip" data-no-notes>שלחי ללא הערות</button>
+          <p id="formError" class="field-error mt-4" role="alert"></p>
         </div>
-      </div>
-
-      <div>
-        <label for="f-message" class="field-label">ספרו לנו קצת</label>
-        <textarea id="f-message" name="message" rows="4" class="field-input resize-none"></textarea>
       </div>
 
       <!-- Honeypot -->
       <input type="checkbox" name="botcheck" class="hidden" tabindex="-1" autocomplete="off" aria-hidden="true"/>
-
-      <div class="text-center pt-2">
-        <button type="submit" id="submitBtn" class="btn-primary w-full sm:w-auto sm:px-20 min-h-[56px]">
-          <span class="btn-label">שליחת פרטים</span>
-        </button>
-        <p id="formError" class="field-error mt-4" role="alert"></p>
-      </div>
     </form>
 
     <div id="formSuccess" class="text-center py-10" hidden>
@@ -1737,128 +1865,258 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
   update();
 })();
 
-/* ── Contact form ── */
+/* ── Contact form: the same 6-step flow as /lead ── */
 (function () {
   const form = document.getElementById('contactForm');
   const success = document.getElementById('formSuccess');
-  const submitBtn = document.getElementById('submitBtn');
   const formError = document.getElementById('formError');
-  const svcGroup = document.getElementById('svcGroup');
-  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-  form.querySelectorAll('input[type="date"]').forEach(d => d.min = today);
+  const submitBtn = document.getElementById('submitBtn');
+  const $ = (id) => document.getElementById(id);
+  const TOTAL = 6;
+  const MAX_COMPANIONS = 6; // 4 included + up to 2 extra (see the hint on the form)
+  const SERVICE_NAMES = { bride: 'התארגנות כלה', fashion: 'צילום אופנה', product: 'צילום מוצר', production: 'הפקות', other: 'אחר' };
+  const LEAD_TYPE = { bride: 'bridal', fashion: 'fashion', product: 'product', production: 'production', other: 'other' };
+  const URGENCY_CODE = { 'השבוע': 'this_week', 'חודש הקרוב': 'this_month', '3 חודשים': 'three_months', 'גמיש': 'flexible' };
+  // CTAs elsewhere on the page use the older service keys.
+  const CTA_SERVICE = { bridal: 'bride', production: 'production' };
+  const s = { step: 1, service: '', sub: '', companions: 0, urgency: '', budgetSkipped: false };
 
-  function syncConditional() {
-    const svc = (form.querySelector('input[name="service"]:checked') || {}).value;
-    form.querySelectorAll('[data-when]').forEach(g => {
-      const on = g.dataset.when === svc;
-      g.hidden = !on;
-      g.querySelectorAll('input, select, textarea').forEach(el => el.disabled = !on);
-    });
-    if (svc) setError('service', '');
+  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  $('f-date').min = today;
+
+  const phoneOk = (v) => /^(?:\+?972|0)(?:[23489]|5\d|7\d)\d{7}$/.test(v.replace(/[\s\-().]/g, ''));
+  const emailOk = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+  const val = (id) => $(id).value.trim();
+
+  function setError(id, msg) {
+    const err = $('e-' + id.replace(/^f-/, '').replace(/-text$/, ''));
+    const input = $(id);
+    if (err) err.textContent = msg;
+    if (input) input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+    return !msg;
   }
-  form.addEventListener('change', e => { if (e.target.name === 'service') syncConditional(); });
+
+  // ── Steps ──
+  function show(n) {
+    form.querySelector('.wz-step.is-active').classList.remove('is-active');
+    s.step = n;
+    const step = form.querySelector(`.wz-step[data-step="${n}"]`);
+    step.classList.add('is-active');
+    const pct = Math.round(((n - 1) / TOTAL) * 100);
+    $('wzFill').style.width = pct + '%';
+    $('wzPct').textContent = pct + '%';
+    $('wzLabel').textContent = `שלב ${n} מתוך ${TOTAL}`;
+    $('wzBack').hidden = n === 1;
+    personalise();
+    // Keep the progress bar + question in view, below the fixed header.
+    if (form.getBoundingClientRect().top < 110) form.scrollIntoView({ behavior: reducedMQ.matches ? 'auto' : 'smooth', block: 'start' });
+    // On touch screens focus the heading, so the keyboard doesn't pop up on its own.
+    const input = step.querySelector('input.field-input, textarea');
+    const touch = window.matchMedia('(hover: none)').matches;
+    ((!touch && input) || step.querySelector('.wz-title')).focus({ preventScroll: true });
+  }
+
+  function personalise() {
+    const first = val('f-name').split(/\s+/)[0];
+    const title = (id, before, strong, after = '') => {
+      const b = document.createElement('strong');
+      b.textContent = strong;
+      $(id).replaceChildren(before, b, first ? `${after}, ${first}?` : `${after}?`);
+    };
+    title('wz-t2', 'מה ', 'פרטי הקשר שלך');
+    title('wz-t3', 'מה ', 'השירות שאת מחפשת');
+  }
+
+  function validate(step) {
+    switch (step) {
+      case 1: return setError('f-name', val('f-name').length >= 2 ? '' : 'נא למלא שם מלא');
+      case 2: {
+        const p = val('f-phone'), m = val('f-email');
+        const okP = setError('f-phone', !p ? 'נא למלא מספר טלפון' : phoneOk(p) ? '' : 'מספר הטלפון אינו תקין');
+        const okM = setError('f-email', !m ? 'נא למלא כתובת אימייל' : emailOk(m) ? '' : 'כתובת האימייל אינה תקינה');
+        return okP && okM;
+      }
+      case 3: {
+        if (!s.service) { $('e-service').textContent = 'נא לבחור שירות'; return false; }
+        $('e-service').textContent = '';
+        const needsText = s.service === 'other' || s.sub === 'אחר';
+        return needsText ? setError(`${s.service}-other-text`, val(`${s.service}-other-text`) ? '' : 'שדה חובה') : true;
+      }
+      case 4: {
+        const d = $('f-date').value;
+        if (!d && !s.urgency) return setError('f-date', 'נא לבחור תאריך או טווח משוער');
+        if (d && d < today) return setError('f-date', 'נא לבחור תאריך עתידי');
+        return setError('f-date', '');
+      }
+      default: return true;
+    }
+  }
+
+  function next() {
+    if (!validate(s.step)) {
+      const bad = form.querySelector(`.wz-step[data-step="${s.step}"] [aria-invalid="true"]`);
+      if (bad) bad.focus();
+      return;
+    }
+    if (s.step === 5) s.budgetSkipped = false;
+    show(s.step + 1);
+  }
+
+  // ── Choices ──
+  function pressOnly(group, btn) {
+    group.querySelectorAll('[aria-pressed]').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+  }
+
+  function chooseService(key) {
+    const btn = form.querySelector(`.svc-chip[data-service="${key}"]`);
+    if (!btn) return;
+    pressOnly($('svcGroup'), btn);
+    s.service = key;
+    s.sub = '';
+    form.querySelectorAll('[data-sub-for]').forEach((el) => {
+      el.hidden = el.dataset.subFor !== key;
+      el.querySelectorAll('.wz-chip').forEach((c) => c.setAttribute('aria-pressed', 'false'));
+      el.querySelectorAll('.wz-other').forEach((o) => { o.hidden = true; });
+    });
+    $('e-service').textContent = '';
+  }
+
+  function setCompanions(n) {
+    s.companions = Math.max(0, Math.min(MAX_COMPANIONS, n));
+    $('wzCompanions').textContent = s.companions;
+    form.querySelector('[data-companions="-1"]').disabled = s.companions === 0;
+    form.querySelector('[data-companions="1"]').disabled = s.companions === MAX_COMPANIONS;
+  }
+
+  function updateBudget() {
+    const el = $('f-budget'), v = Number(el.value);
+    $('wzBudgetVal').textContent = v.toLocaleString('he-IL');
+    $('wzBudgetSfx').textContent = v >= 10000 ? '+' : ' ומעלה';
+    const pct = ((v - 500) / (10000 - 500)) * 100;
+    el.style.background = `linear-gradient(to left, #625e51 ${pct}%, rgba(98,94,81,0.15) ${pct}%)`;
+  }
+
+  form.addEventListener('click', (e) => {
+    const t = e.target.closest('button');
+    if (!t || !form.contains(t)) return;
+    if (t.hasAttribute('data-next')) return next();
+    if (t.hasAttribute('data-skip')) { s.budgetSkipped = true; return show(s.step + 1); }
+    if (t.dataset.service) return chooseService(t.dataset.service);
+    if (t.dataset.companions) return setCompanions(s.companions + Number(t.dataset.companions));
+    if (t.dataset.sub) {
+      const block = t.closest('[data-sub-for]');
+      pressOnly(block.querySelector('.wz-chips'), t);
+      s.sub = t.dataset.sub;
+      const other = block.querySelector('.wz-other');
+      other.hidden = s.sub !== 'אחר';
+      if (!other.hidden) other.querySelector('input').focus();
+      return;
+    }
+    if (t.dataset.urgency) {
+      pressOnly(t.parentElement, t);
+      s.urgency = t.dataset.urgency;
+      $('f-date').value = '';
+      setError('f-date', '');
+    }
+  });
+  $('wzBack').addEventListener('click', () => show(s.step - 1));
+  $('f-date').addEventListener('input', () => {
+    if (!$('f-date').value) return;
+    s.urgency = '';
+    form.querySelectorAll('[data-urgency]').forEach((c) => c.setAttribute('aria-pressed', 'false'));
+    setError('f-date', '');
+  });
+  $('f-budget').addEventListener('input', () => { s.budgetSkipped = false; updateBudget(); });
+  $('f-message').addEventListener('input', () => { $('wzCount').textContent = $('f-message').value.length; });
+  // Enter moves to the next step (the notes box keeps its new lines).
+  form.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.matches('input.field-input') && s.step < TOTAL) { e.preventDefault(); next(); }
+  });
+  form.querySelectorAll('.field-input').forEach((el) => el.addEventListener('input', () => {
+    if (el.getAttribute('aria-invalid') === 'true') validate(s.step);
+  }));
+  updateBudget();
 
   // Called from CTAs anywhere on the page
-  window.selectService = function (value) {
-    const r = form.querySelector(`input[name="service"][value="${value}"]`);
-    if (r) { r.checked = true; syncConditional(); }
-  };
+  window.selectService = function (value) { chooseService(CTA_SERVICE[value] || value); };
 
-  function setError(field, msg) {
-    const err = document.getElementById('e-' + field);
-    const target = field === 'service' ? svcGroup : form.elements[field];
-    if (err) err.textContent = msg;
-    if (target && target.setAttribute) target.setAttribute('aria-invalid', msg ? 'true' : 'false');
+  // ── Submit ──
+  const fmtDate = (d) => d.split('-').reverse().join('.');
+
+  function collect() {
+    const service = s.service;
+    let sub = s.sub;
+    if (sub === 'אחר') sub = val(`${service}-other-text`) || 'אחר';
+    const serviceName = service === 'other' ? (val('other-other-text') || 'אחר') : SERVICE_NAMES[service];
+    return {
+      name: val('f-name'), phone: val('f-phone'), email: val('f-email'),
+      service, serviceName, sub: service === 'other' ? '' : sub,
+      companions: service === 'bride' ? s.companions : null,
+      date: $('f-date').value, urgency: s.urgency,
+      budget: s.budgetSkipped ? null : Number($('f-budget').value),
+      notes: val('f-message'),
+    };
   }
-
-  const phoneOk = v => /^(?:\+?972|0)(?:[23489]|5\d|7\d)\d{7}$/.test(v.replace(/[\s\-().]/g, ''));
-  const emailOk = v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
-
-  function validate() {
-    const f = form.elements;
-    const errors = [];
-    const name = f.name.value.trim(), phone = f.phone.value.trim(), email = f.email.value.trim();
-    const svc = (form.querySelector('input[name="service"]:checked') || {}).value;
-    setError('name', name.length >= 2 ? '' : 'נא למלא שם מלא'); if (name.length < 2) errors.push(f.name);
-    const pErr = !phone ? 'נא למלא מספר טלפון' : phoneOk(phone) ? '' : 'מספר הטלפון אינו תקין';
-    setError('phone', pErr); if (pErr) errors.push(f.phone);
-    const eErr = email && !emailOk(email) ? 'כתובת האימייל אינה תקינה' : '';
-    setError('email', eErr); if (eErr) errors.push(f.email);
-    setError('service', svc ? '' : 'נא לבחור שירות'); if (!svc) errors.push(form.querySelector('input[name="service"]'));
-    return errors;
-  }
-  ['name', 'phone', 'email'].forEach(n => form.elements[n].addEventListener('blur', () => {
-    if (form.elements[n].getAttribute('aria-invalid') === 'true') validate();
-  }));
-
-  const fmtDate = s => s ? s.split('-').reverse().join('.') : '';
 
   function summary(d) {
-    const lines = [
+    return [
       `שם: ${d.name}`,
       `טלפון: ${d.phone}`,
-      d.email && `אימייל: ${d.email}`,
-      `שירות: ${SERVICE_LABELS[d.service]}`,
-    ];
-    if (d.service === 'bridal') {
-      lines.push(`תאריך החתונה: ${fmtDate(d.wedding_date) || 'לא צוין'}`);
-      lines.push(`מספר מלוות: ${d.companions === '' || d.companions == null ? 'לא צוין' : d.companions}`);
-    } else {
-      lines.push(`תאריך מבוקש: ${fmtDate(d.production_date) || 'לא צוין'}`);
-      lines.push(`סוג ההפקה: ${d.production_type || 'לא צוין'}`);
-    }
-    if (d.message) lines.push(`ספרו לנו קצת: ${d.message}`);
-    return lines.filter(Boolean).join('\n');
+      `אימייל: ${d.email}`,
+      `שירות: ${d.serviceName}${d.sub && d.sub !== 'אחר' ? ` · ${d.sub}` : ''}`,
+      d.companions != null && `מלוות: ${d.companions}`,
+      `תאריך: ${d.date ? fmtDate(d.date) : d.urgency || '—'}`,
+      `תקציב: ${d.budget == null ? 'לא צוין' : `₪${d.budget.toLocaleString('he-IL')}`}`,
+      d.notes && `הערות: ${d.notes}`,
+    ].filter(Boolean).join('\n');
   }
 
   function waLink(d) {
-    const text = `שלום, השארתי עכשיו פרטים באתר קאזה מנצ׳יני.\n${summary(d)}`;
-    return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(text)}`;
+    return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`שלום, השארתי עכשיו פרטים באתר קאזה מנצ׳יני.\n${summary(d)}`)}`;
   }
 
   function setLoading(on) {
-    submitBtn.disabled = on;
+    form.querySelectorAll('[type="submit"], [data-next], #wzBack').forEach((b) => { b.disabled = on; });
     submitBtn.setAttribute('aria-busy', String(on));
-    submitBtn.innerHTML = on ? '<span class="spinner" aria-hidden="true"></span><span>שולח…</span>' : '<span class="btn-label">שליחת פרטים</span>';
+    submitBtn.innerHTML = on ? '<span class="spinner" aria-hidden="true"></span><span>שולחת…</span>' : '<span class="btn-label">שליחה</span>';
   }
 
   function showSuccess(d) {
-    document.getElementById('successWa').href = waLink(d);
+    $('successWa').href = waLink(d);
     form.hidden = true;
     success.hidden = false;
-    document.getElementById('successTitle').focus({ preventScroll: true });
+    $('successTitle').focus({ preventScroll: true });
     success.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  form.addEventListener('submit', async e => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (s.step !== TOTAL) return;
+    if (e.submitter && e.submitter.hasAttribute('data-no-notes')) $('f-message').value = '';
     formError.textContent = '';
-    const errors = validate();
-    if (errors.length) { errors[0].focus(); return; }
-
-    const d = Object.fromEntries(new FormData(form).entries());
-    Object.keys(d).forEach(k => { if (typeof d[k] === 'string') d[k] = d[k].trim(); });
+    const d = collect();
     if (form.elements.botcheck.checked) { showSuccess(d); return; }
 
     setLoading(true);
     try {
       // Lead system (source of truth) + Web3Forms email backup — see js/lead-submit.js.
-      const bridal = d.service === 'bridal';
       const { ok } = await window.CasaLeads.submit({
         lead: {
           source: 'website_form',
           name: d.name,
           phone: d.phone,
           email: d.email || null,
-          lead_type: d.service,
-          event_date: (bridal ? d.wedding_date : d.production_date) || null,
-          companions: bridal && d.companions ? Number(d.companions) : null,
-          production_type: bridal ? null : d.production_type || null,
-          message: d.message || null,
+          lead_type: LEAD_TYPE[d.service] || 'other',
+          lead_subtype: d.service === 'other' ? d.serviceName : (d.sub || null),
+          event_date: d.date || null,
+          urgency: URGENCY_CODE[d.urgency] || null,
+          companions: d.companions,
+          budget: d.budget,
+          message: d.notes || null,
         },
         web3: {
           access_key: WEB3_KEY,
-          subject: `פנייה חדשה מהאתר – ${SERVICE_LABELS[d.service]} | ${d.name}`,
+          subject: `פנייה חדשה מהאתר – ${d.serviceName} | ${d.name}`,
           from_name: 'Casa Mancini – אתר',
           name: d.name,
           phone: d.phone,
