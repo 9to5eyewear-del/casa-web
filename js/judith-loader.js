@@ -46,7 +46,16 @@ html.jd-open .jd-launcher,html.jd-open .jd-hint,body.scroll-locked .jd-launcher,
     return loading;
   }
 
+  // The hello next to her photo stays until the visitor opens the chat once.
+  const HINT_KEY = 'casa-judith-hint';
+  let hint = null;
+  function dropHint() {
+    try { sessionStorage.setItem(HINT_KEY, 'opened'); } catch (_) {}
+    if (hint) { hint.remove(); hint = null; }
+  }
+
   function open(from) {
+    dropHint();
     from.setAttribute('aria-busy', 'true');
     loadChat().then((j) => j.open({ launcher: from }))
       .catch(() => { location.href = '/lead?source=judith_ai'; }) // never lose the visitor
@@ -83,21 +92,17 @@ html.jd-open .jd-launcher,html.jd-open .jd-hint,body.scroll-locked .jd-launcher,
     document.body.appendChild(desk);
     requestAnimationFrame(() => requestAnimationFrame(() => desk.classList.add('is-in')));
 
-    // A one-time hello next to the photo (desktop, once per visit).
-    let greeted = false;
-    try { greeted = sessionStorage.getItem('casa-judith-hint') === '1'; } catch (_) {}
-    if (!greeted && window.matchMedia('(min-width: 768px)').matches) {
-      const hint = document.createElement('div');
+    // Desktop: her hello stays next to the photo until the chat is opened.
+    let opened = false;
+    try { opened = sessionStorage.getItem(HINT_KEY) === 'opened'; } catch (_) {}
+    if (!opened) {
+      hint = document.createElement('div');
       hint.className = 'jd-hint';
       hint.setAttribute('aria-hidden', 'true');
       hint.innerHTML = '<b>היי, אני יהודית 👋</b><br>יש שאלה על הבית? אני כאן.';
-      hint.addEventListener('click', () => { hint.remove(); open(desk); });
-      setTimeout(() => {
-        document.body.appendChild(hint);
-        requestAnimationFrame(() => hint.classList.add('is-in'));
-        setTimeout(() => { hint.classList.remove('is-in'); setTimeout(() => hint.remove(), 450); }, 7000);
-      }, 2500);
-      try { sessionStorage.setItem('casa-judith-hint', '1'); } catch (_) {}
+      hint.addEventListener('click', () => open(desk));
+      document.body.appendChild(hint);
+      setTimeout(() => hint && hint.classList.add('is-in'), 1200);
     }
 
     // Phones: the bottom bar's WhatsApp button becomes Judith.
