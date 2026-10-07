@@ -507,41 +507,63 @@
       .svc-chip:has(input:focus-visible) { outline: 2px solid #625e51; outline-offset: 3px; }
       .svc-group[aria-invalid="true"] .svc-chip { border-color: #9e422c; }
       .cond-fields { animation: fade-up .45s ease-out; }
-      /* ── Contact wizard (same 6-step flow as /lead) ── */
-      .wz { max-width: 36rem; margin: 0 auto; scroll-margin-top: 7.5rem; } /* clears the fixed header */
-      .wz-progress-meta { display: flex; justify-content: space-between; font-size: .75rem; letter-spacing: .12em; color: #78716c; margin-bottom: .6rem; }
-      .wz-track { height: 2px; background: rgba(98,94,81,0.15); }
-      .wz-fill { height: 100%; width: 0; background: #625e51; transition: width .5s cubic-bezier(.16,1,.3,1); }
-      .wz-back { display: inline-flex; align-items: center; gap: .35rem; margin-top: 1rem; min-height: 44px; padding: 0; font-size: .85rem; color: #78716c; background: none; border: 0; cursor: pointer; }
+      /* ── Contact wizard: same 6-step flow and look as /lead ── */
+      .wz {
+        max-width: 560px; margin: 0 auto; scroll-margin-top: 7.5rem; /* clears the fixed header */
+        background: #fff; border: 1px solid rgba(98,94,81,0.18); border-radius: 4px;
+        padding: 2.5rem 2rem; box-shadow: 0 4px 40px rgba(98,94,81,0.09);
+      }
+      @media (max-width: 480px) { .wz { padding: 2rem 1.25rem; margin-inline: -.25rem; } }
+      .wz-progress-meta { display: flex; justify-content: space-between; align-items: center; font-size: .72rem; letter-spacing: .06em; color: #777c77; margin-bottom: .5rem; }
+      #wzPct { font-weight: 700; color: #c9a96e; }
+      .wz-track { height: 2px; background: rgba(98,94,81,0.12); border-radius: 99px; overflow: hidden; }
+      .wz-fill { height: 100%; width: 0; background: linear-gradient(90deg, #c9a96e, #625e51); border-radius: 99px; transition: width .55s cubic-bezier(.16,1,.3,1); }
+      .wz-back { display: inline-flex; align-items: center; gap: .35rem; margin-top: .75rem; min-height: 44px; padding: 0; font-size: .8rem; color: #777c77; background: none; border: 0; cursor: pointer; }
       .wz-back:hover { color: #625e51; }
-      .wz-step { display: none; padding-top: 1.75rem; }
-      .wz-step.is-active { display: block; animation: fade-up .45s ease-out; }
-      .wz-title { font-size: 1.9rem; line-height: 1.25; margin-bottom: 2rem; outline: none; }
-      .wz-title strong { font-weight: 400; color: #625e51; }
-      @media (min-width: 768px) { .wz-title { font-size: 2.4rem; } }
-      .wz-field { margin-bottom: 1.75rem; }
-      .wz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
-      .wz-grid .svc-chip { width: 100%; background: transparent; color: #2f3430; }
+      .wz-step { display: none; padding-top: 1.25rem; }
+      .wz-step.is-active { display: block; animation: fade-up .45s cubic-bezier(.16,1,.3,1) both; }
+      .wz-num { font-size: .68rem; font-weight: 700; letter-spacing: .14em; color: #c9a96e; margin-bottom: .45rem; }
+      .wz-title { font-size: clamp(1.45rem, 4vw, 1.9rem); font-weight: 300; line-height: 1.3; color: #2f3430; margin-bottom: 1.75rem; outline: none; }
+      .wz-title strong { font-weight: 700; }
+      .wz-field { margin-bottom: 1.5rem; }
+      .wz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
+      .wz-grid .svc-chip {
+        position: relative; display: block; width: 100%; min-height: 0; padding: .9rem 1rem; text-align: start;
+        background: #faf9f6; color: #2f3430; border: 1.5px solid rgba(98,94,81,0.18); border-radius: 4px;
+        transition: all .25s cubic-bezier(.16,1,.3,1);
+      }
+      .wz-grid .svc-chip:hover { border-color: #e8d5b0; background: #fff; }
+      .wz-grid .svc-chip[aria-pressed="true"] { border-color: #c9a96e; background: #fff; color: #2f3430; box-shadow: 0 4px 16px rgba(201,169,110,0.18); }
       .wz-grid .svc-chip.wide { grid-column: 1 / -1; }
-      .svc-chip[aria-pressed="true"] { background: #625e51; color: #fef7e6; border-color: #625e51; }
-      .svc-chip:focus-visible, .wz-chip:focus-visible, .wz-counter button:focus-visible { outline: 2px solid #625e51; outline-offset: 3px; }
-      .wz-sub { margin-top: 1.75rem; animation: fade-up .35s ease-out; }
+      .chip-icon { display: block; font-size: 1.25rem; margin-bottom: .3rem; }
+      .chip-name { display: block; font-size: .9rem; font-weight: 600; }
+      .chip-check {
+        position: absolute; top: .5rem; left: .5rem; width: 18px; height: 18px; border-radius: 50%;
+        background: #c9a96e; color: #fff; font-size: .65rem; display: flex; align-items: center; justify-content: center;
+        opacity: 0; transform: scale(0); transition: all .25s cubic-bezier(.34,1.56,.64,1);
+      }
+      .svc-chip[aria-pressed="true"] .chip-check { opacity: 1; transform: scale(1); }
+      .svc-chip:focus-visible, .wz-chip:focus-visible, .wz-counter button:focus-visible { outline: 2px solid #c9a96e; outline-offset: 3px; }
+      .wz-sub { margin-top: 1.5rem; animation: fade-up .35s ease-out; }
       .wz-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
-      .wz-chip { min-height: 44px; padding: .5rem 1.1rem; border: 1px solid rgba(98,94,81,0.25); border-radius: 2px; background: transparent; font-size: .9rem; color: #2f3430; cursor: pointer; transition: all .2s; }
-      .wz-chip:hover { border-color: rgba(98,94,81,0.55); }
-      .wz-chip[aria-pressed="true"] { background: #625e51; border-color: #625e51; color: #fef7e6; }
+      .wz-chip { min-height: 40px; padding: .5rem 1rem; border: 1.5px solid rgba(98,94,81,0.18); border-radius: 99px; background: #faf9f6; font-size: .85rem; color: #2f3430; cursor: pointer; transition: all .2s ease; }
+      .wz-chip:hover { border-color: #e8d5b0; }
+      .wz-chip[aria-pressed="true"] { background: #433f33; border-color: #433f33; color: #e8d5b0; font-weight: 500; }
       .wz-other { margin-top: .75rem; }
       .wz-counter { display: flex; align-items: center; gap: 1.25rem; margin: .25rem 0 .5rem; }
-      .wz-counter button { width: 44px; height: 44px; border: 1px solid rgba(98,94,81,0.3); border-radius: 50%; background: transparent; font-size: 1.25rem; line-height: 1; color: #625e51; cursor: pointer; }
+      .wz-counter button { width: 44px; height: 44px; border: 1.5px solid rgba(98,94,81,0.25); border-radius: 50%; background: #faf9f6; font-size: 1.25rem; line-height: 1; color: #433f33; cursor: pointer; }
+      .wz-counter button:hover:not(:disabled) { background: rgba(201,169,110,0.12); }
       .wz-counter button:disabled { opacity: .3; cursor: not-allowed; }
       .wz-counter output { min-width: 2ch; text-align: center; font-size: 1.6rem; font-weight: 300; }
       .wz-budget { font-size: 2.4rem; font-weight: 300; text-align: center; margin-bottom: 1.25rem; color: #2f3430; }
       .wz-range { width: 100%; height: 4px; border-radius: 2px; appearance: none; -webkit-appearance: none; cursor: pointer; }
-      .wz-range::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #625e51; border: 3px solid #faf9f6; box-shadow: 0 1px 4px rgba(47,52,48,0.25); }
-      .wz-range::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #625e51; border: 3px solid #faf9f6; }
+      .wz-range::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #433f33; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(47,52,48,0.25); }
+      .wz-range::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #433f33; border: 3px solid #fff; }
       .wz-range-labels { display: flex; justify-content: space-between; font-size: .75rem; color: #a8a29e; margin-top: .6rem; }
-      .wz-actions { margin-top: 2.25rem; text-align: center; }
-      .wz-skip { display: block; margin: .75rem auto 0; min-height: 44px; padding: 0 .5rem; background: none; border: 0; font-size: .85rem; color: #78716c; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+      .wz-actions { margin-top: 2rem; text-align: center; }
+      .wz .btn-primary { width: 100%; background: #433f33; font-weight: 600; }
+      .wz .btn-primary:hover { background: #625e51; }
+      .wz-skip { display: block; margin: .6rem auto 0; min-height: 44px; padding: 0 .5rem; background: none; border: 0; font-size: .8rem; color: #777c77; cursor: pointer; }
       .wz-skip:hover { color: #625e51; }
       .wz-count { text-align: left; font-size: .75rem; color: #a8a29e; margin-top: .3rem; }
       @media (prefers-reduced-motion: reduce) { .wz-step.is-active, .wz-sub { animation: none; } .wz-fill { transition: none; } }
@@ -888,7 +910,7 @@
 </section>
 
 <!-- ═══════════ 7. CONTACT ═══════════ -->
-<section class="py-20 md:py-32 px-5 bg-surface" id="contact" aria-labelledby="contact-title">
+<section class="py-20 md:py-32 px-5 bg-surface-container-low" id="contact" aria-labelledby="contact-title">
   <div class="max-w-3xl mx-auto">
     <div class="mb-12 md:mb-16 text-center">
       <span class="eyebrow">יצירת קשר</span>
@@ -908,6 +930,7 @@
 
       <!-- Step 1: name -->
       <div class="wz-step is-active" data-step="1" role="group" aria-labelledby="wz-t1">
+        <p class="wz-num" aria-hidden="true">שלב 1 מתוך 6</p>
         <h3 id="wz-t1" class="wz-title font-headline font-light" tabindex="-1">שלום! <strong>איך קוראים לך?</strong></h3>
         <div class="wz-field">
           <label for="f-name" class="field-label">שם מלא *</label>
@@ -919,6 +942,7 @@
 
       <!-- Step 2: phone + email -->
       <div class="wz-step" data-step="2" role="group" aria-labelledby="wz-t2">
+        <p class="wz-num" aria-hidden="true">שלב 2 מתוך 6</p>
         <h3 id="wz-t2" class="wz-title font-headline font-light" tabindex="-1">מה <strong>פרטי הקשר שלך</strong>?</h3>
         <div class="wz-field">
           <label for="f-phone" class="field-label">טלפון *</label>
@@ -935,13 +959,14 @@
 
       <!-- Step 3: service -->
       <div class="wz-step" data-step="3" role="group" aria-labelledby="wz-t3">
+        <p class="wz-num" aria-hidden="true">שלב 3 מתוך 6</p>
         <h3 id="wz-t3" class="wz-title font-headline font-light" tabindex="-1">מה <strong>השירות שאת מחפשת</strong>?</h3>
         <div class="wz-grid" id="svcGroup" role="group" aria-label="בחירת שירות" aria-describedby="e-service">
-          <button type="button" class="svc-chip" data-service="bride" aria-pressed="false">התארגנות כלה</button>
-          <button type="button" class="svc-chip" data-service="fashion" aria-pressed="false">צילום אופנה</button>
-          <button type="button" class="svc-chip" data-service="product" aria-pressed="false">צילום מוצר</button>
-          <button type="button" class="svc-chip" data-service="production" aria-pressed="false">הפקות</button>
-          <button type="button" class="svc-chip wide" data-service="other" aria-pressed="false">אחר</button>
+          <button type="button" class="svc-chip" data-service="bride" aria-pressed="false"><span class="chip-check" aria-hidden="true">✓</span><span class="chip-icon" aria-hidden="true">👰</span><span class="chip-name">התארגנות כלה</span></button>
+          <button type="button" class="svc-chip" data-service="fashion" aria-pressed="false"><span class="chip-check" aria-hidden="true">✓</span><span class="chip-icon" aria-hidden="true">📸</span><span class="chip-name">צילום אופנה</span></button>
+          <button type="button" class="svc-chip" data-service="product" aria-pressed="false"><span class="chip-check" aria-hidden="true">✓</span><span class="chip-icon" aria-hidden="true">🛍️</span><span class="chip-name">צילום מוצר</span></button>
+          <button type="button" class="svc-chip" data-service="production" aria-pressed="false"><span class="chip-check" aria-hidden="true">✓</span><span class="chip-icon" aria-hidden="true">🎬</span><span class="chip-name">הפקות</span></button>
+          <button type="button" class="svc-chip wide" data-service="other" aria-pressed="false"><span class="chip-check" aria-hidden="true">✓</span><span class="chip-icon" aria-hidden="true">💡</span><span class="chip-name">אחר</span></button>
         </div>
         <p id="e-service" class="field-error" aria-live="polite"></p>
 
@@ -1011,6 +1036,7 @@
 
       <!-- Step 4: date -->
       <div class="wz-step" data-step="4" role="group" aria-labelledby="wz-t4">
+        <p class="wz-num" aria-hidden="true">שלב 4 מתוך 6</p>
         <h3 id="wz-t4" class="wz-title font-headline font-light" tabindex="-1"><strong>תאריך האירוע</strong> המבוקש</h3>
         <div class="wz-field">
           <label for="f-date" class="field-label">בחרי תאריך</label>
@@ -1032,6 +1058,7 @@
 
       <!-- Step 5: budget -->
       <div class="wz-step" data-step="5" role="group" aria-labelledby="wz-t5">
+        <p class="wz-num" aria-hidden="true">שלב 5 מתוך 6</p>
         <h3 id="wz-t5" class="wz-title font-headline font-light" tabindex="-1"><strong>תקציב</strong> משוער</h3>
         <p class="wz-budget" aria-live="polite">₪<span id="wzBudgetVal">2,000</span><span id="wzBudgetSfx"> ומעלה</span></p>
         <label for="f-budget" class="sr-only">תקציב משוער</label>
@@ -1045,6 +1072,7 @@
 
       <!-- Step 6: notes + send -->
       <div class="wz-step" data-step="6" role="group" aria-labelledby="wz-t6">
+        <p class="wz-num" aria-hidden="true">שלב 6 מתוך 6</p>
         <h3 id="wz-t6" class="wz-title font-headline font-light" tabindex="-1">עוד <strong>משהו שנדע</strong>?</h3>
         <div class="wz-field">
           <label for="f-message" class="field-label">הערות נוספות</label>
@@ -1880,6 +1908,10 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
   // CTAs elsewhere on the page use the older service keys.
   const CTA_SERVICE = { bridal: 'bride', production: 'production' };
   const s = { step: 1, service: '', sub: '', companions: 0, urgency: '', budgetSkipped: false };
+  // Bridal prep has no budget question; it's only for productions / shoots.
+  const steps = () => (s.service === 'bride' ? [1, 2, 3, 4, 6] : [1, 2, 3, 4, 5, 6]);
+  const stepAfter = (n) => steps()[steps().indexOf(n) + 1];
+  const stepBefore = (n) => steps()[steps().indexOf(n) - 1];
 
   const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   $('f-date').min = today;
@@ -1902,10 +1934,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
     s.step = n;
     const step = form.querySelector(`.wz-step[data-step="${n}"]`);
     step.classList.add('is-active');
-    const pct = Math.round(((n - 1) / TOTAL) * 100);
-    $('wzFill').style.width = pct + '%';
-    $('wzPct').textContent = pct + '%';
-    $('wzLabel').textContent = `שלב ${n} מתוך ${TOTAL}`;
+    renderProgress();
     $('wzBack').hidden = n === 1;
     personalise();
     // Keep the progress bar + question in view, below the fixed header.
@@ -1914,6 +1943,16 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
     const input = step.querySelector('input.field-input, textarea');
     const touch = window.matchMedia('(hover: none)').matches;
     ((!touch && input) || step.querySelector('.wz-title')).focus({ preventScroll: true });
+  }
+
+  function renderProgress() {
+    const pos = steps().indexOf(s.step) + 1, total = steps().length;
+    const pct = Math.round(((pos - 1) / total) * 100);
+    $('wzFill').style.width = pct + '%';
+    $('wzPct').textContent = pct + '%';
+    $('wzLabel').textContent = `שלב ${pos} מתוך ${total}`;
+    const num = form.querySelector('.wz-step.is-active .wz-num');
+    if (num) num.textContent = `שלב ${pos} מתוך ${total}`;
   }
 
   function personalise() {
@@ -1959,7 +1998,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
       return;
     }
     if (s.step === 5) s.budgetSkipped = false;
-    show(s.step + 1);
+    show(stepAfter(s.step));
   }
 
   // ── Choices ──
@@ -1979,6 +2018,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
       el.querySelectorAll('.wz-other').forEach((o) => { o.hidden = true; });
     });
     $('e-service').textContent = '';
+    renderProgress(); // bridal prep = one step fewer
   }
 
   function setCompanions(n) {
@@ -1993,14 +2033,14 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
     $('wzBudgetVal').textContent = v.toLocaleString('he-IL');
     $('wzBudgetSfx').textContent = v >= 10000 ? '+' : ' ומעלה';
     const pct = ((v - 500) / (10000 - 500)) * 100;
-    el.style.background = `linear-gradient(to left, #625e51 ${pct}%, rgba(98,94,81,0.15) ${pct}%)`;
+    el.style.background = `linear-gradient(to left, #c9a96e ${pct}%, rgba(98,94,81,0.15) ${pct}%)`;
   }
 
   form.addEventListener('click', (e) => {
     const t = e.target.closest('button');
     if (!t || !form.contains(t)) return;
     if (t.hasAttribute('data-next')) return next();
-    if (t.hasAttribute('data-skip')) { s.budgetSkipped = true; return show(s.step + 1); }
+    if (t.hasAttribute('data-skip')) { s.budgetSkipped = true; return show(stepAfter(s.step)); }
     if (t.dataset.service) return chooseService(t.dataset.service);
     if (t.dataset.companions) return setCompanions(s.companions + Number(t.dataset.companions));
     if (t.dataset.sub) {
@@ -2019,7 +2059,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
       setError('f-date', '');
     }
   });
-  $('wzBack').addEventListener('click', () => show(s.step - 1));
+  $('wzBack').addEventListener('click', () => show(stepBefore(s.step)));
   $('f-date').addEventListener('input', () => {
     if (!$('f-date').value) return;
     s.urgency = '';
@@ -2053,7 +2093,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
       service, serviceName, sub: service === 'other' ? '' : sub,
       companions: service === 'bride' ? s.companions : null,
       date: $('f-date').value, urgency: s.urgency,
-      budget: s.budgetSkipped ? null : Number($('f-budget').value),
+      budget: service === 'bride' || s.budgetSkipped ? null : Number($('f-budget').value),
       notes: val('f-message'),
     };
   }
@@ -2066,7 +2106,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
       `שירות: ${d.serviceName}${d.sub && d.sub !== 'אחר' ? ` · ${d.sub}` : ''}`,
       d.companions != null && `מלוות: ${d.companions}`,
       `תאריך: ${d.date ? fmtDate(d.date) : d.urgency || '—'}`,
-      `תקציב: ${d.budget == null ? 'לא צוין' : `₪${d.budget.toLocaleString('he-IL')}`}`,
+      d.service !== 'bride' && `תקציב: ${d.budget == null ? 'לא צוין' : `₪${d.budget.toLocaleString('he-IL')}`}`,
       d.notes && `הערות: ${d.notes}`,
     ].filter(Boolean).join('\n');
   }
