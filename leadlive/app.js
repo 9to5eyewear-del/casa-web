@@ -326,20 +326,20 @@
     const sm = d.summary, vs = VS[d.range.key];
     const conv = sm.conversion;
     const tiles = [
-      { label: 'לידים חדשים', value: sm.leads.value,
+      { label: 'לידים חדשים', tone: 'gold', value: sm.leads.value,
         sub: [delta(sm.leads.change), sm.leads.change != null ? ` ${vs}` : `${sm.leads.prev} בתקופה הקודמת`] },
-      { label: 'דורשים טיפול', value: sm.open_now.value, alert: sm.open_now.waiting_24h > 0,
+      { label: 'דורשים טיפול', value: sm.open_now.value, tone: sm.open_now.waiting_24h > 0 ? 'alert' : 'warm',
         sub: `${sm.open_now.new} לטיפול · ${sm.open_now.in_progress} בטיפול` },
-      { label: 'נסגרו', value: sm.won.value,
+      { label: 'נסגרו', tone: 'won', value: sm.won.value,
         sub: [delta(sm.won.change), sm.won.change != null ? ` ${vs}` : `מהלידים שנכנסו בתקופה`] },
-      { label: 'המרה', value: conv.rate, fmt: (x) => Math.round(x * 100), suffix: '%',
+      { label: 'המרה', tone: 'dark', value: conv.rate, fmt: (x) => Math.round(x * 100), suffix: '%',
         sub: conv.rate == null ? 'אין עדיין לידים בתקופה'
           : [`${conv.num} נסגרו מתוך ${conv.den}`, conv.delta != null ? h('br') : null, delta(conv.delta, { points: true }), conv.delta != null ? ` ${vs}` : null] },
     ];
     return h('div', { class: 'kpis' }, tiles.map((t) => {
       const val = h('b', { class: 'kpi-value' + (t.value == null ? ' is-empty' : '') }, '–', t.suffix && t.value != null ? h('small', null, t.suffix) : null);
       if (t.value != null) countTo(val, t.fmt ? t.fmt(t.value) : t.value, (x) => String(Math.round(x)));
-      return h('div', { class: 'kpi' + (t.alert ? ' is-alert' : '') },
+      return h('div', { class: 'kpi', 'data-tone': t.tone },
         h('span', { class: 'kpi-label' }, t.label), val, h('span', { class: 'kpi-sub' }, t.sub));
     }));
   }
@@ -365,7 +365,7 @@
           h('p', { class: 'att-when' }, `פנייה ${rel(l.last_submission_at)}`)),
         h('div', { class: 'att-actions' },
           wa && h('a', { class: 'act wa', href: wa, target: '_blank', rel: 'noopener', 'aria-label': `WhatsApp ל${l.name}` }, icon('wa')),
-          tel && h('a', { class: 'act', href: tel, 'aria-label': `התקשרות ל${l.name}` }, icon('call'))));
+          tel && h('a', { class: 'act call', href: tel, 'aria-label': `התקשרות ל${l.name}` }, icon('call'))));
     }));
   }
 
@@ -439,7 +439,7 @@
       h('div', { class: 'stage-top' }, h('span', null, label), h('span', null, note && `${note} · `, h('b', null, n))),
       bar(n / p.entered, cls));
     return h('div', { class: 'funnel panel' },
-      stage('נכנסו', p.entered, ''),
+      stage('נכנסו', p.entered, 'entered'),
       stage('טופלו', p.handled, '', pct(p.handled / p.entered)),
       stage('נסגרו', p.won, 'won', pct(p.won / p.entered)),
       stage('לא נסגרו', p.lost, 'lost', pct(p.lost / p.entered)),
@@ -490,7 +490,7 @@
 
   function homeSkeleton() {
     return h('div', { class: 'home-grid' },
-      h('section', { class: 'greet', 'data-area': 'greet' }, h('div', { class: 'sk sk-title' }), h('div', { class: 'sk sk-line' })),
+      h('section', { class: 'greet is-plain', 'data-area': 'greet' }, h('div', { class: 'sk sk-title' }), h('div', { class: 'sk sk-line' })),
       block('attention', 'דורש תשומת לב', h('div', { class: 'attention' }, h('div', { class: 'sk sk-card' }), h('div', { class: 'sk sk-card' }))),
       block('period', null, h('div', { class: 'kpis' }, [1, 2, 3, 4].map(() => h('div', { class: 'sk sk-kpi' })))),
       block('trend', null, h('div', { class: 'sk sk-chart' })));
@@ -500,7 +500,7 @@
     const view = $('#homeView');
     const d = state.dash;
     if (!d) {
-      if (state.dashError) return view.replaceChildren(h('div', { class: 'greet' }, h('h1', null, greeting())), h('div', { class: 'block' }, errorState('בדקו את החיבור ונסו שוב.', () => loadDash({ force: true }))));
+      if (state.dashError) return view.replaceChildren(h('div', { class: 'greet is-plain' }, h('h1', null, greeting())), h('div', { class: 'block' }, errorState('בדקו את החיבור ונסו שוב.', () => loadDash({ force: true }))));
       return view.replaceChildren(homeSkeleton());
     }
     const urgent = d.summary.open_now.waiting_24h > 0;
@@ -509,7 +509,13 @@
     view.replaceChildren(h('div', { class: 'home-grid' },
       h('section', { class: 'greet', 'data-area': 'greet' },
         h('h1', null, greeting()),
-        h('p', { class: urgent ? 'is-urgent' : '' }, d.headline)),
+        h('p', { class: urgent ? 'is-urgent' : '' }, d.headline),
+        h('div', { class: 'greet-stats' },
+          h('a', { href: '#/leads', class: d.summary.open_now.new ? 'is-hot' : '', onclick: () => presetFilter('status:new') },
+            h('b', null, d.summary.open_now.new), ' לטיפול'),
+          h('a', { href: '#/leads', onclick: () => presetFilter('status:in_progress') }, h('b', null, d.summary.open_now.in_progress), ' בטיפול'),
+          d.summary.hot_open > 0 && h('a', { href: '#/leads', class: 'is-gold', onclick: () => presetFilter('flag:hot') },
+            h('b', null, d.summary.hot_open), ' HOT'))),
       block('attention', 'דורש תשומת לב', attentionBlock(d.attention)),
       block('recent', 'נכנסו לאחרונה',
         newLeads.length ? h('ul', { class: 'lead-list' }, newLeads.map(leadCard))
@@ -572,7 +578,7 @@
         statusButton(l, (next) => { Object.assign(l, next); render(); }),
         h('span', { class: 'spacer' }),
         h('a', { class: 'act wa' + (wa ? '' : ' is-disabled'), href: wa || undefined, target: '_blank', rel: 'noopener', 'aria-label': `WhatsApp ל${l.name}` }, icon('wa')),
-        h('a', { class: 'act' + (tel ? '' : ' is-disabled'), href: tel || undefined, 'aria-label': `התקשרות ל${l.name}` }, icon('call')),
+        h('a', { class: 'act call' + (tel ? '' : ' is-disabled'), href: tel || undefined, 'aria-label': `התקשרות ל${l.name}` }, icon('call')),
         h('a', { class: 'act', href: `#/lead/${l.id}` }, 'פתח')));
     render();
     return li;
@@ -629,6 +635,12 @@
     } finally {
       $('#loadMore').disabled = false;
     }
+  }
+
+  // A shortcut from the home card straight into a filtered list.
+  function presetFilter(f) {
+    state.filter = f; state.q = ''; state.source = ''; state.leads = []; state.listStale = true;
+    $('#search').value = '';
   }
 
   function syncChips() {
