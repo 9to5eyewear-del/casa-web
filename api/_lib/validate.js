@@ -72,7 +72,9 @@ export function validateLead(body, { now = new Date(), userAgent = null, sources
   const leadType = body.lead_type == null || body.lead_type === ''
     ? null
     : optional('lead_type', LEAD_TYPES.has(body.lead_type) ? body.lead_type : undefined);
-  const urgency = body.urgency == null || body.urgency === ''
+  // With a date, the category comes from the date (priority.js → timingFor).
+  const eventDate = optional('event_date', cleanDate(body.event_date, now));
+  const urgency = eventDate || body.urgency == null || body.urgency === ''
     ? null
     : optional('urgency', URGENCIES.has(body.urgency) ? body.urgency : undefined);
 
@@ -97,7 +99,7 @@ export function validateLead(body, { now = new Date(), userAgent = null, sources
     email,
     lead_type: leadType,
     lead_subtype: cleanText(body.lead_subtype, 80),
-    event_date: optional('event_date', cleanDate(body.event_date, now)),
+    event_date: eventDate,
     urgency,
     companions: optional('companions', cleanInt(body.companions, 0, 20)),
     production_type: cleanText(body.production_type, 120),

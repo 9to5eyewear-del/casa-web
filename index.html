@@ -1044,16 +1044,7 @@
         <div class="wz-field">
           <label for="f-date" class="field-label">בחרי תאריך</label>
           <input id="f-date" type="date" class="field-input" aria-describedby="h-date e-date"/>
-          <p id="h-date" class="field-hint">בחרי תאריך או טווח משוער ונבדוק זמינות</p>
-        </div>
-        <div class="wz-field">
-          <p class="field-label">או בערך:</p>
-          <div class="wz-chips" role="group" aria-label="טווח משוער">
-            <button type="button" class="wz-chip" data-urgency="השבוע" aria-pressed="false">השבוע</button>
-            <button type="button" class="wz-chip" data-urgency="חודש הקרוב" aria-pressed="false">חודש הקרוב</button>
-            <button type="button" class="wz-chip" data-urgency="3 חודשים" aria-pressed="false">3 חודשים</button>
-            <button type="button" class="wz-chip" data-urgency="גמיש" aria-pressed="false">גמיש</button>
-          </div>
+          <p id="h-date" class="field-hint">בחרי תאריך ונבדוק זמינות</p>
           <p id="e-date" class="field-error" aria-live="polite"></p>
         </div>
         <div class="wz-actions"><button type="button" class="btn-primary w-full sm:w-auto sm:px-20 min-h-[56px]" data-next>המשך <span aria-hidden="true">←</span></button></div>
@@ -1907,12 +1898,11 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
   const MAX_COMPANIONS = 6; // 4 included + up to 2 extra (see the hint on the form)
   const SERVICE_NAMES = { bride: 'התארגנות כלה', fashion: 'צילום אופנה', product: 'צילום מוצר', production: 'הפקות', other: 'אחר' };
   const LEAD_TYPE = { bride: 'bridal', fashion: 'fashion', product: 'product', production: 'production', other: 'other' };
-  const URGENCY_CODE = { 'השבוע': 'this_week', 'חודש הקרוב': 'this_month', '3 חודשים': 'three_months', 'גמיש': 'flexible' };
   // CTAs elsewhere on the page use the older service keys.
   const CTA_SERVICE = { bridal: 'bride', production: 'production' };
-  const s = { step: 1, service: '', sub: '', companions: 0, urgency: '', budgetSkipped: false };
+  const s = { step: 1, service: '', sub: '', companions: 0, budgetSkipped: false };
   // The picked date's slots in the bookings calendars (see checkAvailability).
-  const DATE_TAKEN = 'התאריך הזה כבר תפוס אצלנו. אפשר לבחור תאריך אחר, או לסמן ״גמיש״ ונחזור אלייך עם התאריכים הפנויים.';
+  const DATE_TAKEN = 'התאריך הזה כבר תפוס אצלנו. אפשר לבחור תאריך אחר, או לכתוב לנו בוואטסאפ ונמצא יחד תאריך פנוי.';
   const DATE_HINT = $('h-date').textContent;
   let availability = { date: '', slots: null };
   const slotOpen = () => availability.slots?.[s.service === 'bride' ? 'bridal' : 'production'] ?? null;
@@ -1992,7 +1982,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
       }
       case 4: {
         const d = $('f-date').value;
-        if (!d && !s.urgency) return setError('f-date', 'נא לבחור תאריך או טווח משוער');
+        if (!d) return setError('f-date', 'נא לבחור תאריך');
         if (d && d < today) return setError('f-date', 'נא לבחור תאריך עתידי');
         if (d && availability.date === d && slotOpen() === false) return setError('f-date', DATE_TAKEN);
         return setError('f-date', '');
@@ -2062,19 +2052,10 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
       if (!other.hidden) other.querySelector('input').focus();
       return;
     }
-    if (t.dataset.urgency) {
-      pressOnly(t.parentElement, t);
-      s.urgency = t.dataset.urgency;
-      $('f-date').value = '';
-      setError('f-date', '');
-      showAvailability(null);
-    }
   });
   $('wzBack').addEventListener('click', () => show(stepBefore(s.step)));
   $('f-date').addEventListener('input', () => {
     if (!$('f-date').value) return showAvailability(null);
-    s.urgency = '';
-    form.querySelectorAll('[data-urgency]').forEach((c) => c.setAttribute('aria-pressed', 'false'));
     setError('f-date', '');
     if ($('f-date').value >= today) checkAvailability($('f-date').value);
   });
@@ -2137,7 +2118,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
       name: val('f-name'), phone: val('f-phone'), email: val('f-email'),
       service, serviceName, sub: service === 'other' ? '' : sub,
       companions: service === 'bride' ? s.companions : null,
-      date: $('f-date').value, urgency: s.urgency,
+      date: $('f-date').value,
       budget: service === 'bride' || s.budgetSkipped ? null : Number($('f-budget').value),
       notes: val('f-message'),
     };
@@ -2150,7 +2131,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
       `אימייל: ${d.email}`,
       `שירות: ${d.serviceName}${d.sub && d.sub !== 'אחר' ? ` · ${d.sub}` : ''}`,
       d.companions != null && `מלוות: ${d.companions}`,
-      `תאריך: ${d.date ? fmtDate(d.date) : d.urgency || '—'}`,
+      `תאריך: ${d.date ? fmtDate(d.date) : '—'}`,
       d.service !== 'bride' && `תקציב: ${d.budget == null ? 'לא צוין' : `₪${d.budget.toLocaleString('he-IL')}`}`,
       d.notes && `הערות: ${d.notes}`,
     ].filter(Boolean).join('\n');
@@ -2193,7 +2174,6 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
           lead_type: LEAD_TYPE[d.service] || 'other',
           lead_subtype: d.service === 'other' ? d.serviceName : (d.sub || null),
           event_date: d.date || null,
-          urgency: URGENCY_CODE[d.urgency] || null,
           companions: d.companions,
           budget: d.budget,
           message: d.notes || null,

@@ -395,6 +395,10 @@ h1, h2, h3, p { margin: 0; }
 [data-status="lost"] { --st: var(--slate); }
 .tag { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 12px; font-weight: 500; background: var(--ochre-wash); color: var(--ochre); }
 .tag-judith { background: var(--gold-wash); color: var(--gold-ink); }
+/* How far off the date is: closer = warmer. */
+.tag-timing[data-timing="this_week"] { background: var(--brick-wash); color: var(--brick); }
+.tag-timing[data-timing="three_months"], .tag-timing[data-timing="later"] { background: var(--slate-wash); color: var(--slate); }
+.tag-timing[data-timing="past"] { background: var(--linen); color: var(--ink-soft); }
 .tag-dup { background: var(--linen); color: var(--ink-soft); }
 
 /* ── Empty / error ── */

@@ -15,7 +15,8 @@
   const MANUAL_SOURCE = { phone: 'שיחת טלפון', whatsapp: 'וואטסאפ', instagram: 'אינסטגרם', facebook: 'פייסבוק', referral: 'המלצה', walk_in: 'הגיעו לסטודיו', manual: 'אחר' };
   const SOURCE = { website_form: 'טופס באתר', lead_page: 'דף ליד', judith_ai: 'יהודית AI', ...MANUAL_SOURCE, manual: 'הוזן ידנית' };
   const TYPE = { bridal: 'התארגנות כלה', production: 'הפקת צילום', fashion: 'צילום אופנה', product: 'צילום מוצר', other: 'אחר', unknown: 'לא צוין' };
-  const URGENCY = { this_week: 'השבוע', this_month: 'בחודש הקרוב', three_months: 'ב-3 החודשים הקרובים', flexible: 'גמיש' };
+  // l.timing: the server files every lead by how far off its date is, fresh on each load (priority.js → timingFor).
+  const URGENCY = { this_week: 'השבוע', this_month: 'בחודש הקרוב', three_months: 'ב-3 החודשים הקרובים', later: 'בעוד יותר מ-3 חודשים', past: 'התאריך עבר', flexible: 'גמיש' };
   const PAYMENT = { transfer: 'העברה בנקאית', credit: 'אשראי', bit: 'ביט / פייבוקס', cash: 'מזומן', check: 'צ׳ק', other: 'אחר' };
   const PRIO = { hot: '🔥 HOT', warm: '● WARM', cold: '○ COLD' };
   const SCORE = { hot: 'HOT', warm: 'WARM', cold: 'COLD' };
@@ -112,7 +113,7 @@
       const u = l.priority && untilText(l.priority.days_to_event);
       return u ? `${fmtDate(l.event_date)} · ${u}` : fmtDate(l.event_date);
     }
-    return URGENCY[l.urgency] || '';
+    return URGENCY[l.timing || l.urgency] || '';
   }
 
   // Red number on the app icon = unread leads.
@@ -734,6 +735,7 @@
         h('p', { class: 'card-what' }, [typeLabel(l), whenText(l)].filter(Boolean).join(' · ')),
         h('p', { class: 'card-when' },
           h('span', null, `פנייה ${rel(l.last_submission_at)}`),
+          l.event_date && l.timing && h('span', { class: 'tag tag-timing', 'data-timing': l.timing }, URGENCY[l.timing]),
           l.source === 'judith_ai' && h('span', { class: 'tag tag-judith' }, SOURCE.judith_ai),
           l.submission_count > 1 && h('span', { class: 'tag' }, `פנייה חוזרת ×${l.submission_count}`))),
       h('div', { class: 'card-foot' },
@@ -953,7 +955,7 @@
     return [
       ['שירות', [typeLabel(l), l.lead_subtype].filter(Boolean).join(' · ')],
       ['תאריך', l.event_date && whenText(l)],
-      ['דחיפות', URGENCY[l.urgency]],
+      ['דחיפות', URGENCY[l.timing || l.urgency]],
       ['מלוות', l.companions != null && String(l.companions)],
       ['סוג הפקה', l.production_type],
       ['תקציב', l.budget != null && ils(l.budget)],
@@ -1115,7 +1117,6 @@
     const source = h('select', { name: 'source', required: true }, options(MANUAL_SOURCE));
     const type = h('select', { name: 'lead_type' }, options(Object.fromEntries(Object.entries(TYPE).filter(([k]) => k !== 'unknown')), 'לא צוין'));
     const date = h('input', { name: 'event_date', type: 'date', min: today });
-    const urgency = h('select', { name: 'urgency' }, options(URGENCY, 'לא צוין'));
     const budget = h('input', { name: 'budget', type: 'number', inputmode: 'numeric', min: 0, max: 1000000, step: 1, dir: 'ltr' });
     const email = h('input', { name: 'email', type: 'email', dir: 'ltr', maxlength: 254, autocomplete: 'off' });
     const message = h('textarea', { name: 'message', rows: 4, maxlength: 4000 });
@@ -1131,7 +1132,7 @@
       field('מאיפה הגיע הליד? *', source, { name: 'source' }),
       field('אימייל', email, { name: 'email' }),
       h('div', { class: 'nf-row' }, field('שירות', type), field('תקציב (₪)', budget)),
-      h('div', { class: 'nf-row' }, field('תאריך האירוע', date), field('דחיפות', urgency)),
+      field('תאריך האירוע', date, { hint: 'הדחיפות נקבעת לפי התאריך: השבוע, החודש, 3 חודשים או מעבר לזה', full: true }),
       field('הערות', message, { hint: 'מה הלקוח ביקש, מתי לחזור אליו וכו׳', full: true }),
       h('div', { class: 'nf-field is-full' }, h('span', { class: 'nf-label' }, 'סטטוס'), picker),
       submit);
@@ -1141,7 +1142,7 @@
       Object.values(err).forEach((el) => { el.textContent = ''; });
       const body = {
         submission_id: submissionId, source: source.value, name: name.value, phone: phone.value, email: email.value,
-        lead_type: type.value, event_date: date.value, urgency: urgency.value, budget: budget.value, message: message.value, status,
+        lead_type: type.value, event_date: date.value, budget: budget.value, message: message.value, status,
       };
       const local = {};
       if (name.value.trim().length < 2) local.name = 'required';

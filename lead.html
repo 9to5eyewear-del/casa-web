@@ -431,13 +431,6 @@ textarea { resize: none; min-height: 100px; line-height: 1.6; }
   font-weight: 500;
 }
 
-/* ── Urgency chips ── */
-.urgency-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
 
 /* ── Conditional block ── */
 .conditional-block {
@@ -956,20 +949,11 @@ img.judith-note-mark { object-fit: cover; padding: 0; }
       <div class="field">
         <label class="field-label" for="f-date">בחרי תאריך</label>
         <input type="date" id="f-date" oninput="onDateInput(this)"/>
-        <div class="field-hint" id="date-hint">בחרי תאריך או טווח משוער ונבדוק זמינות</div>
+        <div class="field-hint" id="date-hint">בחרי תאריך ונבדוק זמינות</div>
         <div class="field-error" id="e-date">אנא בחרי תאריך עתידי</div>
-        <div class="field-error" id="e-date-busy" role="alert">התאריך הזה כבר תפוס אצלנו. אפשר לבחור תאריך אחר, או לסמן ״גמיש״ ונחזור אלייך עם התאריכים הפנויים.</div>
+        <div class="field-error" id="e-date-busy" role="alert">התאריך הזה כבר תפוס אצלנו. אפשר לבחור תאריך אחר, או לכתוב לנו בוואטסאפ ונמצא יחד תאריך פנוי.</div>
       </div>
-      <div class="field">
-        <label class="field-label">או בערך:</label>
-        <div class="urgency-chips">
-          <div class="sub-chip" onclick="selectUrgency('השבוע',this)">השבוע</div>
-          <div class="sub-chip" onclick="selectUrgency('חודש הקרוב',this)">חודש הקרוב</div>
-          <div class="sub-chip" onclick="selectUrgency('3 חודשים',this)">3 חודשים</div>
-          <div class="sub-chip" onclick="selectUrgency('גמיש',this)">גמיש</div>
-        </div>
-      </div>
-      <div class="field-error" id="e-date-req" style="margin-top:0.5rem">אנא בחרי תאריך או טווח</div>
+      <div class="field-error" id="e-date-req" style="margin-top:0.5rem">אנא בחרי תאריך</div>
       <button class="btn-primary" onclick="next()">
         המשך <span class="btn-arrow">←</span>
       </button>
@@ -1156,7 +1140,7 @@ const s = {
   name:'', phone:'', email:'',
   service:'', sub:'', subOtherText:'',
   companions: 0,
-  date:'', urgency:'',
+  date:'',
   budget: 2000, budgetSkipped: false,
   notes:'',
   productionType: '',
@@ -1304,9 +1288,8 @@ function checkService() {
 }
 function checkDate() {
   const dateVal = document.getElementById('f-date').value;
-  const urgent = s.urgency;
   const errEl = document.getElementById('e-date-req');
-  if (!dateVal && !urgent) {
+  if (!dateVal) {
     errEl.style.display = 'block';
     return false;
   }
@@ -1415,19 +1398,8 @@ function selectSubChip(service, value, el) {
 }
 
 // ═══════════════════════════════
-//  DATE / URGENCY
+//  DATE
 // ═══════════════════════════════
-function selectUrgency(value, el) {
-  document.querySelectorAll('.urgency-chips .sub-chip').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  s.urgency = value;
-  // Clear date
-  document.getElementById('f-date').value = '';
-  document.getElementById('f-date').classList.remove('has-error','is-valid');
-  setErr('f-date','e-date', false);
-  document.getElementById('e-date-req').style.display = 'none';
-  showAvailability(null);
-}
 
 function onDateInput(el) {
   const chosen = new Date(el.value);
@@ -1435,9 +1407,6 @@ function onDateInput(el) {
   if (chosen >= today) {
     setErr('f-date','e-date', false);
     document.getElementById('e-date-req').style.display = 'none';
-    // Clear urgency chips
-    document.querySelectorAll('.urgency-chips .sub-chip').forEach(c => c.classList.remove('selected'));
-    s.urgency = '';
     checkAvailability(el.value);
   } else {
     showAvailability(null);
@@ -1495,10 +1464,6 @@ function updateBudget(el) {
 // ═══════════════════════════════
 function calcScore() {
   let score = 0;
-  if (s.urgency === 'השבוע') score += 40;
-  else if (s.urgency === 'חודש הקרוב') score += 30;
-  else if (s.urgency === '3 חודשים') score += 20;
-  else if (s.urgency === 'גמיש') score += 10;
   if (s.date) {
     const days = (new Date(s.date) - new Date()) / 86400000;
     if (days < 30) score += 35;
@@ -1539,7 +1504,7 @@ function submitForm() {
   const score = calcScore();
   const scoreLabel = { hot:'🔥 HOT', warm:'✨ WARM', cold:'📋 COLD' }[score];
 
-  const dateStr = s.date ? formatDate(s.date) : s.urgency || '—';
+  const dateStr = s.date ? formatDate(s.date) : '—';
   const budgetStr = s.budgetSkipped ? 'לא צוין' : `₪${s.budget.toLocaleString('he-IL')}`;
 
   const msg =
@@ -1571,7 +1536,6 @@ function submitForm() {
       lead_type: LEAD_TYPE[s.service] || 'other',
       lead_subtype: s.service === 'other' ? serviceDetail : (subDetail || null),
       event_date: s.date || null,
-      urgency: URGENCY_CODE[s.urgency] || null,
       companions: s.service === 'bride' ? s.companions : null,
       budget: s.service === 'bride' || s.budgetSkipped ? null : s.budget,
       production_type: s.productionType || null,
@@ -1606,9 +1570,10 @@ function submitForm() {
   });
 }
 
-// lead.html service / urgency values → the lead system's codes
+// lead.html service values → the lead system's codes
 const LEAD_TYPE = { bride:'bridal', fashion:'fashion', product:'product', production:'production', other:'other' };
-const URGENCY_CODE = { 'השבוע':'this_week', 'חודש הקרוב':'this_month', '3 חודשים':'three_months', 'גמיש':'flexible' };
+// What Judith heard when there was no exact date: shown as a hint, the visitor still picks the date.
+const URGENCY_TEXT = { this_week:'השבוע', this_month:'בחודש הקרוב', three_months:'ב-3 החודשים הקרובים', flexible:'התאריך גמיש' };
 
 let submitting = false;
 function setSubmitting(on) {
@@ -1691,13 +1656,9 @@ async function prefillFromJudith() {
     onDateInput(dateEl);
     known.push(formatDate(p.event_date));
     s.done.add(4);
-  } else if (p.urgency) {
-    const label = Object.keys(URGENCY_CODE).find(k => URGENCY_CODE[k] === p.urgency);
-    const chip = [...document.querySelectorAll('.urgency-chips .sub-chip')].find(c => c.textContent.trim() === label);
-    if (chip) { selectUrgency(label, chip); known.push(label); s.done.add(4); }
-  } else if (p.event_date_text) {
+  } else if (p.event_date_text || URGENCY_TEXT[p.urgency]) {
     const hint = document.getElementById('date-hint');
-    hint.textContent = hint.dataset.base = `סיפרת ליהודית: ${p.event_date_text} — בחרי תאריך או טווח ונבדוק זמינות`;
+    hint.textContent = hint.dataset.base = `סיפרת ליהודית: ${p.event_date_text || URGENCY_TEXT[p.urgency]} — בחרי תאריך ונבדוק זמינות`;
   }
 
   if (service && service !== 'bride' && Number.isInteger(p.budget)) {

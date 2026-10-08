@@ -156,3 +156,32 @@ test('api/ stays within the 12-function limit', async () => {
   assert.ok(files.length <= 12, `${files.length} functions: ${files.join(', ')}`);
 });
 
+
+test('timing: the date files the lead, and it moves closer by itself', async () => {
+  const { timingFor, withPriority } = await import('../api/_lib/priority.js');
+  const now = new Date('2026-10-08T09:00:00+03:00');
+  const at = (event_date, urgency = null) => timingFor({ event_date, urgency }, now);
+  assert.equal(at('2026-10-08'), 'this_week');
+  assert.equal(at('2026-10-15'), 'this_week');
+  assert.equal(at('2026-10-16'), 'this_month');
+  assert.equal(at('2026-11-08'), 'this_month');
+  assert.equal(at('2026-11-09'), 'three_months');
+  assert.equal(at('2027-01-08'), 'three_months');
+  assert.equal(at('2027-01-09'), 'later');
+  assert.equal(at('2026-10-07'), 'past');
+  // No date: what an older lead chose is kept; the date always wins over it.
+  assert.equal(at(null, 'flexible'), 'flexible');
+  assert.equal(at(null), null);
+  assert.equal(at('2027-05-01', 'this_week'), 'later');
+  // The same lead, months later.
+  assert.equal(timingFor({ event_date: '2027-05-01' }, new Date('2027-04-28T12:00:00+03:00')), 'this_week');
+  assert.equal(withPriority({ status: 'won', event_date: '2026-10-10', created_at: now.toISOString() }, now).timing, 'this_week');
+});
+
+test('validate: with a date, a sent urgency is ignored (the date decides)', async () => {
+  const { validateLead } = await import('../api/_lib/validate.js');
+  const now = new Date('2026-10-08T09:00:00Z');
+  const base = { source: 'website_form', name: 'דנה', phone: '0546787179' };
+  assert.equal(validateLead({ ...base, event_date: '2027-03-01', urgency: 'this_week' }, { now }).lead.urgency, null);
+  assert.equal(validateLead({ ...base, urgency: 'flexible' }, { now }).lead.urgency, 'flexible');
+});

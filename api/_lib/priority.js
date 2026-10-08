@@ -49,8 +49,22 @@ export function attentionPriority(lead, now = new Date()) {
   return { level, points, reasons, days_to_event: days };
 }
 
+/**
+ * How far off the event is, today — so a lead moves from 'later' to
+ * 'this_week' by itself as its date comes closer. The forms only ask for a
+ * date; this is the category LeadLive shows. Older leads sent without a date
+ * keep the urgency they chose.
+ *   'this_week' ≤ 7 days · 'this_month' ≤ 31 · 'three_months' ≤ 92 · 'later' · 'past'
+ */
+export function timingFor(lead, now) {
+  const days = daysUntil(lead.event_date, now);
+  if (days == null) return lead.urgency || null;
+  if (days < 0) return 'past';
+  return days <= 7 ? 'this_week' : days <= 31 ? 'this_month' : days <= 92 ? 'three_months' : 'later';
+}
+
 export function withPriority(lead, now) {
-  return { ...lead, priority: attentionPriority(lead, now) };
+  return { ...lead, priority: attentionPriority(lead, now), timing: timingFor(lead, now) };
 }
 
 /** The open leads worth acting on now, most urgent first. */
