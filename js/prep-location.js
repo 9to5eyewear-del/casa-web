@@ -15,7 +15,7 @@ import { ORIGIN, ZONES, checkLocation, minutesText, needsCheck, prepLocationText
 
 const NOTICE = 'המיקום שבחרת נמצא מחוץ לאזורי השירות המומלצים שלנו. נשמח לבדוק עבורך אפשרות מיוחדת, בהתאם לזמינות ולתמחור.';
 const CONFIRM = 'כן, אשמח לבדוק אפשרות';
-const CONFIRMED = '✓ מעולה, נבדוק עבורך אפשרות מיוחדת ונחזור אלייך.';
+const CONFIRMED = '✓ תודה שעדיין בחרת בנו! בואי נמשיך בתהליך.';
 
 const CSS = `
 .pl-combo { position: relative; }
