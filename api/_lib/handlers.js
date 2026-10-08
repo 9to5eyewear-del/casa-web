@@ -130,8 +130,8 @@ export function createLeadsHandler(getDeps, { log = defaultLog, rateLimit = RATE
     // HOT is ranked in JS (priority.js), so it's one unpaged list of open leads.
     const hotOnly = q.flag === 'hot';
     if (q.flag) {
-      if (q.flag !== 'hot' && q.flag !== 'repeat') return send(res, 400, { error: 'invalid flag' });
-      filters.flag = hotOnly ? 'open' : 'repeat';
+      if (!['hot', 'repeat', 'out_of_area'].includes(q.flag)) return send(res, 400, { error: 'invalid flag' });
+      filters.flag = hotOnly ? 'open' : q.flag;
     }
     if (q.limit) filters.limit = Math.min(Math.max(parseInt(q.limit, 10) || 30, 1), 100);
     if (q.cursor) {

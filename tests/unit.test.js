@@ -185,3 +185,25 @@ test('validate: with a date, a sent urgency is ignored (the date decides)', asyn
   assert.equal(validateLead({ ...base, event_date: '2027-03-01', urgency: 'this_week' }, { now }).lead.urgency, null);
   assert.equal(validateLead({ ...base, urgency: 'flexible' }, { now }).lead.urgency, 'flexible');
 });
+
+test('service areas: localities by region, spelling-insensitive, Ashkelon outside', async () => {
+  const { checkLocation, suggest, isOutOfArea, prepLocationText } = await import('../js/service-areas.js');
+  const at = (text, region) => { const r = checkLocation(text, region); return [r.status, r.place?.name ?? null, r.region]; };
+  assert.deepEqual(at('נתניה', 'sharon'), ['in_region', 'נתניה', 'sharon']);
+  assert.deepEqual(at('כפר סבא', 'sharon'), ['in_region', 'כפר סבא', 'sharon']);
+  assert.deepEqual(at('כפר ויתקין', 'emek_hefer'), ['in_region', 'כפר ויתקין', 'emek_hefer']);
+  assert.deepEqual(at('קריית ביאליק', 'north'), ['in_region', 'קרית ביאליק', 'north']);   // קרית / קריית
+  assert.deepEqual(at('ת״א', 'center'), ['in_region', 'תל אביב - יפו', 'center']);          // alias
+  assert.deepEqual(at('הרצל 5, נתניה', 'sharon'), ['in_region', 'נתניה', 'sharon']);        // inside an address
+  assert.deepEqual(at('רחובות', 'sharon'), ['other_region', 'רחובות', 'shfela']);
+  assert.deepEqual(at('אשקלון', 'south'), ['outside', 'אשקלון', null]);
+  assert.deepEqual(at('באר שבע', 'south'), ['outside', 'באר שבע', null]);
+  assert.deepEqual(at('אשדוד', 'south'), ['in_region', 'אשדוד', 'south']);
+  assert.deepEqual(at('בלה בלה', 'sharon'), ['unknown', null, null]);
+  assert.ok(isOutOfArea('outside') && isOutOfArea('unknown') && !isOutOfArea('other_region'));
+  // Autocomplete only offers the chosen region.
+  assert.ok(suggest('כפר', 'sharon').includes('כפר סבא'));
+  assert.deepEqual(suggest('אשק', 'south'), []);
+  assert.equal(prepLocationText({ prep_location: 'אשקלון', prep_region: 'south', out_of_area: true }), 'אשקלון (הדרום) · ⚠️ מחוץ לאזור שירות');
+  assert.equal(prepLocationText({ prep_location: null }), null);
+});

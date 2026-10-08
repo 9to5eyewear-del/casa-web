@@ -592,6 +592,7 @@
       @media (min-width: 768px) { .mobile-cta { display: none; } }
     </style>
 <script src="/js/lead-submit.js" defer></script>
+<script type="module" src="/js/prep-location.js"></script>
 <!-- Judith AI: loads after the page, only if enabled on the server -->
 <script src="/js/judith-loader.js" defer></script>
 </head>
@@ -981,6 +982,8 @@
             <button type="button" data-companions="1" aria-label="עוד מלווה">+</button>
           </div>
           <p class="field-hint">החבילה כוללת עד 4 מלוות ללא תוספת תשלום. אפשר לצרף עד 2 מלוות נוספות בתוספת תשלום.</p>
+          <!-- מיקום ההתארגנות: region + locality (js/prep-location.js) -->
+          <div id="prepLoc" class="mt-6" data-prep-location data-input-class="field-input"></div>
         </div>
 
         <div class="wz-sub" data-sub-for="fashion" hidden>
@@ -1908,6 +1911,8 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
   const slotOpen = () => availability.slots?.[s.service === 'bride' ? 'bridal' : 'production'] ?? null;
   // Bridal prep has no budget question; it's only for productions / shoots.
   const steps = () => (s.service === 'bride' ? [1, 2, 3, 4, 6] : [1, 2, 3, 4, 5, 6]);
+  // מיקום ההתארגנות (bridal only). If the module didn't load, the form goes on without it.
+  const prepLoc = () => $('prepLoc').prepLocation;
   const stepAfter = (n) => steps()[steps().indexOf(n) + 1];
   const stepBefore = (n) => steps()[steps().indexOf(n) - 1];
 
@@ -1977,6 +1982,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
       case 3: {
         if (!s.service) { $('e-service').textContent = 'נא לבחור שירות'; return false; }
         $('e-service').textContent = '';
+        if (s.service === 'bride') return prepLoc()?.validate() ?? true;
         const needsText = s.service === 'other' || s.sub === 'אחר';
         return needsText ? setError(`${s.service}-other-text`, val(`${s.service}-other-text`) ? '' : 'שדה חובה') : true;
       }
@@ -2118,6 +2124,8 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
       name: val('f-name'), phone: val('f-phone'), email: val('f-email'),
       service, serviceName, sub: service === 'other' ? '' : sub,
       companions: service === 'bride' ? s.companions : null,
+      prep: service === 'bride' ? prepLoc()?.value() : null,
+      prepLine: service === 'bride' ? prepLoc()?.summary() : '',
       date: $('f-date').value,
       budget: service === 'bride' || s.budgetSkipped ? null : Number($('f-budget').value),
       notes: val('f-message'),
@@ -2131,6 +2139,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
       `אימייל: ${d.email}`,
       `שירות: ${d.serviceName}${d.sub && d.sub !== 'אחר' ? ` · ${d.sub}` : ''}`,
       d.companions != null && `מלוות: ${d.companions}`,
+      d.prepLine,
       `תאריך: ${d.date ? fmtDate(d.date) : '—'}`,
       d.service !== 'bride' && `תקציב: ${d.budget == null ? 'לא צוין' : `₪${d.budget.toLocaleString('he-IL')}`}`,
       d.notes && `הערות: ${d.notes}`,
@@ -2175,12 +2184,13 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
           lead_subtype: d.service === 'other' ? d.serviceName : (d.sub || null),
           event_date: d.date || null,
           companions: d.companions,
+          ...d.prep,
           budget: d.budget,
           message: d.notes || null,
         },
         web3: {
           access_key: WEB3_KEY,
-          subject: `פנייה חדשה מהאתר – ${d.serviceName} | ${d.name}`,
+          subject: `פנייה חדשה מהאתר – ${d.serviceName} | ${d.name}${d.prep?.out_of_area ? ' | ⚠️ מחוץ לאזור שירות' : ''}`,
           from_name: 'Casa Mancini – אתר',
           name: d.name,
           phone: d.phone,

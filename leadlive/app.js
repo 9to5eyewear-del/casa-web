@@ -17,6 +17,9 @@
   const TYPE = { bridal: 'התארגנות כלה', production: 'הפקת צילום', fashion: 'צילום אופנה', product: 'צילום מוצר', other: 'אחר', unknown: 'לא צוין' };
   // l.timing: the server files every lead by how far off its date is, fresh on each load (priority.js → timingFor).
   const URGENCY = { this_week: 'השבוע', this_month: 'בחודש הקרוב', three_months: 'ב-3 החודשים הקרובים', later: 'בעוד יותר מ-3 חודשים', past: 'התאריך עבר', flexible: 'גמיש' };
+  // מיקום ההתארגנות regions (js/service-areas.js → REGIONS, `name`).
+  const REGION = { sharon: 'השרון', shfela: 'השפלה', south: 'הדרום', north: 'הצפון', center: 'המרכז', jerusalem: 'ירושלים והסביבה', emek_hefer: 'עמק חפר', hadera: 'חדרה והסביבה' };
+  const placeText = (l) => [l.prep_location, REGION[l.prep_region]].filter(Boolean).join(' · ');
   const PAYMENT = { transfer: 'העברה בנקאית', credit: 'אשראי', bit: 'ביט / פייבוקס', cash: 'מזומן', check: 'צ׳ק', other: 'אחר' };
   const PRIO = { hot: '🔥 HOT', warm: '● WARM', cold: '○ COLD' };
   const SCORE = { hot: 'HOT', warm: 'WARM', cold: 'COLD' };
@@ -735,6 +738,7 @@
         h('p', { class: 'card-what' }, [typeLabel(l), whenText(l)].filter(Boolean).join(' · ')),
         h('p', { class: 'card-when' },
           h('span', null, `פנייה ${rel(l.last_submission_at)}`),
+          l.out_of_area && h('span', { class: 'tag tag-area', title: placeText(l) }, `📍 מחוץ לאזור · ${l.prep_location}`),
           l.event_date && l.timing && h('span', { class: 'tag tag-timing', 'data-timing': l.timing }, URGENCY[l.timing]),
           l.source === 'judith_ai' && h('span', { class: 'tag tag-judith' }, SOURCE.judith_ai),
           l.submission_count > 1 && h('span', { class: 'tag' }, `פנייה חוזרת ×${l.submission_count}`))),
@@ -764,6 +768,7 @@
     'status:new': ['הכול מטופל', 'אין לידים חדשים שמחכים לטיפול.'],
     'flag:hot': ['אין כרגע לידים דחופים', 'לידי HOT פתוחים יופיעו כאן.'],
     'flag:repeat': ['אין פניות חוזרות', 'לקוחות שפנו יותר מפעם אחת יופיעו כאן.'],
+    'flag:out_of_area': ['אין פניות מחוץ לאזור', 'כלות שביקשו התארגנות מחוץ לאזורי השירות יופיעו כאן.'],
     'status:in_progress': ['אין לידים בטיפול', null],
     'status:won': ['עדיין אין לידים שנסגרו', null],
     'status:lost': ['אין לידים שלא נסגרו', null],
@@ -957,6 +962,7 @@
       ['תאריך', l.event_date && whenText(l)],
       ['דחיפות', URGENCY[l.timing || l.urgency]],
       ['מלוות', l.companions != null && String(l.companions)],
+      ['מיקום ההתארגנות', l.prep_location && placeText(l)],
       ['סוג הפקה', l.production_type],
       ['תקציב', l.budget != null && ils(l.budget)],
     ].filter(([, v]) => v);
@@ -1055,6 +1061,10 @@
         h('h1', null, l.name),
         h('p', { class: 'd-phone ltr' }, l.phone))),
       marks,
+      // Out of the service regions, and she asked to go on anyway: price / approve the trip first.
+      l.out_of_area && h('section', { class: 'area-alert', role: 'note' },
+        h('strong', null, '📍 מחוץ לאזור שירות'),
+        h('p', null, `${placeText(l)} — הכלה ביקשה בכל זאת לבדוק זמינות. יש לתמחר או לאשר הגעה חריגה לפני הסגירה.`)),
       (wa || tel) && h('div', { class: 'd-actions' },
         wa && h('a', { class: 'btn btn-wa', href: wa, target: '_blank', rel: 'noopener' }, icon('wa'), 'WhatsApp'),
         tel && h('a', { class: 'btn btn-primary', href: tel }, icon('call'), 'התקשר')),

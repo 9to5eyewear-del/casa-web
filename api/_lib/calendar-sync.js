@@ -20,6 +20,7 @@
 
 import { createTokenSource, nextDate, TIMEOUT_MS } from './calendar.js';
 import { LEAD_TYPE_LABELS, SOURCE_LABELS, PAYMENT_LABELS } from './catalog.js';
+import { prepLocationText } from '../../js/service-areas.js';
 import { defaultLog } from './handlers.js';
 
 const API = 'https://www.googleapis.com/calendar/v3/calendars';
@@ -60,6 +61,7 @@ export function eventFor(lead) {
     `שירות: ${type}${lead.lead_subtype ? ` · ${lead.lead_subtype}` : ''}`,
     lead.production_type && `סוג הפקה: ${lead.production_type}`,
     lead.companions != null && `מלוות: ${lead.companions}`,
+    lead.prep_location && `מיקום ההתארגנות: ${prepLocationText(lead)}`,
     lead.budget != null && `תקציב: ₪${Number(lead.budget).toLocaleString('he-IL')}`,
     lead.message && `הערות: ${lead.message}`,
     lead.source && `מקור: ${SOURCE_LABELS[lead.source] || lead.source}`,

@@ -367,3 +367,29 @@ test('manual lead: optional starting status; same phone merges into the open lea
   assert.equal(b.body.result, 'duplicate_submission');
   assert.equal(b.body.lead_id, a.body.lead_id);
 });
+
+test('bridal prep location: out of area is decided by the server, stored, flagged and filterable', async () => {
+  // Ashkelon is outside every service region; the client's own flag is ignored.
+  await post(websiteLead({ prep_region: 'south', prep_location: 'אשקלון', out_of_area: false }));
+  // רחובות sent under the wrong region: in the area, and the region follows the locality.
+  await post(websiteLead({ phone: '0521234567', email: 'b@example.com', prep_region: 'sharon', prep_location: 'רחובות' }));
+  // Not bridal: no location is kept.
+  await post(leadPageLead({ prep_region: 'south', prep_location: 'אשקלון' }));
+
+  const byPhone = Object.fromEntries((await onlyLead()).map((l) => [l.phone_normalized, l]));
+  const out = byPhone['972546787179'];
+  assert.deepEqual([out.prep_region, out.prep_location, out.out_of_area], ['south', 'אשקלון', true]);
+  const inArea = byPhone['972521234567'];
+  assert.deepEqual([inArea.prep_region, inArea.prep_location, inArea.out_of_area], ['shfela', 'רחובות', false]);
+  const shoot = byPhone['972521112233'];
+  assert.deepEqual([shoot.prep_region, shoot.prep_location, shoot.out_of_area], [null, null, false]);
+
+  const flagged = (await list({ flag: 'out_of_area' })).body.leads;
+  assert.deepEqual(flagged.map((l) => l.id), [out.id]);
+  assert.equal((await getOne(out.id)).body.lead.out_of_area, true);
+
+  // A repeat inquiry doesn't overwrite a location already on the lead.
+  await post(websiteLead({ prep_region: 'center', prep_location: 'תל אביב' }));
+  const again = (await getOne(out.id)).body.lead;
+  assert.deepEqual([again.prep_location, again.out_of_area, again.submission_count], ['אשקלון', true, 2]);
+});

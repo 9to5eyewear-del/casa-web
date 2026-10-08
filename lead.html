@@ -278,6 +278,8 @@ body::before {
 .step { display: none; }
 .step.active {
   display: block;
+  position: relative;
+  z-index: 2; /* above the mobile video strip below, so the locality suggestions aren't covered */
   animation: fadeUp 0.45s cubic-bezier(0.16,1,0.3,1) both;
 }
 @keyframes fadeUp {
@@ -319,6 +321,7 @@ input[type="tel"],
 input[type="email"],
 input[type="date"],
 input[type="number"],
+select,
 textarea {
   display: block;
   width: 100%;
@@ -336,7 +339,7 @@ textarea {
   appearance: none;
 }
 input[type="date"] { color-scheme: light; }
-input:focus, textarea:focus {
+input:focus, select:focus, textarea:focus {
   border-color: var(--border-focus);
   box-shadow: 0 0 0 3px rgba(201,169,110,0.14);
 }
@@ -733,6 +736,7 @@ img.judith-note-mark { object-fit: cover; padding: 0; }
 }
 </style>
 <script src="/js/lead-submit.js" defer></script>
+<script type="module" src="/js/prep-location.js"></script>
 </head>
 <body>
 
@@ -874,6 +878,8 @@ img.judith-note-mark { object-fit: cover; padding: 0; }
         </div>
         <div class="field-hint" style="margin-top:0.5rem">החבילה כוללת עד 4 מלוות ללא תוספת תשלום. אפשר לצרף עד 2 מלוות נוספות בתוספת תשלום.</div>
         <div class="field-error" id="e-companions">ניתן לבחור עד 6 מלוות בלבד</div>
+        <!-- מיקום ההתארגנות: region + locality (js/prep-location.js) -->
+        <div id="prepLoc" style="margin-top:1.25rem" data-prep-location></div>
       </div>
 
       <!-- Sub: Fashion -->
@@ -1267,6 +1273,9 @@ function checkService() {
   }
   document.getElementById('e-service').style.display = 'none';
 
+  // מיקום ההתארגנות (bridal only). If the module didn't load, the form goes on without it.
+  if (s.service === 'bride') return prepLoc()?.validate() ?? true;
+
   // Check sub for "other" variants
   if (s.service === 'other') {
     const v = document.getElementById('service-other-text').value.trim();
@@ -1303,6 +1312,8 @@ function checkDate() {
   }
   return true;
 }
+
+const prepLoc = () => document.getElementById('prepLoc').prepLocation;
 
 function setErr(inputId, errId, hasError) {
   const inp = document.getElementById(inputId);
@@ -1501,6 +1512,7 @@ function submitForm() {
     serviceDetail = document.getElementById('service-other-text').value.trim() || 'אחר';
   }
 
+  const prep = s.service === 'bride' ? prepLoc()?.value() : null;
   const score = calcScore();
   const scoreLabel = { hot:'🔥 HOT', warm:'✨ WARM', cold:'📋 COLD' }[score];
 
@@ -1515,6 +1527,7 @@ function submitForm() {
     `אימייל: ${s.email}\n` +
     `שירות: ${serviceDetail}${subDetail && subDetail !== 'אחר' ? ` · ${subDetail}` : ''}\n` +
     (s.service === 'bride' ? `מלוות: ${s.companions}\n` : '') +
+    (prep?.prep_location ? `${prepLoc().summary()}\n` : '') +
     `תאריך: ${dateStr}\n` +
     (s.service !== 'bride' ? `תקציב: ${budgetStr}\n` : '') +
     `הערות: ${s.notes || '—'}\n` +
@@ -1537,13 +1550,14 @@ function submitForm() {
       lead_subtype: s.service === 'other' ? serviceDetail : (subDetail || null),
       event_date: s.date || null,
       companions: s.service === 'bride' ? s.companions : null,
+      ...prep,
       budget: s.service === 'bride' || s.budgetSkipped ? null : s.budget,
       production_type: s.productionType || null,
       message: s.notes || null,
     },
     web3: {
       access_key: WEB3_KEY,
-      subject: `ליד חדש – ${serviceDetail} | ${s.name} | ${scoreLabel}`,
+      subject: `ליד חדש – ${serviceDetail} | ${s.name} | ${scoreLabel}${prep?.out_of_area ? ' | ⚠️ מחוץ לאזור שירות' : ''}`,
       from_name: LEAD_SOURCE === 'judith_ai' ? 'Casa Mancini – יהודית AI' : 'Casa Mancini – דף פנייה',
       message: msg,
       name: s.name,
@@ -1629,10 +1643,10 @@ async function prefillFromJudith() {
     known.push(serviceLabel(service));
     let complete = false;
     if (service === 'bride') {
+      // Not complete: the step still asks for מיקום ההתארגנות, which Judith doesn't collect.
       if (Number.isInteger(p.companions) && p.companions >= 0 && p.companions <= MAX_COMPANIONS) {
         changeCompanions(p.companions - s.companions);
         known.push(`${p.companions} מלוות`);
-        complete = true;
       }
     } else if (service === 'other') {
       if (p.lead_subtype) { document.getElementById('service-other-text').value = p.lead_subtype; known.push(p.lead_subtype); complete = true; }

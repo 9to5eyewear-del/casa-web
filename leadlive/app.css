@@ -400,6 +400,10 @@ h1, h2, h3, p { margin: 0; }
 .tag-timing[data-timing="three_months"], .tag-timing[data-timing="later"] { background: var(--slate-wash); color: var(--slate); }
 .tag-timing[data-timing="past"] { background: var(--linen); color: var(--ink-soft); }
 .tag-dup { background: var(--linen); color: var(--ink-soft); }
+.tag-area { background: var(--brick); color: #fff; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.area-alert { margin: 14px 0; padding: 12px 14px; border-radius: 10px; background: var(--brick-wash); color: var(--brick); border-inline-start: 4px solid var(--brick); }
+.area-alert strong { display: block; font-size: 15px; }
+.area-alert p { margin: 4px 0 0; font-size: 14px; line-height: 1.5; color: var(--ink); }
 
 /* ── Empty / error ── */
 .empty-state { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 28px 16px; background: var(--linen); border-radius: var(--r-md); }
