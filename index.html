@@ -1098,8 +1098,7 @@
         <span class="material-symbols-outlined" aria-hidden="true">check</span>
       </div>
       <h3 class="font-headline font-light text-3xl md:text-4xl mb-4" tabindex="-1" id="successTitle">תודה, הפרטים התקבלו.</h3>
-      <p class="text-on-surface-variant font-light leading-relaxed mb-8">נחזור אלייך בהקדם. אם נוח יותר, אפשר גם לכתוב לנו ישירות בוואטסאפ.</p>
-      <a id="successWa" href="https://wa.me/972546787179" target="_blank" rel="noopener noreferrer" class="btn-primary">להמשך שיחה בוואטסאפ</a>
+      <p class="text-on-surface-variant font-light leading-relaxed">נחזור אלייך בהקדם.</p>
     </div>
   </div>
 </section>
@@ -2167,8 +2166,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
     submitBtn.innerHTML = on ? '<span class="spinner" aria-hidden="true"></span><span>שולחת…</span>' : '<span class="btn-label">שליחה</span>';
   }
 
-  function showSuccess(d) {
-    $('successWa').href = waLink(d);
+  function showSuccess() {
     form.hidden = true;
     success.hidden = false;
     $('successTitle').focus({ preventScroll: true });
@@ -2181,7 +2179,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (e.submitter && e.submitter.hasAttribute('data-no-notes')) $('f-message').value = '';
     formError.textContent = '';
     const d = collect();
-    if (form.elements.botcheck.checked) { showSuccess(d); return; }
+    if (form.elements.botcheck.checked) { showSuccess(); return; }
 
     setLoading(true);
     try {
@@ -2211,7 +2209,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
         },
       });
       if (!ok) throw new Error('not delivered');
-      showSuccess(d);
+      showSuccess();
     } catch (err) {
       console.warn('Lead submit:', err);
       formError.innerHTML = `משהו השתבש בשליחה. אפשר לנסות שוב, או <a class="underline" target="_blank" rel="noopener noreferrer" href="${waLink(d)}">לשלוח את הפרטים בוואטסאפ</a>.`;
