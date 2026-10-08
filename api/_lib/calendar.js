@@ -126,13 +126,16 @@ export function createAvailabilityHandler(getConfig, { fetchImpl = fetch, now = 
     if (res.status === 401) token = null;
     if (!res.ok || !data.calendars) throw Object.assign(new Error(`freeBusy ${res.status}`), { kind: 'google' });
     const open = {};
+    const problems = {};
     for (const slot of SLOTS) {
       const cal = cfg.calendars[slot] && data.calendars[cfg.calendars[slot]];
       // notFound means the calendar isn't shared with the service account (or a wrong ID).
-      if (cal?.errors?.length) log.error('calendar_check_failed', { kind: 'calendar', slot, message: `calendar ${cal.errors[0].reason}`, date });
-      else if (!cal) log.error('calendar_check_failed', { kind: 'calendar', slot, message: cfg.calendars[slot] ? 'calendar missing from the answer' : 'no calendar ID set', date });
-      open[slot] = !cal || cal.errors?.length ? null : cal.busy.length === 0;
+      if (cal?.errors?.length) problems[slot] = `calendar ${cal.errors[0].reason}`;
+      else if (!cal) problems[slot] = cfg.calendars[slot] ? 'calendar missing from the answer' : 'no calendar ID set';
+      open[slot] = problems[slot] ? null : cal.busy.length === 0;
     }
+    // One line per request: Vercel's log view keeps only the first.
+    if (Object.keys(problems).length) log.error('calendar_check_failed', { kind: 'calendar', ...problems, date });
     return open;
   }
 

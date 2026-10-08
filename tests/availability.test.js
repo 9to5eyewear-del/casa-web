@@ -90,7 +90,7 @@ test('a calendar not shared with the service account is unknown, the other still
   } }) });
   const h = api(google);
   assert.deepEqual((await get(h, '2026-11-01')).body, { date: '2026-11-01', bridal: null, production: false });
-  assert.ok(log.entries.some((e) => e.event === 'calendar_check_failed' && e.slot === 'bridal' && /notFound/.test(e.message)));
+  assert.ok(log.entries.some((e) => e.event === 'calendar_check_failed' && /notFound/.test(e.bridal) && !e.production));
   await get(h, '2026-11-01');
   assert.equal(google.checks().length, 2);   // a partial answer isn't cached
 });
