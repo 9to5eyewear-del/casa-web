@@ -517,8 +517,6 @@
         h('div', { class: 'metric' }, h('b', null, j.whatsapp_shown ?? 0), h('span', null, 'הופנו לוואטסאפ'))));
   }
 
-  function breakdownBlock(rows, nameOf, emptyText) {
-    if (!rows.length) return emptyState('אין עדיין נתונים', emptyText);
   // ── Claude API card (inside the Judith block) ──
   // Loaded on its own, so a slow or failing Anthropic never holds up the
   // dashboard. The server caches what it gets from Anthropic; there is no API
@@ -586,6 +584,9 @@
       h('p', { class: 'claude-note' }, notes.join(' ')));
   }
   setInterval(() => document.querySelectorAll('.claude-time').forEach((el) => { el.textContent = agoText(el.dataset.ts); }), 20000);
+
+  function breakdownBlock(rows, nameOf, emptyText) {
+    if (!rows.length) return emptyState('אין עדיין נתונים', emptyText);
 
     return h('div', { class: 'rows panel' }, rows.map((r) => h('div', { class: 'row' },
       h('div', { class: 'row-top' }, h('span', { class: 'row-name' }, nameOf(r)), h('span', { class: 'row-share' }, pct(r.share.rate))),
