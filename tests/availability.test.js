@@ -140,10 +140,18 @@ test('config reads both calendar IDs and the pasted key file', () => {
   assert.equal(calendarConfig({ ...env, GOOGLE_SERVICE_ACCOUNT_JSON: '{nope' }, log), null);
 });
 
+test('a key file pasted with curly quotes still works', () => {
+  const key = JSON.stringify({ client_email: CFG.clientEmail, private_key: PEM }).replace(/"/g, (q, i) => (i % 2 ? '\u201C' : '\u201D'));
+  assert.deepEqual(calendarConfig({ GOOGLE_CALENDAR_BRIDAL: BRIDAL, GOOGLE_CALENDAR_PRODUCTION: PROD, GOOGLE_SERVICE_ACCOUNT_JSON: `\uFEFF${key}\n` }, log), CFG);
+});
+
 test('a wrong key is reported without quoting it in the logs', () => {
   const secret = 'AIzaSyFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE';
   assert.equal(calendarConfig({ GOOGLE_CALENDAR_BRIDAL: BRIDAL, GOOGLE_SERVICE_ACCOUNT_JSON: secret }, log), null);
   const entry = log.entries.find((e) => e.event === 'calendar_bad_key');
   assert.match(entry.message, /API key/);
   assert.ok(!JSON.stringify(log.entries).includes('AIza'));
+  calendarConfig({ GOOGLE_CALENDAR_BRIDAL: BRIDAL, GOOGLE_SERVICE_ACCOUNT_JSON: '{"private_key": "-----BEGIN' }, log);
+  assert.ok(!JSON.stringify(log.entries).includes('BEGIN'));
+  assert.match(log.entries.at(-1).message, /ends with "}": false/);
 });

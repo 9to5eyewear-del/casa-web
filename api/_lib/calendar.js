@@ -42,7 +42,8 @@ export function calendarConfig(env = process.env, log = defaultLog) {
     bridal: (env.GOOGLE_CALENDAR_BRIDAL || '').trim() || null,
     production: (env.GOOGLE_CALENDAR_PRODUCTION || '').trim() || null,
   };
-  const raw = (env.GOOGLE_SERVICE_ACCOUNT_JSON || '').trim();
+  // Pasting through TextEdit or Notes turns the key file's quotes curly.
+  const raw = (env.GOOGLE_SERVICE_ACCOUNT_JSON || '').replace(/^\uFEFF/, '').replace(/[\u201C\u201D\u201E\u201F]/g, '"').trim();
   if (!raw || !SLOTS.some((slot) => calendars[slot])) return null;
   try {
     const key = JSON.parse(raw);
@@ -51,7 +52,8 @@ export function calendarConfig(env = process.env, log = defaultLog) {
   } catch (err) {
     // Never err.message from JSON.parse: it quotes the start of the secret.
     const message = err instanceof SyntaxError
-      ? (raw.startsWith('AIza') ? 'an API key, not a service account JSON key file' : 'not valid JSON')
+      ? (raw.startsWith('AIza') ? 'an API key, not a service account JSON key file'
+        : `not valid JSON (starts with "{": ${raw.startsWith('{')}, ends with "}": ${raw.endsWith('}')}, length ${raw.length})`)
       : err.message;
     log.error('calendar_bad_key', { message });
     return null;
