@@ -98,6 +98,9 @@ export function createLeadsHandler(getDeps, { log = defaultLog, rateLimit = RATE
       }
     }
 
+    // Into the "interested" calendar, after the response (calendar-sync.js).
+    if (deps.calendarSync && out.lead_id) deps.waitUntil(deps.calendarSync(out.lead_id, log));
+
     // Sent after the response, so a slow push service never delays the form.
     const note = leadNotification(lead, out);
     if (note && deps.notify) {
@@ -206,6 +209,8 @@ export function createLeadHandler(getDeps, { log = defaultLog } = {}) {
       if (!updated) return send(res, 404, { error: 'not_found' });
       const lead = withPriority(updated, new Date());
       log.info('lead_status_changed', { lead_id: id, status: body.status, by: user.email });
+      // Won → the bookings calendar, lost → off the calendar (calendar-sync.js).
+      if (deps.calendarSync) deps.waitUntil(deps.calendarSync(updated, log));
       return send(res, 200, { lead });
     } catch (err) {
       log.error('lead_api_error', { method: req.method, error: String(err && err.message || err) });

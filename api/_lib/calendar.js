@@ -18,7 +18,8 @@
 //
 // Env: GOOGLE_CALENDAR_BRIDAL and GOOGLE_CALENDAR_PRODUCTION (each calendar's
 // ID from its settings page) and GOOGLE_SERVICE_ACCOUNT_JSON (the whole JSON
-// key file, pasted as is).
+// key file, pasted as is). GOOGLE_CALENDAR_INTERESTED is used only by
+// calendar-sync.js, which writes leads into the calendars.
 
 import { createSign } from 'node:crypto';
 import { send, query } from './http.js';
@@ -26,25 +27,28 @@ import { defaultLog } from './handlers.js';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const FREEBUSY_URL = 'https://www.googleapis.com/calendar/v3/freeBusy';
-const SCOPE = 'https://www.googleapis.com/auth/calendar.freebusy';
+// freeBusy for the availability check; events for calendar-sync.js.
+const SCOPE = 'https://www.googleapis.com/auth/calendar.freebusy https://www.googleapis.com/auth/calendar.events';
 export const SLOTS = ['bridal', 'production'];
 const TZ = 'Asia/Jerusalem';
 export const CACHE_MS = 2 * 60 * 1000;   // a new booking shows up within 2 minutes
-const TIMEOUT_MS = 4000;
+export const TIMEOUT_MS = 4000;
 const MAX_DAYS_AHEAD = 3 * 365;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const DAY = 86400000;
 
-/** Env → { calendars: { bridal, production }, clientEmail, privateKey }, or
- * null when not set up. A slot without a calendar ID is never checked. */
+/** Env → { calendars: { bridal, production, interested }, clientEmail,
+ * privateKey }, or null when not set up. A calendar without an ID is never
+ * read or written. */
 export function calendarConfig(env = process.env, log = defaultLog) {
   const calendars = {
     bridal: (env.GOOGLE_CALENDAR_BRIDAL || '').trim() || null,
     production: (env.GOOGLE_CALENDAR_PRODUCTION || '').trim() || null,
+    interested: (env.GOOGLE_CALENDAR_INTERESTED || '').trim() || null,
   };
   // Pasting through TextEdit or Notes turns the key file's quotes curly.
   const raw = (env.GOOGLE_SERVICE_ACCOUNT_JSON || '').replace(/^\uFEFF/, '').replace(/[\u201C\u201D\u201E\u201F]/g, '"').trim();
-  if (!raw || !SLOTS.some((slot) => calendars[slot])) return null;
+  if (!raw || !Object.values(calendars).some(Boolean)) return null;
   try {
     const key = JSON.parse(raw);
     if (!key.client_email || !key.private_key) throw new Error('missing client_email or private_key');
@@ -77,7 +81,29 @@ export function israelOffset(date) {
   return name === 'GMT' ? '+00:00' : name.slice(3);
 }
 
-const nextDate = (date) => new Date(Date.parse(`${date}T00:00:00Z`) + DAY).toISOString().slice(0, 10);
+/** A service account's access token, fetched once and reused for its hour.
+ * One per function instance. */
+export function createTokenSource({ fetchImpl = fetch, now = () => Date.now() } = {}) {
+  let token = null;
+  return {
+    async get(cfg) {
+      if (token && token.email === cfg.clientEmail && token.expires - 60000 > now()) return token.value;
+      const res = await fetchImpl(TOKEN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: serviceAccountJwt(cfg, now()) }),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.access_token) throw Object.assign(new Error(`token ${res.status} ${data.error || ''}`.trim()), { kind: 'auth' });
+      token = { value: data.access_token, email: cfg.clientEmail, expires: now() + (data.expires_in || 3600) * 1000 };
+      return token.value;
+    },
+    reset() { token = null; },
+  };
+}
+
+export const nextDate = (date) => new Date(Date.parse(`${date}T00:00:00Z`) + DAY).toISOString().slice(0, 10);
 const israelToday = (nowMs) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date(nowMs));
 
 /** A YYYY-MM-DD that is a real date, today or later (Israel), within the window. */
@@ -91,29 +117,15 @@ export function checkDate(date, nowMs) {
 
 export function createAvailabilityHandler(getConfig, { fetchImpl = fetch, now = () => Date.now(), log = defaultLog } = {}) {
   // Per function instance: one access token (valid an hour) and recent answers.
-  let token = null;
+  const tokens = createTokenSource({ fetchImpl, now });
   const answers = new Map();
-
-  async function accessToken(cfg) {
-    if (token && token.email === cfg.clientEmail && token.expires - 60000 > now()) return token.value;
-    const res = await fetchImpl(TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: serviceAccountJwt(cfg, now()) }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.access_token) throw Object.assign(new Error(`token ${res.status} ${data.error || ''}`.trim()), { kind: 'auth' });
-    token = { value: data.access_token, email: cfg.clientEmail, expires: now() + (data.expires_in || 3600) * 1000 };
-    return token.value;
-  }
 
   // One freeBusy request for both calendars → { bridal, production }.
   async function openSlots(cfg, date) {
     const ids = SLOTS.map((slot) => cfg.calendars[slot]).filter(Boolean);
     const res = await fetchImpl(FREEBUSY_URL, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${await accessToken(cfg)}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${await tokens.get(cfg)}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         timeMin: `${date}T00:00:00${israelOffset(date)}`,
         timeMax: `${nextDate(date)}T00:00:00${israelOffset(nextDate(date))}`,
@@ -123,7 +135,7 @@ export function createAvailabilityHandler(getConfig, { fetchImpl = fetch, now = 
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     const data = await res.json().catch(() => ({}));
-    if (res.status === 401) token = null;
+    if (res.status === 401) tokens.reset();
     if (!res.ok || !data.calendars) throw Object.assign(new Error(`freeBusy ${res.status}`), { kind: 'google' });
     const open = {};
     const problems = {};
@@ -149,7 +161,7 @@ export function createAvailabilityHandler(getConfig, { fetchImpl = fetch, now = 
 
     const unknown = { date, bridal: null, production: null };
     const cfg = getConfig();
-    if (!cfg) return send(res, 200, unknown);
+    if (!cfg || !SLOTS.some((slot) => cfg.calendars[slot])) return send(res, 200, unknown);
 
     const hit = answers.get(date);
     if (hit && now() - hit.at < CACHE_MS) return send(res, 200, { date, ...hit.open });

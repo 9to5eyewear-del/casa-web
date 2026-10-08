@@ -5,12 +5,17 @@ import { createDb, sqlRpc, neonQuery } from './db.js';
 import { createRequireSession } from './session.js';
 import { createNotifier } from './push.js';
 import { defaultLog } from './handlers.js';
+import { calendarConfig } from './calendar.js';
+import { createCalendarSync, syncLeadCalendar } from './calendar-sync.js';
 
 function required(name) {
   const v = process.env[name];
   if (!v) throw new Error(`missing env ${name}`);
   return v;
 }
+
+// One per function instance, so its Google token is reused across requests.
+let calendarSync;
 
 // Built per request so a missing variable fails loudly in the logs instead
 // of at import time. Getters keep each endpoint to the variables it uses.
@@ -21,6 +26,8 @@ export function productionDeps() {
   const vapid = env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY && env.VAPID_SUBJECT
     ? { publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY, subject: env.VAPID_SUBJECT }
     : null;
+  const calendar = calendarConfig();
+  if (calendar) calendarSync ??= createCalendarSync(calendar);
 
   return {
     db,
@@ -33,5 +40,7 @@ export function productionDeps() {
     // Push is best-effort: without VAPID keys leads are still saved.
     notify: vapid ? createNotifier({ db, webpush, vapid, log: defaultLog }) : null,
     waitUntil,
+    // Lead → Google Calendar (calendar-sync.js); never throws. Null without the env vars.
+    calendarSync: calendar ? (leadOrId, log) => syncLeadCalendar(calendarSync, db, leadOrId, log) : null,
   };
 }

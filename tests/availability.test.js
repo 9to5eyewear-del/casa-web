@@ -11,7 +11,7 @@ const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 20
 const PEM = privateKey.export({ type: 'pkcs8', format: 'pem' });
 const BRIDAL = 'bridal-cal@group.calendar.google.com';
 const PROD = 'production-cal@group.calendar.google.com';
-const CFG = { calendars: { bridal: BRIDAL, production: PROD }, clientEmail: 'casa@casa.iam.gserviceaccount.com', privateKey: PEM };
+const CFG = { calendars: { bridal: BRIDAL, production: PROD, interested: null }, clientEmail: 'casa@casa.iam.gserviceaccount.com', privateKey: PEM };
 const NOW = Date.parse('2026-10-08T09:00:00Z');
 const NONE = { bridal: null, production: null };
 const BLOCK = [{ start: '2026-11-20T07:00:00Z', end: '2026-11-20T12:00:00Z' }];
@@ -97,7 +97,7 @@ test('a calendar not shared with the service account is unknown, the other still
 
 test('only one calendar set up: the other slot stays unknown', async () => {
   const google = fakeGoogle({ busy: { '2026-11-01': [PROD] } });
-  const h = api(google, { ...CFG, calendars: { bridal: null, production: PROD } });
+  const h = api(google, { ...CFG, calendars: { bridal: null, production: PROD, interested: null } });
   assert.deepEqual((await get(h, '2026-11-01')).body, { date: '2026-11-01', bridal: null, production: false });
   assert.deepEqual(google.checks()[0].body.items, [{ id: PROD }]);
 });
@@ -121,13 +121,13 @@ test('rejects bad, past and far-off dates, and non-GET', async () => {
   assert.equal(checkDate('2026-10-08', Date.parse('2026-10-07T22:30:00Z')), true);  // already the 8th in Israel
 });
 
-test('the JWT is a valid RS256 assertion for the freeBusy scope', () => {
+test('the JWT is a valid RS256 assertion for freeBusy and events', () => {
   const jwt = serviceAccountJwt(CFG, NOW);
   const [head, claims, sig] = jwt.split('.');
   assert.ok(createVerify('RSA-SHA256').update(`${head}.${claims}`).verify(publicKey, sig, 'base64url'));
   const c = JSON.parse(Buffer.from(claims, 'base64url'));
   assert.equal(c.iss, CFG.clientEmail);
-  assert.equal(c.scope, 'https://www.googleapis.com/auth/calendar.freebusy');
+  assert.equal(c.scope, 'https://www.googleapis.com/auth/calendar.freebusy https://www.googleapis.com/auth/calendar.events');
   assert.equal(c.exp - c.iat, 3600);
 });
 
@@ -137,6 +137,9 @@ test('config reads both calendar IDs and the pasted key file', () => {
   assert.deepEqual(calendarConfig(env, log), CFG);
   assert.equal(calendarConfig({ GOOGLE_SERVICE_ACCOUNT_JSON: key }, log), null);
   assert.equal(calendarConfig({ GOOGLE_CALENDAR_BRIDAL: BRIDAL }, log), null);
+  // Only the interested calendar: config exists, but availability stays unknown.
+  assert.deepEqual(calendarConfig({ GOOGLE_CALENDAR_INTERESTED: 'i@group.calendar.google.com', GOOGLE_SERVICE_ACCOUNT_JSON: key }, log).calendars,
+    { bridal: null, production: null, interested: 'i@group.calendar.google.com' });
   assert.equal(calendarConfig({ ...env, GOOGLE_SERVICE_ACCOUNT_JSON: '{nope' }, log), null);
 });
 
