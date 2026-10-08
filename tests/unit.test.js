@@ -143,7 +143,16 @@ test('every /api path the PWA and the forms call exists as a route', async () =>
   for (const p of paths) {
     const base = new URL(`..${p}`, import.meta.url);
     const ok = existsSync(new URL(`${base.href}.js`)) || existsSync(new URL(`${base.href}/index.js`))
-      || existsSync(new URL(`${base.href}/[id].js`));
+      || existsSync(new URL(`${base.href}/[id].js`)) || existsSync(new URL('[action].js', base));
     assert.ok(ok, `${p} has no route under api/`);
   }
 });
+
+// Vercel Hobby deploys at most 12 functions; a 13th fails the whole deploy.
+test('api/ stays within the 12-function limit', async () => {
+  const { readdirSync } = await import('node:fs');
+  const files = readdirSync(new URL('../api/', import.meta.url), { recursive: true })
+    .filter((f) => f.endsWith('.js') && !f.split('/').some((part) => part.startsWith('_')));
+  assert.ok(files.length <= 12, `${files.length} functions: ${files.join(', ')}`);
+});
+
