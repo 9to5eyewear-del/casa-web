@@ -17,7 +17,7 @@ export function leadNotification(lead, out) {
   if (out.result === 'created') {
     const body = [lead.name, LEAD_TYPE_LABELS[lead.lead_type], lead.event_date && ddmm(lead.event_date), prepLocationText(lead)]
       .filter(Boolean).join(' | ');
-    return { title: `ליד חדש${lead.out_of_area ? ' · מחוץ לאזור שירות' : ''} – ${BRAND}`, body, url, tag };
+    return { title: `ליד חדש${lead.out_of_area ? ' · לבדוק זמינות ותמחור' : ''} – ${BRAND}`, body, url, tag };
   }
   if (out.result === 'repeat') {
     return { title: `פנייה חוזרת – ${BRAND}`, body: `${lead.name} פנתה שוב · פנייה ×${out.submission_count}`, url, tag };

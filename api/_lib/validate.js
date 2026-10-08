@@ -6,7 +6,7 @@
 
 import { SOURCES, LEAD_TYPES, URGENCIES, PAYMENT_METHODS } from './catalog.js';
 import { normalizePhone } from './phone.js';
-import { REGION_IDS, checkLocation, isOutOfArea } from '../../js/service-areas.js';
+import { checkLocation, needsCheck } from '../../js/service-areas.js';
 
 // C0/C1 control chars, zero-width chars and bidi overrides (but not \n / \t).
 const INVISIBLE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F​-‏‪-‮⁦-⁩﻿]/g;
@@ -79,18 +79,18 @@ export function validateLead(body, { now = new Date(), userAgent = null, sources
     ? null
     : optional('urgency', URGENCIES.has(body.urgency) ? body.urgency : undefined);
 
-  // מיקום ההתארגנות: bridal prep only. out_of_area is decided here, from the
-  // same locality lists the form uses (js/service-areas.js), not taken from the client.
-  let prepRegion = null, prepLocation = null, outOfArea = false;
+  // מיקום ההתארגנות: bridal prep only. The drive time from Ein Vered and the
+  // service zone are worked out here, from the same data the form uses
+  // (js/service-areas.js), not taken from the client. out_of_area = beyond the
+  // recommended zone: check availability and pricing.
+  let prepLocation = null, driveMinutes = null, serviceZone = null, outOfArea = false;
   if (leadType === 'bridal') {
-    prepRegion = body.prep_region == null || body.prep_region === ''
-      ? null
-      : optional('prep_region', REGION_IDS.has(body.prep_region) ? body.prep_region : undefined);
     prepLocation = cleanText(body.prep_location, 120);
     if (prepLocation) {
-      const where = checkLocation(prepLocation, prepRegion);
-      outOfArea = isOutOfArea(where.status);
-      if (where.region) prepRegion = where.region;
+      const where = checkLocation(prepLocation);
+      driveMinutes = where.minutes;
+      serviceZone = where.zone;
+      outOfArea = needsCheck(where.zone);
     }
   }
 
@@ -120,8 +120,9 @@ export function validateLead(body, { now = new Date(), userAgent = null, sources
     companions: optional('companions', cleanInt(body.companions, 0, 20)),
     production_type: cleanText(body.production_type, 120),
     budget: optional('budget', cleanInt(body.budget, 0, 1_000_000)),
-    prep_region: prepRegion,
     prep_location: prepLocation,
+    drive_minutes: driveMinutes,
+    service_zone: serviceZone,
     out_of_area: outOfArea,
     message: cleanText(body.message, 4000, { multiline: true }),
     metadata,

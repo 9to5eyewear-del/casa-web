@@ -1559,7 +1559,7 @@ function submitForm() {
     },
     web3: {
       access_key: WEB3_KEY,
-      subject: `ליד חדש – ${serviceDetail} | ${s.name} | ${scoreLabel}${prep?.out_of_area ? ' | ⚠️ מחוץ לאזור שירות' : ''}`,
+      subject: `ליד חדש – ${serviceDetail} | ${s.name} | ${scoreLabel}${prep?.out_of_area ? ' | ⚠️ לבדוק זמינות ותמחור' : ''}`,
       from_name: LEAD_SOURCE === 'judith_ai' ? 'Casa Mancini – יהודית AI' : 'Casa Mancini – דף פנייה',
       message: msg,
       name: s.name,

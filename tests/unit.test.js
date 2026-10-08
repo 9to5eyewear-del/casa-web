@@ -186,27 +186,35 @@ test('validate: with a date, a sent urgency is ignored (the date decides)', asyn
   assert.equal(validateLead({ ...base, urgency: 'flexible' }, { now }).lead.urgency, 'flexible');
 });
 
-test('service areas: localities by region, spelling-insensitive, Ashkelon outside', async () => {
-  const { checkLocation, suggest, isOutOfArea, prepLocationText } = await import('../js/service-areas.js');
-  const at = (text, region) => { const r = checkLocation(text, region); return [r.status, r.place?.name ?? null, r.region]; };
-  assert.deepEqual(at('נתניה', 'sharon'), ['in_region', 'נתניה', 'sharon']);
-  assert.deepEqual(at('כפר סבא', 'sharon'), ['in_region', 'כפר סבא', 'sharon']);
-  assert.deepEqual(at('כפר ויתקין', 'emek_hefer'), ['in_region', 'כפר ויתקין', 'emek_hefer']);
-  assert.deepEqual(at('קריית ביאליק', 'north'), ['in_region', 'קרית ביאליק', 'north']);   // קרית / קריית
-  assert.deepEqual(at('ת״א', 'center'), ['in_region', 'תל אביב - יפו', 'center']);          // alias
-  assert.deepEqual(at('הרצל 5, נתניה', 'sharon'), ['in_region', 'נתניה', 'sharon']);        // inside an address
-  assert.deepEqual(at('רחובות', 'sharon'), ['other_region', 'רחובות', 'shfela']);
-  assert.deepEqual(at('אשקלון', 'south'), ['outside', 'אשקלון', null]);
-  assert.deepEqual(at('באר שבע', 'south'), ['outside', 'באר שבע', null]);
-  assert.deepEqual(at('אשדוד', 'south'), ['in_region', 'אשדוד', 'south']);
-  assert.deepEqual(at('בלה בלה', 'sharon'), ['unknown', null, null]);
-  assert.ok(isOutOfArea('outside') && isOutOfArea('unknown') && !isOutOfArea('other_region'));
-  // Quick search over every city: outside ones are offered too, marked, after service ones.
-  assert.deepEqual(suggest('כפר ס', 3), [{ name: 'כפר סבא', outside: false }, { name: 'כפר סאלד', outside: false }, { name: 'כפר סירקין', outside: false }]);
-  assert.deepEqual(suggest('אשק'), [{ name: 'אשקלון', outside: true }]);
-  const beer = suggest('באר', 20).map((p) => p.outside);
-  assert.ok(beer.includes(true) && beer.indexOf(true) > beer.lastIndexOf(false));
-  assert.deepEqual(at('נתניה', null), ['other_region', 'נתניה', 'sharon']);              // no region sent: looked up
-  assert.equal(prepLocationText({ prep_location: 'אשקלון', prep_region: 'south', out_of_area: true }), 'אשקלון (הדרום) · ⚠️ מחוץ לאזור שירות');
+test('service areas: drive time from Ein Vered decides the zone; every locality is searchable', async () => {
+  const { checkLocation, suggest, zoneFor, minutesText, prepLocationText, needsCheck } = await import('../js/service-areas.js');
+  const at = (text) => { const r = checkLocation(text); return [r.place?.name ?? null, r.zone]; };
+  // Casa Mancini's recommended area, cities and small places alike, is ≤ 75 minutes.
+  for (const n of ['עין ורד', 'אבן יהודה', 'תל מונד', 'קדימה-צורן', 'נתניה', 'כפר יונה', 'פרדסיה', 'רעננה', 'כפר סבא', 'הוד השרון',
+    'הרצליה', 'רמת השרון', 'חדרה', 'קיסריה', 'אור עקיבא', 'פרדס חנה-כרכור', 'תל אביב - יפו', 'רמת גן', 'גבעתיים', 'פתח תקווה',
+    'קרית אונו', 'גבעת שמואל', 'יהוד-מונוסון', 'אור יהודה', 'חולון', 'בת ים', 'ראשון לציון', 'ראש העין', 'שוהם', 'נס ציונה',
+    'רחובות', 'באר יעקב', 'יבנה', 'גדרה', 'מזכרת בתיה', 'רמלה', 'לוד', 'מודיעין-מכבים-רעות', 'גן יבנה', 'אשדוד',
+    'כפר ויתקין', 'משמר השרון', 'בני דרור', 'צור משה']) {
+    assert.equal(checkLocation(n).zone, 'recommended', n);
+  }
+  assert.deepEqual(at('אשקלון'), ['אשקלון', 'special']);
+  assert.deepEqual(at('ירושלים'), ['ירושלים', 'special']);
+  assert.deepEqual(at('באר שבע'), ['באר שבע', 'remote']);
+  assert.deepEqual(at('אילת'), ['אילת', 'remote']);
+  assert.deepEqual(at('קריית אונו'), ['קרית אונו', 'recommended']);   // קרית / קריית
+  assert.deepEqual(at('ת״א'), ['תל אביב - יפו', 'recommended']);      // alias
+  assert.deepEqual(at('הרצל 5, נתניה'), ['נתניה', 'recommended']);    // inside an address
+  assert.deepEqual(at('בלה בלה'), [null, 'unknown']);
+  assert.equal(checkLocation('עין ורד').minutes, 0);
+  // The boundaries: ≤ 75 recommended, 76–105 special, above that remote.
+  assert.deepEqual([75, 76, 105, 106, null].map(zoneFor), ['recommended', 'special', 'special', 'remote', 'unknown']);
+  assert.ok(!needsCheck('recommended') && needsCheck('special') && needsCheck('remote') && needsCheck('unknown'));
+  assert.deepEqual([3, 22, 88, 131].map(minutesText), ['כמה דקות', 'כ-20 דקות', 'כ-90 דקות', 'כ-2 שעות ו-10 דקות']);
+  // Quick search: closer recommended places first at the same match; far ones are offered too.
+  const nt = suggest('נת', 5);
+  assert.deepEqual(nt[0], { name: 'נתניה', minutes: checkLocation('נתניה').minutes, zone: 'recommended' });
+  assert.deepEqual(suggest('אשק').map((p) => [p.name, p.zone]), [['אשקלון', 'special']]);
+  assert.equal(prepLocationText({ prep_location: 'אשקלון', drive_minutes: 88, service_zone: 'special' }),
+    'אשקלון · כ-90 דקות מעין ורד · מחוץ לאזור המומלץ – נבדוק אפשרות מיוחדת');
   assert.equal(prepLocationText({ prep_location: null }), null);
 });

@@ -1,29 +1,44 @@
-// Where Casa Mancini comes to the bride (התארגנות כלה): the service regions
-// and their localities. Shared by the website forms (js/prep-location.js) and
-// the lead API (api/_lib/validate.js), so both decide "out of area" the same way.
+// Where Casa Mancini comes to the bride (התארגנות כלה): every locality with its
+// estimated driving time from the studio in Ein Vered, and the service zone
+// that time puts it in. Shared by the website forms (js/prep-location.js) and
+// the lead API (api/_lib/validate.js), so both classify a location the same way.
 
-import { REGION_PLACES, OUTSIDE_PLACES } from './service-areas.data.js';
+import { PLACES as ROWS } from './service-areas.data.js';
 
-// The form asks only for the locality; its region is looked up here and
-// stored on the lead. `name` is what LeadLive shows.
-export const REGIONS = [
-  { id: 'sharon', name: 'השרון' },
-  { id: 'shfela', name: 'השפלה' },
-  { id: 'south', name: 'הדרום' },
-  { id: 'north', name: 'הצפון' },
-  { id: 'center', name: 'המרכז' },
-  { id: 'jerusalem', name: 'ירושלים והסביבה' },
-  { id: 'emek_hefer', name: 'עמק חפר' },
-  { id: 'hadera', name: 'חדרה והסביבה' },
-];
-export const REGION_IDS = new Set(REGIONS.map((r) => r.id));
-export const REGION_NAMES = Object.fromEntries(REGIONS.map((r) => [r.id, r.name]));
+export const ORIGIN = 'עין ורד';
 
-/** "נתניה (השרון) · מחוץ לאזור שירות" — for notifications, the calendar, emails. */
+// By driving time from Ein Vered. Anything but 'recommended' is a lead to
+// check availability and pricing for (out_of_area).
+export const ZONES = {
+  recommended: { label: 'אזור שירות מומלץ', max: 75 },
+  special: { label: 'מחוץ לאזור המומלץ – נבדוק אפשרות מיוחדת', max: 105 },
+  remote: { label: 'מיקום מרוחק – נבדוק זמינות ותמחור חריג', max: Infinity },
+  unknown: { label: 'מיקום לא זוהה – נבדוק זמינות ותמחור' },
+};
+export const ZONE_IDS = new Set(Object.keys(ZONES));
+
+export function zoneFor(minutes) {
+  if (minutes == null) return 'unknown';
+  return minutes <= ZONES.recommended.max ? 'recommended' : minutes <= ZONES.special.max ? 'special' : 'remote';
+}
+
+export const needsCheck = (zone) => zone !== 'recommended';
+
+/** "כ-45 דקות" — rounded to 5 minutes, it's an estimate. */
+export function minutesText(minutes) {
+  if (minutes == null) return null;
+  if (minutes < 8) return 'כמה דקות';
+  const m = Math.round(minutes / 5) * 5;
+  if (m < 120) return `כ-${m} דקות`;
+  const h = Math.floor(m / 60), rest = m % 60;
+  return `כ-${h} שעות${rest ? ` ו-${rest} דקות` : ''}`;
+}
+
+/** "אשקלון · כ-90 דקות מעין ורד · מחוץ לאזור המומלץ…" — for notifications, the calendar, emails. */
 export function prepLocationText(lead) {
   if (!lead.prep_location) return null;
-  const region = REGION_NAMES[lead.prep_region];
-  return `${lead.prep_location}${region ? ` (${region})` : ''}${lead.out_of_area ? ' · ⚠️ מחוץ לאזור שירות' : ''}`;
+  const time = minutesText(lead.drive_minutes);
+  return [lead.prep_location, time && `${time} מ${ORIGIN}`, ZONES[lead.service_zone]?.label].filter(Boolean).join(' · ');
 }
 
 // What people type for places the CBS list spells differently.
@@ -32,6 +47,7 @@ const ALIASES = {
   'מודיעין': 'מודיעין-מכבים-רעות', 'מכבים': 'מודיעין-מכבים-רעות', 'רעות': 'מודיעין-מכבים-רעות',
   'ראשון': 'ראשון לציון', 'ראשל"צ': 'ראשון לציון', 'פ"ת': 'פתח תקווה', 'ב"ש': 'באר שבע',
   'קדימה': 'קדימה-צורן', 'צורן': 'קדימה-צורן', 'יהוד': 'יהוד-מונוסון',
+  'פרדס חנה': 'פרדס חנה-כרכור', 'כרכור': 'פרדס חנה-כרכור', 'בנימינה': 'בנימינה-גבעת עדה',
   'נצרת עילית': 'נוף הגליל', 'כוכב יאיר': 'כוכב יאיר-צור יגאל', 'צור יגאל': 'כוכב יאיר-צור יגאל',
 };
 
@@ -49,24 +65,17 @@ export function placeKey(text, { spaces = false } = {}) {
     .toLowerCase();
 }
 
-// name → { name, regions: [ids] }; outside places have no regions.
-const PLACES = new Map();
-const add = (name, region) => {
-  const p = PLACES.get(name) || { name, regions: [] };
-  if (region && !p.regions.includes(region)) p.regions.push(region);
-  PLACES.set(name, p);
-};
-for (const [region, names] of Object.entries(REGION_PLACES)) names.forEach((n) => add(n, region));
-OUTSIDE_PLACES.forEach((n) => add(n, null));
+// { name, minutes, estimated, zone }
+const PLACES = ROWS.map(([name, minutes, estimated]) => ({ name, minutes, estimated: Boolean(estimated), zone: zoneFor(minutes) }));
+const BY_NAME = new Map(PLACES.map((p) => [p.name, p]));
 
 const BY_KEY = new Map();
-for (const p of PLACES.values()) if (!BY_KEY.has(placeKey(p.name))) BY_KEY.set(placeKey(p.name), p);
-for (const [alias, name] of Object.entries(ALIASES)) if (PLACES.has(name)) BY_KEY.set(placeKey(alias), PLACES.get(name));
+for (const p of PLACES) if (!BY_KEY.has(placeKey(p.name))) BY_KEY.set(placeKey(p.name), p);
+for (const [alias, name] of Object.entries(ALIASES)) if (BY_NAME.has(name)) BY_KEY.set(placeKey(alias), BY_NAME.get(name));
 // For finding a locality inside a longer address ("הרצל 5, נתניה"), longest names first.
-const BY_PHRASE = [...BY_KEY.entries()]
-  .map(([, p]) => p)
-  .filter((p, i, all) => all.indexOf(p) === i)
-  .flatMap((p) => [p.name, ...Object.keys(ALIASES).filter((a) => ALIASES[a] === p.name)].map((n) => [` ${placeKey(n, { spaces: true })} `, p]))
+const BY_PHRASE = [...PLACES.map((p) => [p.name, p]), ...Object.entries(ALIASES).map(([a, n]) => [a, BY_NAME.get(n)])]
+  .filter(([, p]) => p)
+  .map(([n, p]) => [` ${placeKey(n, { spaces: true })} `, p])
   .sort((a, b) => b[0].length - a[0].length);
 
 /**
@@ -82,40 +91,27 @@ export function findPlace(text) {
   return hit ? hit[1] : null;
 }
 
-/**
- * Where a typed location stands (regionId optional: kept when it holds the locality):
- *   in_region     the locality is in that region
- *   other_region  it's in a service region, `region` = its (first) one
- *   outside       a known locality outside every service region (e.g. אשקלון)
- *   unknown       not a locality we know — treated as outside the service areas
- */
-export function checkLocation(text, regionId) {
+/** Where a typed location stands: { place, minutes, zone }; zone 'unknown' when it isn't a locality we know. */
+export function checkLocation(text) {
   const place = findPlace(text);
-  if (!place) return { status: 'unknown', place: null, region: null };
-  if (!place.regions.length) return { status: 'outside', place, region: null };
-  if (place.regions.includes(regionId)) return { status: 'in_region', place, region: regionId };
-  return { status: 'other_region', place, region: place.regions[0] };
+  return place ? { place, minutes: place.minutes, zone: place.zone } : { place: null, minutes: null, zone: 'unknown' };
 }
-
-export const isOutOfArea = (status) => status === 'outside' || status === 'unknown';
 
 /**
  * Quick search over every locality: best match first; at the same match,
- * service localities before those outside (`outside: true`, shown on the form
- * as "לא מומלץ לשירות"). The regions stay behind the scenes.
+ * the recommended area before the rest, then the closer one.
  */
 export function suggest(text, limit = 8) {
   const key = placeKey(text);
   if (!key) return [];
   const ranked = [];
-  for (const p of PLACES.values()) {
+  for (const p of PLACES) {
     const k = placeKey(p.name);
     const at = k.indexOf(key);
     if (at < 0) continue;
     const wordStart = at === 0 || placeKey(p.name, { spaces: true }).split(' ').some((w) => w.startsWith(key));
-    const outside = !p.regions.length;
-    ranked.push([at === 0 ? 0 : wordStart ? 1 : 2, outside ? 1 : 0, k.length, { name: p.name, outside }]);
+    ranked.push([at === 0 ? 0 : wordStart ? 1 : 2, needsCheck(p.zone) ? 1 : 0, p.minutes ?? 999, p]);
   }
   ranked.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]);
-  return ranked.slice(0, limit).map((r) => r[3]);
+  return ranked.slice(0, limit).map(([, , , p]) => ({ name: p.name, minutes: p.minutes, zone: p.zone }));
 }

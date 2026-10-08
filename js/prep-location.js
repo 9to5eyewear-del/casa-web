@@ -1,22 +1,21 @@
 // "מיקום ההתארגנות" — asked only for bridal prep (index.html and /lead).
-// One quick-search field over every city / locality; the service region is
-// looked up behind the scenes. A locality outside every service region (e.g.
-// אשקלון) is still offered, marked "לא מומלץ לשירות"; picking it shows a
-// notice, the bride can go on by confirming, and the lead is flagged out_of_area.
+// One quick-search field over every city, town, moshav and kibbutz. Picking
+// one shows the estimated drive from the studio in Ein Vered and its service
+// zone (js/service-areas.js). Beyond the recommended zone (> 75 minutes) a
+// notice offers a special check; the bride goes on with "כן, אשמח לבדוק
+// אפשרות", and the lead is flagged to check availability and pricing.
 //
 // Mounts into every [data-prep-location] element and puts the API on it:
 //   el.prepLocation.validate() → true when the step may continue (shows errors)
-//   el.prepLocation.value()    → { prep_region, prep_location, out_of_area }
+//   el.prepLocation.value()    → { prep_location, drive_minutes, service_zone, out_of_area }
 //   el.prepLocation.summary()  → one line for the email / WhatsApp text
 // data-input-class: the page's class for text inputs.
 
-import { REGION_NAMES, checkLocation, isOutOfArea, suggest } from './service-areas.js';
+import { ORIGIN, ZONES, checkLocation, minutesText, needsCheck, prepLocationText, suggest } from './service-areas.js';
 
-const NOT_RECOMMENDED = '⚠️ לא מומלץ לשירות';
-// Why it isn't recommended, and that we still come everywhere.
-const NOTICE = 'המיקום שבחרת נמצא מחוץ לאזורי השירות המומלצים שלנו. בגלל האזור והמרחק לאולם, הנסיעה ביום החתונה ארוכה יותר ולכן אנחנו פחות ממליצים עליו. עם זאת, אנחנו נותנים שירות בכל מקום — אנחנו רק ממליצים על אזורים מסוימים. נשמח לבדוק עבורך אפשרות הגעה מיוחדת.';
-const CONFIRM = 'בכל זאת, אני רוצה לסגור ולבדוק זמינות';
-const CONFIRMED = '✓ מעולה, נבדוק עבורך אפשרות הגעה מיוחדת ונחזור אלייך.';
+const NOTICE = 'המיקום שבחרת נמצא מחוץ לאזורי השירות המומלצים שלנו. נשמח לבדוק עבורך אפשרות מיוחדת, בהתאם לזמינות ולתמחור.';
+const CONFIRM = 'כן, אשמח לבדוק אפשרות';
+const CONFIRMED = '✓ מעולה, נבדוק עבורך אפשרות מיוחדת ונחזור אלייך.';
 
 const CSS = `
 .pl-combo { position: relative; }
@@ -33,8 +32,10 @@ const CSS = `
 }
 .pl-list li { padding: .65rem 1rem; font-size: .95rem; color: #2f3430; cursor: pointer; }
 .pl-list li[aria-selected="true"], .pl-list li:hover { background: rgba(201,169,110,0.14); }
-.pl-list li.is-outside { display: flex; justify-content: space-between; align-items: center; gap: .5rem; color: #78716c; }
-.pl-tag { flex-shrink: 0; padding: .1rem .5rem; border-radius: 99px; font-size: .72rem; font-weight: 600; background: rgba(158,66,44,0.1); color: #9e422c; }
+.pl-list li { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+.pl-list li.is-far { color: #78716c; }
+.pl-meta { flex-shrink: 0; display: flex; align-items: center; gap: .4rem; font-size: .75rem; color: #857f70; }
+.pl-tag { padding: .1rem .5rem; border-radius: 99px; font-size: .72rem; font-weight: 600; background: rgba(158,66,44,0.1); color: #9e422c; }
 .pl-notice strong { display: block; margin-bottom: .25rem; font-size: .95rem; }
 .pl-error { color: #9e422c; font-size: .8rem; margin-top: .35rem; }
 .pl-error:empty, .pl-hint:empty { display: none; }
@@ -79,14 +80,15 @@ function mount(root) {
 
   const noticeText = h('p', { tabindex: '-1' });
   const confirmBtn = h('button', { type: 'button' }, CONFIRM);
-  const noticeTitle = h('strong', null, NOT_RECOMMENDED);
+  const noticeTitle = h('strong');
   const notice = h('div', { class: 'pl-notice', role: 'status', hidden: true }, noticeTitle, noticeText, confirmBtn);
 
   root.classList.add('pl');
   root.replaceChildren(placeField, notice);
 
-  // region: looked up from the locality; out: outside the service areas; confirmed: she chose to go on anyway.
-  const st = { region: null, out: false, confirmed: false, checked: '' };
+  // zone / minutes: of the picked locality; out: beyond the recommended zone; confirmed: she asked to check anyway.
+  const st = { minutes: null, zone: null, out: false, confirmed: false, checked: '' };
+  const reset = () => Object.assign(st, { minutes: null, zone: null, out: false, confirmed: false });
   let active = -1;
 
   const setErr = (el, field, msg) => {
@@ -103,10 +105,12 @@ function mount(root) {
 
   function renderList() {
     const names = suggest(input.value);
-    // Localities outside the service regions are offered too, marked "לא מומלץ לשירות".
+    // Every locality is offered, with its drive time; beyond the recommended zone it's tagged.
+    const TAG = { special: 'מחוץ לאזור המומלץ', remote: 'מיקום מרוחק' };
     list.replaceChildren(...names.map((n, i) => h('li',
-      { id: `${id}-opt${i}`, role: 'option', 'aria-selected': 'false', 'data-name': n.name, class: n.outside ? 'is-outside' : null },
-      h('span', null, n.name), n.outside && h('span', { class: 'pl-tag' }, 'לא מומלץ לשירות'))));
+      { id: `${id}-opt${i}`, role: 'option', 'aria-selected': 'false', 'data-name': n.name, class: needsCheck(n.zone) ? 'is-far' : null },
+      h('span', null, n.name),
+      h('span', { class: 'pl-meta' }, minutesText(n.minutes), TAG[n.zone] && h('span', { class: 'pl-tag' }, TAG[n.zone])))));
     active = -1;
     if (!names.length || document.activeElement !== input) return closeList();
     list.hidden = false;
@@ -132,6 +136,7 @@ function mount(root) {
     notice.hidden = !st.out;
     notice.classList.toggle('is-confirmed', st.confirmed);
     noticeTitle.hidden = st.confirmed;
+    noticeTitle.textContent = `⚠️ ${ZONES[st.zone]?.label || ''}`;
     noticeText.textContent = st.confirmed ? CONFIRMED : NOTICE;
     confirmBtn.hidden = st.confirmed;
   }
@@ -141,19 +146,19 @@ function mount(root) {
     const text = input.value.trim();
     if (st.checked === text) return;
     st.checked = text;
-    st.region = null;
-    st.out = false;
-    st.confirmed = false;
+    reset();
     hint.textContent = '';
     hint.classList.remove('is-ok');
     if (text) {
       setErr(placeErr, input, '');
       const r = checkLocation(text);
-      st.region = r.region;
-      st.out = isOutOfArea(r.status);
-      if (!st.out) {
-        hint.textContent = `✓ ${r.place.name}`;
-        hint.classList.add('is-ok');
+      Object.assign(st, { minutes: r.minutes, zone: r.zone, out: needsCheck(r.zone) });
+      // "✓ נתניה · כ-20 דקות נסיעה מעין ורד · אזור שירות מומלץ"
+      if (r.place) {
+        const time = minutesText(r.minutes);
+        hint.textContent = [`${st.out ? '' : '✓ '}${r.place.name}`, time && `${time} נסיעה מ${ORIGIN}`, !st.out && ZONES.recommended.label]
+          .filter(Boolean).join(' · ');
+        hint.classList.toggle('is-ok', !st.out);
       }
     }
     showNotice();
@@ -161,9 +166,7 @@ function mount(root) {
 
   input.addEventListener('input', () => {
     st.checked = '';
-    st.region = null;
-    st.out = false;
-    st.confirmed = false;
+    reset();
     hint.textContent = '';
     showNotice();
     if (input.getAttribute('aria-invalid') === 'true' && input.value.trim()) setErr(placeErr, input, '');
@@ -217,12 +220,13 @@ function mount(root) {
     },
     value() {
       check();
-      return { prep_region: st.region, prep_location: input.value.trim() || null, out_of_area: st.out && st.confirmed };
+      const loc = input.value.trim() || null;
+      return { prep_location: loc, drive_minutes: loc ? st.minutes : null, service_zone: loc ? st.zone : null, out_of_area: st.out && st.confirmed };
     },
     summary() {
       const v = this.value();
       if (!v.prep_location) return '';
-      return `מיקום ההתארגנות: ${v.prep_location}${REGION_NAMES[v.prep_region] ? ` (${REGION_NAMES[v.prep_region]})` : ''}${v.out_of_area ? ' · ⚠️ מחוץ לאזור שירות' : ''}`;
+      return `מיקום ההתארגנות: ${prepLocationText(v)}${v.out_of_area ? ' · לבדוק זמינות ותמחור' : ''}`;
     },
   };
   root.dispatchEvent(new CustomEvent('prep-location:ready', { bubbles: true }));

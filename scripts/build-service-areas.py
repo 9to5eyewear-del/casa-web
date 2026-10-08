@@ -1,63 +1,105 @@
-# Builds js/service-areas.data.js — the localities of each bridal-prep service
-# region — from the CBS locality list (data.gov.il, "רשימת ישובים").
+# Builds js/service-areas.data.js: every Israeli locality (CBS list) with the
+# estimated driving time from Casa Mancini in Ein Vered (עין ורד), in minutes.
 #
-#   curl -s "https://data.gov.il/api/3/action/datastore_search?resource_id=5c78e9fa-c2e2-4771-93ff-7f400a12f7ba&limit=2000" -o /tmp/loc.json
-#   python3 -I scripts/build-service-areas.py /tmp/loc.json > js/service-areas.data.js
+#   W=/tmp/areas; mkdir -p $W
+#   curl -s "https://data.gov.il/api/3/action/datastore_search?resource_id=5c78e9fa-c2e2-4771-93ff-7f400a12f7ba&limit=2000" -o $W/loc.json
+#   curl -s -A casa-web-build -X POST https://overpass-api.de/api/interpreter --data-urlencode \
+#     'data=[out:json][timeout:150];node["place"~"^(city|town|village|hamlet|isolated_dwelling|suburb|neighbourhood|locality)$"](29.4,34.2,33.4,35.95);out;' -o $W/places.json
+#   python3 -I scripts/build-service-areas.py $W > js/service-areas.data.js
 #
-# Regions follow CBS sub-districts (נפה) and regional councils; the business
-# rules (what counts as "בדרום", Herzliya in the Sharon too, ...) are below.
-# Every other locality is kept, under `outside`, so the form recognizes it as
-# a real place outside the service areas (e.g. Ashkelon) rather than a typo.
+# How a time is estimated:
+#   1. The locality's point from OpenStreetMap, matched by its Hebrew name.
+#   2. The fastest drive from Ein Vered by the public OSRM router (cached in
+#      $W/minutes.json; delete it to fetch again). OSRM assumes empty roads,
+#      so it's multiplied by TRAFFIC — set so the places Casa Mancini calls
+#      its recommended area (up to Ashdod / Gedera / Gan Yavne) come out at
+#      ≤ 75 minutes, and Ashkelon, Haifa and Jerusalem don't.
+#   3. A locality with no (or a wrong) match takes the median time of its
+#      regional council, else of its CBS sub-district — marked as estimated.
 
 import json
 import re
+import statistics
 import sys
+import time
+import urllib.request
+from collections import defaultdict
+from pathlib import Path
 
-recs = json.load(open(sys.argv[1], encoding='utf-8'))['result']['records']
+W = Path(sys.argv[1])
+TRAFFIC = 1.3
+ORIGIN = 'עין ורד'
+# Matched to a different place with the same name; they fall back to the median.
+WRONG_MATCH = {"יאנוח-ג'ת", 'צוקים', 'גת (קיבוץ)', 'טייבה (בעמק)'}
+
+clean = lambda s: re.sub(r'\s+', ' ', s or '').strip()
+recs = json.loads((W / 'loc.json').read_text())['result']['records']
+cbs = {clean(r['שם_ישוב']): (clean(r['שם_נפה']), clean(r['שם_מועצה'])) for r in recs if clean(r['שם_ישוב'])}
+
+FINALS = str.maketrans('ךםןףץ', 'כמנפצ')
 
 
-def clean(s):
-    return re.sub(r'\s+', ' ', s or '').strip()
+def key(s):
+    s = re.sub(r'[֑-ׇ]', '', s).translate(FINALS)
+    return re.sub(r'[^א-ת]', '', s).replace('וו', 'ו').replace('יי', 'י')
 
 
-places = [(clean(r['שם_ישוב']), clean(r['שם_נפה']), clean(r['שם_מועצה'])) for r in recs]
-places = [p for p in places if p[0]]
+# OSM points by name; a town beats a neighbourhood of the same name.
+RANK = {'city': 0, 'town': 0, 'village': 1, 'hamlet': 2, 'isolated_dwelling': 3, 'locality': 4, 'suburb': 5, 'neighbourhood': 6}
+points = {}
+for e in json.loads((W / 'places.json').read_text())['elements']:
+    t = e['tags']
+    for name in {t.get('name:he'), t.get('name'), t.get('official_name:he'), t.get('alt_name:he'), t.get('old_name:he')} - {None}:
+        for part in name.split(';'):
+            k, p = key(part), (RANK.get(t['place'], 9), e['lat'], e['lon'])
+            if k and (k not in points or p[0] < points[k][0]):
+                points[k] = p
 
-SUBDISTRICTS = {
-    'sharon': {'השרון'},
-    'hadera': {'חדרה'},
-    'center': {'תל אביב', 'רמת גן', 'חולון', 'פתח תקווה'},
-    'shfela': {'רחובות', 'רמלה'},
-    'jerusalem': {'ירושלים'},
-    'north': {'חיפה', 'עכו', 'עפולה', 'נצרת', 'כנרת', 'צפת', 'גולן'},
-}
-EXTRA = {
-    # Filed under the Tel Aviv / Petah Tikva sub-districts, but "השרון" to everyone (and still in the center too).
-    'sharon': {'הרצליה', 'רמת השרון', 'כפר סבא', 'רעננה', 'הוד השרון', 'כוכב יאיר-צור יגאל'},
-    'south': {'אשדוד', 'קרית מלאכי'},        # the Ashdod area only; Ashkelon and further south are outside
-}
-COUNCILS = {'emek_hefer': {'עמק חפר'}, 'sharon': {'דרום השרון'}, 'south': {'באר טוביה'}}
-ORDER = ['sharon', 'shfela', 'south', 'north', 'center', 'jerusalem', 'emek_hefer', 'hadera']
+coords = {}
+for name in cbs:
+    if name in WRONG_MATCH:
+        continue
+    tries = [name, re.sub(r'\(.*?\)', '', name)] + (name.split('-') if '-' in name else [])
+    p = next((points[key(x)] for x in tries if key(x) in points), None)
+    if p:
+        coords[name] = (p[1], p[2])
 
-regions = {k: set() for k in ORDER}
-for name, sub, council in places:
-    for k in ORDER:
-        if council in COUNCILS.get(k, ()) or name in EXTRA.get(k, ()):
-            regions[k].add(name)
-        elif sub in SUBDISTRICTS.get(k, ()) and not (k == 'sharon' and council == 'עמק חפר'):
-            regions[k].add(name)
+cache = W / 'minutes.json'
+free = json.loads(cache.read_text()) if cache.exists() else {}
+todo = [n for n in coords if n not in free]
+src = coords[ORIGIN]
+for i in range(0, len(todo), 90):
+    chunk = todo[i:i + 90]
+    pts = ';'.join(f'{lon},{lat}' for lat, lon in [src] + [coords[n] for n in chunk])
+    req = urllib.request.Request(f'https://router.project-osrm.org/table/v1/driving/{pts}?sources=0&annotations=duration',
+                                 headers={'User-Agent': 'casa-web-build/1.0'})
+    durations = json.load(urllib.request.urlopen(req, timeout=60))['durations'][0][1:]
+    free.update({n: round(s / 60, 1) for n, s in zip(chunk, durations) if s is not None})
+    time.sleep(1.2)
+cache.write_text(json.dumps(free, ensure_ascii=False))
 
-inside = set().union(*regions.values())
-outside = sorted({p[0] for p in places} - inside)
+minutes = {n: round(free[n] * TRAFFIC) for n in coords if n in free}
+by_council, by_sub = defaultdict(list), defaultdict(list)
+for n, m in minutes.items():
+    sub, council = cbs[n]
+    by_sub[sub].append(m)
+    if council:
+        by_council[council].append(m)
 
-out = ['// Generated by scripts/build-service-areas.py from the CBS locality list. Edit',
-       '// the rules there and regenerate; a one-off fix by hand is fine too.',
-       'export const REGION_PLACES = {']
-for k in ORDER:
-    out.append(f'  {k}: {json.dumps(sorted(regions[k]), ensure_ascii=False)},')
-out.append('};')
-out.append(f'export const OUTSIDE_PLACES = {json.dumps(outside, ensure_ascii=False)};')
-print('\n'.join(out))
-for k in ORDER:
-    print(k, len(regions[k]), file=sys.stderr)
-print('outside', len(outside), file=sys.stderr)
+rows = []
+for name in sorted(cbs):
+    sub, council = cbs[name]
+    if name in minutes:
+        rows.append([name, minutes[name]])
+    else:
+        pool = by_council.get(council) or by_sub.get(sub)
+        rows.append([name, round(statistics.median(pool)), 1] if pool else [name, None])
+
+print('// Generated by scripts/build-service-areas.py: [locality, minutes from Ein Vered, 1 = estimated from')
+print('// its regional council / sub-district]. Regenerate rather than edit; a one-off fix by hand is fine.')
+print('export const PLACES = [')
+for r in rows:
+    print(f'  {json.dumps(r, ensure_ascii=False)},')
+print('];')
+est = sum(len(r) == 3 for r in rows)
+print(f'{len(rows)} localities, {est} estimated, {sum(r[1] is None for r in rows)} without a time', file=sys.stderr)
