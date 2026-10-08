@@ -22,7 +22,7 @@ import { LAND, ORIGIN_XY, VIEW, XY, ZONE } from './service-map.data.js';
 
 const TEXT = {
   he: {
-    label: 'מיקום ההתארגנות *',
+    label: 'אזור החתונה *',
     placeholder: 'חיפוש עיר או יישוב…',
     list: 'יישובים',
     required: 'נא לבחור עיר או יישוב',
@@ -41,7 +41,7 @@ const TEXT = {
     mapStudio: `הסטודיו ב${ORIGIN}`,
   },
   en: {
-    label: 'Getting-ready location *',
+    label: 'Wedding area *',
     placeholder: 'Search for a city or town…',
     list: 'Places',
     required: 'Please choose a city or town',
@@ -290,7 +290,7 @@ function mount(root) {
     summary() {
       const v = this.value();
       if (!v.prep_location) return '';
-      return `מיקום ההתארגנות: ${prepLocationText(v)}${v.out_of_area ? ' · לבדוק זמינות ותמחור' : ''}`;
+      return `אזור החתונה: ${prepLocationText(v)}${v.out_of_area ? ' · לבדוק זמינות ותמחור' : ''}`;
     },
   };
   // The fixed texts, in the site's language; on a switch, a picked place takes its name in the new one.

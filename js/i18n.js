@@ -9,7 +9,10 @@
  * Hebrew exactly, without a reload, so a half-filled form keeps its answers.
  *
  * The choice is remembered (localStorage) and can be set by ?lang=en|he.
- * Language buttons: any [data-lang-toggle] element. Elements with
+ * In Hebrew the dictionary is fetched right away at low priority, so a switch
+ * is instant; until it's in, the button shows it's loading.
+ * Language buttons: any [data-lang-toggle] element, drawn here as one pill
+ * (globe + EN / עב) whatever the page gave it. Elements with
  * [data-no-i18n] (and everything inside) are never touched.
  *
  *   CasaI18n.lang          'he' | 'en'
@@ -48,6 +51,21 @@
     'html[dir="ltr"] input, html[dir="ltr"] textarea, html[dir="ltr"] select { direction: ltr; }',
     // Direction-bound icons (Material "arrow_back") point the other way.
     'html[dir="ltr"] .dir-flip { display: inline-block; transform: scaleX(-1); }',
+    // The language button: the same pill on every page, over the page's own sizes.
+    // display only at zero specificity: each page still hides the button it doesn't use on that screen size.
+    ':where(button.lang-pill[data-lang-toggle]) { display: inline-flex; }',
+    'button.lang-pill[data-lang-toggle] { align-items: center; justify-content: center; gap: .35rem;'
+      + ' width: auto !important; min-width: 0; height: 34px !important; padding: 0 .8rem !important; border-radius: 999px !important;'
+      + ' background: #fff !important; color: #2f3430 !important; border: 1.5px solid #c9a96e !important; box-shadow: 0 2px 8px rgba(47,52,48,.12) !important;'
+      + ' font: 700 .8rem/1 "Heebo", system-ui, sans-serif !important; letter-spacing: .06em; cursor: pointer; transition: background .2s, color .2s, transform .15s; -webkit-tap-highlight-color: transparent; }',
+    '@media (hover: hover) { button.lang-pill[data-lang-toggle]:hover { background: #c9a96e !important; color: #fff !important; } }',
+    'button.lang-pill[data-lang-toggle]:active { transform: scale(.95); }',
+    'button.lang-pill[data-lang-toggle]:focus-visible { outline: 2px solid #433f33; outline-offset: 2px; }',
+    'button.lang-pill[data-lang-toggle] svg { width: 15px; height: 15px; flex-shrink: 0; }',
+    'button.lang-pill[data-lang-toggle][aria-busy="true"] { cursor: progress; }',
+    'button.lang-pill[data-lang-toggle][aria-busy="true"] svg { animation: casa-lang-spin 1s linear infinite; }',
+    '@keyframes casa-lang-spin { to { transform: rotate(360deg); } }',
+    '@media (prefers-reduced-motion: reduce) { button.lang-pill[data-lang-toggle][aria-busy="true"] svg { animation: none; opacity: .4; } }',
   ].join('\n');
   document.head.appendChild(style);
   setDir(lang);
@@ -74,8 +92,8 @@
     }).sort((a, b) => b.len - a.len);
   }
 
-  function loadDict() {
-    dictPromise = dictPromise || fetch(DICT_URL, { headers: { Accept: 'application/json' } })
+  function loadDict(priority = 'high') {
+    dictPromise = dictPromise || fetch(DICT_URL, { headers: { Accept: 'application/json' }, priority })
       .then((r) => (r.ok ? r.json() : {}))
       .catch(() => ({}))
       .then((dict) => {
@@ -184,17 +202,26 @@
   });
 
   // ── Language buttons ──
+  const GLOBE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">'
+    + '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg>';
+  let switching = false;
+
   function renderToggles() {
     document.querySelectorAll('[data-lang-toggle]').forEach((b) => {
       b.setAttribute('data-no-i18n', '');
+      b.classList.add('lang-pill');
       const toEn = lang !== 'en';
-      b.textContent = toEn ? 'EN' : 'עב';
+      b.innerHTML = `${GLOBE}<span>${toEn ? 'EN' : 'עב'}</span>`;
+      if (switching) b.setAttribute('aria-busy', 'true');
+      else b.removeAttribute('aria-busy');
       b.setAttribute('lang', toEn ? 'en' : 'he');
       b.setAttribute('aria-label', toEn ? 'English' : 'עברית');
       b.setAttribute('title', toEn ? 'English' : 'עברית');
       if (!b.dataset.langBound) {
         b.dataset.langBound = '1';
-        b.addEventListener('click', (e) => { e.preventDefault(); set(lang === 'en' ? 'he' : 'en'); });
+        b.addEventListener('click', (e) => { e.preventDefault(); if (!switching) set(lang === 'en' ? 'he' : 'en'); });
+        // A finger on the button: start fetching before the tap lands.
+        b.addEventListener('pointerdown', () => { if (lang !== 'en') loadDict(); }, { passive: true });
       }
     });
   }
@@ -202,7 +229,13 @@
   async function set(next) {
     if (next !== 'en' && next !== 'he') return;
     write(next);
-    if (next === 'en') await loadDict();
+    if (next === 'en' && !EN) {
+      // Still on its way (a slow connection): the button says so.
+      switching = true;
+      renderToggles();
+      await loadDict();
+      switching = false;
+    }
     lang = next;
     setDir(next);
     if (next === 'en') everEnglish = true;
@@ -226,6 +259,10 @@
     observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS });
     html.classList.remove('i18n-loading');
   });
+
+  // In Hebrew, fetch the English now at low priority (behind the page's own files), so a
+  // switch needs no wait. Not on 'load': with the video streaming that can take long.
+  if (lang !== 'en') loadDict('low');
 
   window.CasaI18n = { get lang() { return lang; }, set, t, ready };
 })();
