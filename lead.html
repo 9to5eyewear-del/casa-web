@@ -359,6 +359,7 @@ textarea { resize: none; min-height: 100px; line-height: 1.6; }
   display: none;
 }
 .field-error.show { display: block; }
+.field-hint.is-free { color: var(--success); }
 
 /* ── Service chips ── */
 .service-grid {
@@ -957,6 +958,7 @@ img.judith-note-mark { object-fit: cover; padding: 0; }
         <input type="date" id="f-date" oninput="onDateInput(this)"/>
         <div class="field-hint" id="date-hint">בחרי תאריך או טווח משוער ונבדוק זמינות</div>
         <div class="field-error" id="e-date">אנא בחרי תאריך עתידי</div>
+        <div class="field-error" id="e-date-busy" role="alert">התאריך הזה כבר תפוס אצלנו. אפשר לבחור תאריך אחר, או לסמן ״גמיש״ ונחזור אלייך עם התאריכים הפנויים.</div>
       </div>
       <div class="field">
         <label class="field-label">או בערך:</label>
@@ -1231,6 +1233,7 @@ function showStep(n) {
   next.classList.add('active');
   updateProgress();
   personalise();
+  if (n === 4) refreshAvailability();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1313,6 +1316,7 @@ function checkDate() {
     const today = new Date(); today.setHours(0,0,0,0);
     if (chosen < today) return setErr('f-date','e-date', true);
     setErr('f-date','e-date', false);
+    if (availability.date === dateVal && slotOpen() === false) return setErr('f-date','e-date-busy', true);
   }
   return true;
 }
@@ -1422,6 +1426,7 @@ function selectUrgency(value, el) {
   document.getElementById('f-date').classList.remove('has-error','is-valid');
   setErr('f-date','e-date', false);
   document.getElementById('e-date-req').style.display = 'none';
+  showAvailability(null);
 }
 
 function onDateInput(el) {
@@ -1433,7 +1438,45 @@ function onDateInput(el) {
     // Clear urgency chips
     document.querySelectorAll('.urgency-chips .sub-chip').forEach(c => c.classList.remove('selected'));
     s.urgency = '';
+    checkAvailability(el.value);
+  } else {
+    showAvailability(null);
   }
+}
+
+// The bookings calendar (Google Calendar, via /api/availability). A day holds
+// one bridal prep and one shoot/production; the answer has both, and the
+// chosen service decides which one counts. A taken slot is flagged right away;
+// if the check fails the form carries on as before.
+let availability = { date: '', slots: null };
+const slotOpen = () => availability.slots?.[s.service === 'bride' ? 'bridal' : 'production'] ?? null;
+async function checkAvailability(date) {
+  availability = { date, slots: null };
+  showAvailability('checking');
+  let slots = null;
+  try {
+    const r = await fetch(`/api/availability?date=${encodeURIComponent(date)}`, { headers: { Accept: 'application/json' } });
+    if (r.ok) slots = await r.json();
+  } catch {}
+  if (availability.date !== date) return;   // a newer date was picked meanwhile
+  availability.slots = slots;
+  refreshAvailability();
+}
+// Also on returning to the date step, in case the service changed.
+function refreshAvailability() {
+  const date = document.getElementById('f-date').value;
+  if (!date || availability.date !== date || !availability.slots) return;
+  const open = slotOpen();
+  showAvailability(open === true ? 'free' : open === false ? 'busy' : null);
+}
+function showAvailability(state) {
+  const hint = document.getElementById('date-hint');
+  hint.dataset.base ??= hint.textContent;   // the default, or Judith's handoff note
+  hint.textContent = state === 'checking' ? 'בודקים זמינות…' : state === 'free' ? '✓ התאריך פנוי' : hint.dataset.base;
+  hint.classList.toggle('is-free', state === 'free');
+  hint.style.display = state === 'busy' ? 'none' : '';
+  setErr('f-date', 'e-date-busy', state === 'busy');
+  if (state !== 'busy' && !document.getElementById('f-date').value) document.getElementById('f-date').classList.remove('is-valid');
 }
 
 // ═══════════════════════════════
@@ -1653,7 +1696,8 @@ async function prefillFromJudith() {
     const chip = [...document.querySelectorAll('.urgency-chips .sub-chip')].find(c => c.textContent.trim() === label);
     if (chip) { selectUrgency(label, chip); known.push(label); s.done.add(4); }
   } else if (p.event_date_text) {
-    document.getElementById('date-hint').textContent = `סיפרת ליהודית: ${p.event_date_text} — בחרי תאריך או טווח ונבדוק זמינות`;
+    const hint = document.getElementById('date-hint');
+    hint.textContent = hint.dataset.base = `סיפרת ליהודית: ${p.event_date_text} — בחרי תאריך או טווח ונבדוק זמינות`;
   }
 
   if (service && service !== 'bride' && Number.isInteger(p.budget)) {
