@@ -1,10 +1,10 @@
 // End-to-end through the HTTP handlers and the real migration (in PGlite).
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { createLeadsHandler, createLeadHandler } from '../api/_lib/handlers.js';
+import { createLeadsHandler, createLeadHandler, createManualLeadHandler } from '../api/_lib/handlers.js';
 import { createTestDb, mockReq, mockRes, silentLog, fakeRequireStaff, STAFF } from './helpers.js';
 
-let t, log, leadsApi, leadApi;
+let t, log, leadsApi, leadApi, manualApi;
 
 beforeEach(async () => {
   t = await createTestDb();
@@ -12,6 +12,7 @@ beforeEach(async () => {
   const deps = () => ({ db: t.db, ipHashKey: 'test-key', requireStaff: fakeRequireStaff });
   leadsApi = createLeadsHandler(deps, { log });
   leadApi = createLeadHandler(deps, { log });
+  manualApi = createManualLeadHandler(deps, { log });
 });
 
 async function call(handler, reqOpts) {
@@ -24,6 +25,7 @@ const post = (body, headers) => call(leadsApi, { method: 'POST', body, headers }
 const list = (query = {}, auth = 'Bearer good') => call(leadsApi, { method: 'GET', query, headers: { authorization: auth } });
 const getOne = (id, auth = 'Bearer good') => call(leadApi, { method: 'GET', query: { id }, headers: { authorization: auth } });
 const patch = (id, body, auth = 'Bearer good') => call(leadApi, { method: 'PATCH', query: { id }, body, headers: { authorization: auth } });
+const addManual = (body, auth = 'Bearer good') => call(manualApi, { method: 'POST', body, headers: { authorization: auth } });
 
 const websiteLead = (over = {}) => ({
   source: 'website_form', name: 'דנה כהן', phone: '054-678-7179', email: 'dana@example.com',
@@ -228,6 +230,39 @@ test('PATCH accepts only {status}; unknown ids are 404', async () => {
   assert.equal((await getOne('not-a-uuid')).statusCode, 404);
 });
 
+test('deal: saved on the lead, moves its date and service, logged; bad fields are 400', async () => {
+  await post(websiteLead());
+  const id = (await onlyLead())[0].id;
+  await patch(id, { status: 'won' });
+
+  const deal = { package: 'התארגנות + צלם', lead_type: 'production', event_date: '2027-06-01', start_time: '09:30', end_time: '14:00',
+    guests: '6', price: '4800', deposit: '1500', payment_method: 'transfer', notes: 'שורה 1\nשורה 2', junk: 'x' };
+  const r = await patch(id, { deal });
+  assert.equal(r.statusCode, 200);
+  assert.deepEqual(r.body.lead.deal, { package: 'התארגנות + צלם', notes: 'שורה 1\nשורה 2', lead_type: 'production', payment_method: 'transfer',
+    start_time: '09:30', end_time: '14:00', event_date: '2027-06-01', guests: 6, price: 4800, deposit: 1500 });
+
+  const lead = (await getOne(id)).body.lead;
+  assert.equal(lead.event_date, '2027-06-01');
+  assert.equal(lead.lead_type, 'production');
+  assert.equal(lead.deal.price, 4800);
+  const ev = lead.events.find((e) => e.type === 'deal_updated');
+  assert.equal(ev.actor_email, STAFF.email);
+  assert.equal(ev.data.package, 'התארגנות + צלם');
+
+  // Empty fields are left out; the lead's date stays.
+  assert.deepEqual((await patch(id, { deal: { price: '', package: ' ', notes: 'רק הערה' } })).body.lead.deal, { notes: 'רק הערה' });
+  assert.equal((await getOne(id)).body.lead.event_date, '2027-06-01');
+
+  const bad = await patch(id, { deal: { price: '100', deposit: '200', start_time: '25:00', guests: '-1', payment_method: 'gold', event_date: '2027-02-30' } });
+  assert.equal(bad.statusCode, 400);
+  assert.deepEqual(Object.keys(bad.body.fields).sort(), ['deposit', 'event_date', 'guests', 'payment_method', 'start_time']);
+  assert.equal((await patch(id, { deal: 'x' })).statusCode, 400);
+  assert.equal((await patch(id, { deal: {}, status: 'won' })).statusCode, 400);
+  assert.equal((await patch('7d3b1e70-0000-4000-8000-000000000000', { deal: {} })).statusCode, 404);
+  assert.equal((await patch(id, { deal: {} }, 'Bearer outsider')).statusCode, 403);
+});
+
 test('list: counters, filters, search by name / phone / email', async () => {
   await post(websiteLead());
   await post(leadPageLead());
@@ -287,4 +322,48 @@ test('database: constraints hold even if the API is bypassed', async () => {
   await assert.rejects(t.pg.query(`insert into leads (source, name, phone) values ('Bad Source!','x','1')`));
   // A future source / type needs no migration.
   await t.pg.query(`insert into leads (source, name, phone, lead_type) values ('judith_ai','x','1','event_planning')`);
+});
+
+test('manual lead: staff only, manual sources only, already seen, no push', async () => {
+  const body = { source: 'instagram', name: 'מיכל אברהם', phone: '050-123-4567', lead_type: 'bridal', urgency: 'this_month', message: 'פנתה בדיירקט' };
+  assert.equal((await addManual(body, null)).statusCode, 401);
+  assert.equal((await addManual(body, 'Bearer outsider')).statusCode, 403);
+  assert.equal((await addManual({ ...body, source: 'website_form' })).statusCode, 400);   // public sources stay public
+  assert.equal((await post({ ...body })).statusCode, 400);                                 // and manual ones stay staff-only
+  assert.equal((await addManual({ ...body, status: 'archived' })).statusCode, 400);
+  assert.deepEqual((await addManual({ ...body, name: '', phone: '12' })).body.fields, { name: 'required', phone: 'required' });
+
+  const res = await addManual(body);
+  assert.equal(res.statusCode, 201);
+  assert.equal(res.body.result, 'created');
+  const lead = (await getOne(res.body.lead_id)).body.lead;
+  assert.equal(lead.source, 'instagram');
+  assert.equal(lead.status, 'new');
+  assert.equal(lead.lead_score, 'warm');
+  assert.ok(lead.seen_at);
+  assert.equal(lead.metadata.entered_by, STAFF.email);
+  assert.equal(log.entries.some((e) => e.event === 'push_notify_failed'), false);
+});
+
+test('manual lead: optional starting status; same phone merges into the open lead', async () => {
+  const won = await addManual({ source: 'phone', name: 'רותם', phone: '0529998877', status: 'won' });
+  const lead = (await getOne(won.body.lead_id)).body.lead;
+  assert.equal(lead.status, 'won');
+  assert.ok(lead.closed_at);
+  assert.equal(lead.events.find((e) => e.type === 'status_changed').actor_email, STAFF.email);
+
+  await post(websiteLead());
+  const r = await addManual({ source: 'whatsapp', name: 'דנה כהן', phone: '+972 54-678-7179', budget: 3000 });
+  assert.equal(r.body.result, 'repeat');
+  assert.equal(r.body.submission_count, 2);
+  const merged = (await getOne(r.body.lead_id)).body.lead;
+  assert.equal(merged.source, 'website_form');
+  assert.equal(merged.budget, 3000);
+
+  // Retrying the same form (same submission_id) never adds twice.
+  const sid = '4f1c2b9a-6d3e-4b7a-9c1d-2e3f4a5b6c7d';
+  const a = await addManual({ source: 'referral', name: 'שירן', phone: '0531112222', submission_id: sid });
+  const b = await addManual({ source: 'referral', name: 'שירן', phone: '0531112222', submission_id: sid });
+  assert.equal(b.body.result, 'duplicate_submission');
+  assert.equal(b.body.lead_id, a.body.lead_id);
 });

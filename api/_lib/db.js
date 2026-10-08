@@ -34,6 +34,15 @@ export function createDb(rpc) {
         p_actor_id: actor?.id ?? null,
         p_actor_email: actor?.email ?? null,
       }),
+    setDeal: (id, deal, actor) =>
+      rpc('set_lead_deal', {
+        p_lead_id: id,
+        p_deal: deal,
+        p_event_date: deal.event_date ?? null,
+        p_lead_type: deal.lead_type ?? null,
+        p_actor_id: actor?.id ?? null,
+        p_actor_email: actor?.email ?? null,
+      }),
 
     loginGate: (ipHash, { ipMax, globalMax, windowSeconds }) =>
       rpc('login_gate', { p_ip_hash: ipHash, p_ip_max: ipMax, p_global_max: globalMax, p_window_seconds: windowSeconds }),

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { STATUSES } from './catalog.js';
-import { validateLead, cleanText } from './validate.js';
+import { STATUSES, MANUAL_SOURCES } from './catalog.js';
+import { validateLead, validateDeal, cleanText } from './validate.js';
 import { scoreLead } from './score.js';
 import { leadNotification } from './push.js';
 import { withPriority } from './priority.js';
@@ -165,7 +165,51 @@ export function createLeadsHandler(getDeps, { log = defaultLog, rateLimit = RATE
   };
 }
 
-/** /api/leads/:id — GET (staff): one lead with its history. PATCH (staff): {status} or {seen: true}. DELETE (staff). */
+/**
+ * /api/leads/manual — POST (staff): a lead the team typed in by hand (a phone
+ * call, Instagram DM, referral…). Same validation, scoring and phone merge as
+ * the public form, but only manual sources, no rate limit and no push: the
+ * person entering it already knows. Optional {status} sets where it starts.
+ */
+export function createManualLeadHandler(getDeps, { log = defaultLog, now = () => new Date() } = {}) {
+  return async function handler(req, res) {
+    try {
+      if (req.method !== 'POST') {
+        res.setHeader('Allow', 'POST');
+        return send(res, 405, { error: 'method_not_allowed' });
+      }
+      const deps = getDeps();
+      const user = await withStaff(deps, req, res);
+      if (!user) return;
+      if (!isSameOrigin(req)) return send(res, 403, { error: 'forbidden' });
+
+      const { body, error } = readJson(req);
+      if (error) return send(res, error === 'too_large' ? 413 : 400, { error });
+      const status = body?.status == null || body.status === '' ? 'new' : body.status;
+      if (!STATUSES.has(status)) return send(res, 400, { error: 'invalid', fields: { status: 'unknown status' } });
+
+      const v = validateLead({ ...body, botcheck: null }, { now: now(), sources: MANUAL_SOURCES });
+      if (!v.ok) return send(res, 400, { error: 'invalid', fields: v.errors });
+
+      const lead = { ...v.lead, lead_score: scoreLead(v.lead, now()) };
+      lead.metadata = { ...lead.metadata, entered_by: user.email || user.id };
+      const out = await deps.db.ingestLead(lead, { submissionId: v.submissionId || randomUUID(), ipHash: null, rateMax: 0, rateWindowSeconds: 0 });
+
+      // Already seen: whoever typed it in doesn't need it flagged as unread.
+      if (out.result === 'created') {
+        await deps.db.markSeen(out.lead_id);
+        if (status !== 'new') await deps.db.setStatus(out.lead_id, status, user);
+      }
+      log.info('lead_manual_saved', { lead_id: out.lead_id, result: out.result, source: lead.source, by: user.email, phone_tail: phoneTail(lead.phone) });
+      return send(res, 201, { ok: true, result: out.result, lead_id: out.lead_id, submission_count: out.submission_count ?? null });
+    } catch (err) {
+      log.error('lead_manual_error', { error: String(err && err.message || err) });
+      return send(res, 500, { error: 'server_error' });
+    }
+  };
+}
+
+/** /api/leads/:id — GET (staff): one lead with its history. PATCH (staff): {status}, {deal} or {seen: true}. DELETE (staff). */
 export function createLeadHandler(getDeps, { log = defaultLog } = {}) {
   return async function handler(req, res) {
     try {
@@ -201,8 +245,19 @@ export function createLeadHandler(getDeps, { log = defaultLog } = {}) {
         const out = await deps.db.markSeen(id);
         return out ? send(res, 200, out) : send(res, 404, { error: 'not_found' });
       }
+      // פרטי הסגירה: what was booked, for how much. Replaces the whole deal.
+      if (keys.length === 1 && keys[0] === 'deal') {
+        const v = validateDeal(body.deal);
+        if (!v.ok) return send(res, 400, { error: 'invalid', fields: v.errors });
+        const updated = await deps.db.setDeal(id, v.deal, user);
+        if (!updated) return send(res, 404, { error: 'not_found' });
+        log.info('lead_deal_saved', { lead_id: id, by: user.email, price: v.deal.price ?? null });
+        // The booked date / service may have moved the calendar event.
+        if (deps.calendarSync) deps.waitUntil(deps.calendarSync(updated, log));
+        return send(res, 200, { lead: withPriority(updated, new Date()) });
+      }
       if (keys.length !== 1 || keys[0] !== 'status' || !STATUSES.has(body.status)) {
-        return send(res, 400, { error: 'only {status} or {seen: true} can be updated', allowed: [...STATUSES] });
+        return send(res, 400, { error: 'only {status}, {deal} or {seen: true} can be updated', allowed: [...STATUSES] });
       }
 
       const updated = await deps.db.setStatus(id, body.status, user);

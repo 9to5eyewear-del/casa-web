@@ -19,7 +19,7 @@
 // Leads without an exact date (only "this month" / "flexible") get no event.
 
 import { createTokenSource, nextDate, TIMEOUT_MS } from './calendar.js';
-import { LEAD_TYPE_LABELS, SOURCE_LABELS } from './catalog.js';
+import { LEAD_TYPE_LABELS, SOURCE_LABELS, PAYMENT_LABELS } from './catalog.js';
 import { defaultLog } from './handlers.js';
 
 const API = 'https://www.googleapis.com/calendar/v3/calendars';
@@ -40,7 +40,21 @@ export function targetFor(lead) {
 export function eventFor(lead) {
   const date = String(lead.event_date).slice(0, 10);
   const type = LEAD_TYPE_LABELS[lead.lead_type] || 'פנייה';
+  const ils = (n) => `₪${Number(n).toLocaleString('he-IL')}`;
+  // פרטי הסגירה come first: on a booking they're what the team needs that day.
+  const d = lead.status === 'won' && lead.deal ? lead.deal : null;
+  const dealLines = d ? [
+    d.package && `נסגר: ${d.package}`,
+    (d.start_time || d.end_time) && `שעות: ${[d.start_time, d.end_time].filter(Boolean).join('–')}`,
+    d.guests != null && `משתתפים: ${d.guests}`,
+    d.price != null && `מחיר: ${ils(d.price)}`,
+    d.deposit != null && `מקדמה: ${ils(d.deposit)}${d.price != null ? ` · יתרה: ${ils(d.price - d.deposit)}` : ''}`,
+    d.payment_method && `תשלום: ${PAYMENT_LABELS[d.payment_method] || d.payment_method}`,
+    d.notes && `הערות סגירה: ${d.notes}`,
+    '',
+  ] : [];
   const lines = [
+    ...dealLines,
     `טלפון: ${lead.phone}`,
     lead.email && `אימייל: ${lead.email}`,
     `שירות: ${type}${lead.lead_subtype ? ` · ${lead.lead_subtype}` : ''}`,
@@ -53,7 +67,7 @@ export function eventFor(lead) {
     `ב-LeadLive: ${LEADLIVE_URL}${lead.id}`,
   ].filter((l) => l !== false && l != null);
   return {
-    summary: `${type} · ${lead.name}`,
+    summary: `${type} · ${lead.name}${d?.start_time ? ` · ${d.start_time}` : ''}`,
     description: lines.join('\n'),
     start: { date },
     end: { date: nextDate(date) },

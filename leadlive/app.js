@@ -5,15 +5,18 @@
  * Every number on screen comes from /api/dashboard or /api/leads — this file
  * formats, it never computes a metric of its own.
  *
- * Routes: #/ home · #/leads · #/insights · #/lead/{id} (push deep links). */
+ * Routes: #/ home · #/leads · #/insights · #/new (manual lead) · #/lead/{id} (push deep links). */
 (function () {
   'use strict';
 
   // ── Labels ──
   const STATUS = { new: 'לטיפול', in_progress: 'בטיפול', won: 'נסגר', lost: 'לא נסגר' };
-  const SOURCE = { website_form: 'טופס באתר', lead_page: 'דף ליד', judith_ai: 'יהודית AI' };
+  // Where a hand-entered lead came from (the server accepts only these on /api/leads/manual).
+  const MANUAL_SOURCE = { phone: 'שיחת טלפון', whatsapp: 'וואטסאפ', instagram: 'אינסטגרם', facebook: 'פייסבוק', referral: 'המלצה', walk_in: 'הגיעו לסטודיו', manual: 'אחר' };
+  const SOURCE = { website_form: 'טופס באתר', lead_page: 'דף ליד', judith_ai: 'יהודית AI', ...MANUAL_SOURCE, manual: 'הוזן ידנית' };
   const TYPE = { bridal: 'התארגנות כלה', production: 'הפקת צילום', fashion: 'צילום אופנה', product: 'צילום מוצר', other: 'אחר', unknown: 'לא צוין' };
   const URGENCY = { this_week: 'השבוע', this_month: 'בחודש הקרוב', three_months: 'ב-3 החודשים הקרובים', flexible: 'גמיש' };
+  const PAYMENT = { transfer: 'העברה בנקאית', credit: 'אשראי', bit: 'ביט / פייבוקס', cash: 'מזומן', check: 'צ׳ק', other: 'אחר' };
   const PRIO = { hot: '🔥 HOT', warm: '● WARM', cold: '○ COLD' };
   const SCORE = { hot: 'HOT', warm: 'WARM', cold: 'COLD' };
   const RANGES = [['7d', '7 ימים'], ['30d', '30 ימים'], ['this_month', 'החודש'], ['previous_month', 'חודש קודם']];
@@ -26,7 +29,7 @@
   };
 
   const $ = (sel) => document.querySelector(sel);
-  const VIEWS = ['homeView', 'leadsView', 'insightsView', 'detailView'];
+  const VIEWS = ['homeView', 'leadsView', 'insightsView', 'detailView', 'newView'];
   const state = {
     authed: false, vapidKey: null, installPrompt: null,
     range: loadRange(), custom: null,          // custom = { from, to } (desktop only)
@@ -77,6 +80,7 @@
   const fmtShort = (iso) => { const [, m, d] = iso.split('-'); return `${Number(d)}.${Number(m)}`; };
   const fmtFull = (ts) => { const d = new Date(ts); return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} · ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
   const fmtHm = (ts) => { const d = new Date(ts); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  const ils = (n) => `₪${Number(n).toLocaleString('he-IL')}`;
   const pct = (x, digits = 0) => `${(x * 100).toFixed(digits).replace(/\.0$/, '')}%`;
   const typeLabel = (l) => TYPE[l.lead_type] || l.lead_type || 'פנייה';
   const sourceLabel = (src) => SOURCE[src] || src;
@@ -587,7 +591,6 @@
 
   function breakdownBlock(rows, nameOf, emptyText) {
     if (!rows.length) return emptyState('אין עדיין נתונים', emptyText);
-
     return h('div', { class: 'rows panel' }, rows.map((r) => h('div', { class: 'row' },
       h('div', { class: 'row-top' }, h('span', { class: 'row-name' }, nameOf(r)), h('span', { class: 'row-share' }, pct(r.share.rate))),
       bar(r.share.rate),
@@ -658,7 +661,8 @@
             h('b', null, d.summary.open_now.new), ' לטיפול'),
           h('a', { href: '#/leads', onclick: () => presetFilter('status:in_progress') }, h('b', null, d.summary.open_now.in_progress), ' בטיפול'),
           d.summary.hot_open > 0 && h('a', { href: '#/leads', class: 'is-gold', onclick: () => presetFilter('flag:hot') },
-            h('b', null, d.summary.hot_open), ' HOT'))),
+            h('b', null, d.summary.hot_open), ' HOT'),
+          h('a', { href: '#/new', class: 'is-add' }, '+ ליד חדש'))),
       block('attention', 'עכשיו', attentionBlock(d.attention)),
       block('period', 'ביצועים', h('div', null, rangeControl(), kpiStrip(d))),
       block('trend', 'לידים לאורך זמן', trendChart(d.trend)),
@@ -703,10 +707,10 @@
         block('judith', 'יהודית AI', h('div', { class: 'judith-stack' }, judithBlock(d.judith), claudeCard())),
         h('section', { class: 'block wide' }, h('div', { class: 'block-head' }, h('h2', null, 'מדדים נוספים'),
           h('span', { class: 'block-note' }, 'המרה = נסגרו ÷ לידים שנכנסו בתקופה')), metricsBlock(d))));
+    loadClaude();
   }
 
   // ══════════════════ Lead list ══════════════════
-    loadClaude();
 
   function prioMark(l) {
     return l.priority ? h('span', { class: `prio prio-${l.priority.level}` }, PRIO[l.priority.level]) : null;
@@ -819,16 +823,19 @@
         onclick: () => { closeSheet(); changeStatus(l, key, onChange); } }, label))));
   }
 
-  /** Optimistic: the UI moves first, and moves back if the server says no. */
-  async function changeStatus(l, status, onChange) {
+  /** Optimistic: the UI moves first, and moves back if the server says no.
+   *  Closing a deal then asks what was closed (onDeal gets the saved lead). */
+  async function changeStatus(l, status, onChange, onDeal) {
     if (l.status === status) return;
     const before = { status: l.status, priority: l.priority };
     onChange({ status, priority: status === 'won' || status === 'lost' ? null : l.priority });
     try {
       const { lead } = await api(`/api/leads/${l.id}`, { method: 'PATCH', body: { status } });
       onChange({ status: lead.status, priority: lead.priority, closed_at: lead.closed_at });
-      if (lead.status === 'won') toast('✓ הליד נסגר בהצלחה', { success: true });
-      else toast(`הסטטוס עודכן: ${STATUS[lead.status]}`);
+      if (lead.status === 'won') {
+        toast('✓ הליד נסגר בהצלחה', { success: true });
+        dealSheet(l, onDeal || ((saved) => onChange({ deal: saved.deal })));
+      } else toast(`הסטטוס עודכן: ${STATUS[lead.status]}`);
       state.dash = null; state.dashKey = null; // numbers changed
       state.listStale = true;
       refreshCounts();
@@ -842,6 +849,104 @@
     api('/api/leads?limit=1').then((d) => applyCounts(d.counts)).catch(() => {});
   }
 
+  // ══════════════════ פרטי הסגירה (what a closed lead booked) ══════════════════
+
+  const DEAL_ERRORS = { deposit: 'המקדמה גבוהה מהמחיר', event_date: 'תאריך לא תקין', start_time: 'שעה לא תקינה', end_time: 'שעה לא תקינה' };
+
+  /** The deal form, in the bottom sheet. Prefilled from the saved deal, or from what the lead asked for. */
+  function dealSheet(l, onSaved) {
+    const d = l.deal || { lead_type: l.lead_type, event_date: l.event_date, guests: l.companions };
+    const err = {};
+    const field = (label, control, name, { full } = {}) => {
+      err[name] = h('span', { class: 'nf-error', role: 'alert' });
+      return h('label', { class: 'nf-field' + (full ? ' is-full' : '') }, h('span', { class: 'nf-label' }, label), control, err[name]);
+    };
+    const options = (map, selected) => [h('option', { value: '' }, 'לא צוין'),
+      ...Object.entries(map).map(([k, v]) => h('option', { value: k, selected: k === selected }, v))];
+    const num = (name, max) => h('input', { name, type: 'number', inputmode: 'numeric', min: 0, max, step: 1, dir: 'ltr', value: d[name] ?? '' });
+
+    const pkg = h('input', { name: 'package', maxlength: 300, autocomplete: 'off', value: d.package || '', placeholder: 'לדוגמה: התארגנות כלה + 4 מלוות' });
+    const type = h('select', { name: 'lead_type' }, options(Object.fromEntries(Object.entries(TYPE).filter(([k]) => k !== 'unknown')), d.lead_type));
+    const guests = num('guests', 50);
+    const date = h('input', { name: 'event_date', type: 'date', value: d.event_date ? String(d.event_date).slice(0, 10) : '' });
+    const start = h('input', { name: 'start_time', type: 'time', dir: 'ltr', value: d.start_time || '' });
+    const end = h('input', { name: 'end_time', type: 'time', dir: 'ltr', value: d.end_time || '' });
+    const price = num('price', 1000000), deposit = num('deposit', 1000000);
+    const pay = h('select', { name: 'payment_method' }, options(PAYMENT, d.payment_method));
+    const notes = h('textarea', { name: 'notes', rows: 3, maxlength: 4000 }, d.notes || '');
+    const balance = h('p', { class: 'deal-balance', 'aria-live': 'polite' });
+    const showBalance = () => {
+      const p = price.value === '' ? null : Number(price.value), dep = deposit.value === '' ? 0 : Number(deposit.value);
+      balance.textContent = p == null ? '' : `יתרה לתשלום: ${ils(p - dep)}`;
+    };
+    price.addEventListener('input', showBalance);
+    deposit.addEventListener('input', showBalance);
+    showBalance();
+
+    const submit = h('button', { type: 'submit', class: 'btn btn-primary btn-block' }, 'שמירת פרטי הסגירה');
+    const form = h('form', { class: 'new-form deal-form', novalidate: true, onsubmit: (e) => { e.preventDefault(); save(); } },
+      field('מה נסגר', pkg, 'package', { full: true }),
+      h('div', { class: 'nf-row' }, field('שירות', type, 'lead_type'), field('משתתפים', guests, 'guests')),
+      field('תאריך', date, 'event_date', { full: true }),
+      h('div', { class: 'nf-row' }, field('משעה', start, 'start_time'), field('עד שעה', end, 'end_time')),
+      h('div', { class: 'nf-row' }, field('מחיר (₪)', price, 'price'), field('מקדמה ששולמה (₪)', deposit, 'deposit')),
+      balance,
+      field('אמצעי תשלום', pay, 'payment_method', { full: true }),
+      field('הערות', notes, 'notes', { full: true }),
+      submit,
+      h('button', { type: 'button', class: 'btn btn-ghost btn-block', onclick: closeSheet }, l.deal ? 'ביטול' : 'אמלא אחר כך'));
+
+    async function save() {
+      Object.values(err).forEach((el) => { el.textContent = ''; });
+      const deal = Object.fromEntries([pkg, type, guests, date, start, end, price, deposit, pay, notes].map((c) => [c.name, c.value]));
+      submit.disabled = true;
+      try {
+        const { lead } = await api(`/api/leads/${l.id}`, { method: 'PATCH', body: { deal } });
+        closeSheet();
+        toast('✓ פרטי הסגירה נשמרו', { success: true });
+        state.listStale = true;
+        onSaved(lead);
+      } catch (ex) {
+        submit.disabled = false;
+        if (ex.status === 401) return;
+        if (ex.status === 400 && ex.body?.fields) {
+          for (const [k, v] of Object.entries(ex.body.fields)) if (err[k]) err[k].textContent = DEAL_ERRORS[k] || (v === 'invalid' ? 'ערך לא תקין' : v);
+          return;
+        }
+        toast(ex.status ? 'השמירה נכשלה, נסו שוב' : 'אין חיבור — הפרטים לא נשמרו');
+      }
+    }
+    openSheet(`פרטי הסגירה · ${l.name}`, form);
+  }
+
+  /** The "פרטי הסגירה" section on the lead page: shown once it's closed, or whenever a deal was saved. */
+  function dealSection(l, onEdit) {
+    if (l.status !== 'won' && !l.deal) return null;
+    const d = l.deal;
+    const head = h('div', { class: 'section-head' }, h('h2', null, 'פרטי הסגירה'),
+      d && h('button', { type: 'button', class: 'link-btn', onclick: onEdit }, 'עריכה'));
+    if (!d) {
+      return h('section', { class: 'section' }, head, h('div', { class: 'deal-empty' },
+        h('p', null, 'עדיין לא נרשם מה נסגר ובכמה.'),
+        h('button', { type: 'button', class: 'btn btn-primary', onclick: onEdit }, 'הוספת פרטי סגירה')));
+    }
+    const rows = [
+      ['נסגר', d.package],
+      ['שירות', d.lead_type && TYPE[d.lead_type]],
+      ['תאריך', d.event_date && fmtDate(d.event_date)],
+      ['שעות', (d.start_time || d.end_time) && [d.start_time, d.end_time].filter(Boolean).join('–'), 'ltr'],
+      ['משתתפים', d.guests != null && String(d.guests)],
+      ['מחיר', d.price != null && ils(d.price)],
+      ['מקדמה', d.deposit != null && ils(d.deposit)],
+      ['יתרה', d.price != null && ils(d.price - (d.deposit || 0)), 'deal-due'],
+      ['תשלום', d.payment_method && PAYMENT[d.payment_method]],
+    ].filter(([, v]) => v);
+    return h('section', { class: 'section' }, head,
+      rows.length ? dl(rows) : null,
+      d.notes && h('p', { class: 'message deal-notes' }, d.notes),
+      l.status !== 'won' && h('p', { class: 'block-note' }, 'הליד כבר לא בסטטוס "נסגר" — הפרטים נשמרו למקרה שייסגר שוב.'));
+  }
+
   // ══════════════════ Lead detail ══════════════════
 
   function fieldRows(l) {
@@ -851,7 +956,7 @@
       ['דחיפות', URGENCY[l.urgency]],
       ['מלוות', l.companions != null && String(l.companions)],
       ['סוג הפקה', l.production_type],
-      ['תקציב', l.budget != null && `₪${Number(l.budget).toLocaleString('he-IL')}`],
+      ['תקציב', l.budget != null && ils(l.budget)],
     ].filter(([, v]) => v);
   }
   const dl = (rows) => h('dl', { class: 'fields' }, rows.flatMap(([k, v, cls]) => [h('dt', null, k), h('dd', { class: cls }, v)]));
@@ -859,13 +964,17 @@
   function eventItem(e) {
     let title, extra;
     if (e.type === 'lead_created') {
-      title = `הליד התקבל · ${sourceLabel(e.data?.source)}`;
+      title = e.data?.metadata?.entered_by ? `הליד נוסף ידנית · ${sourceLabel(e.data.source)}` : `הליד התקבל · ${sourceLabel(e.data?.source)}`;
     } else if (e.type === 'repeat_submission') {
       title = `פנייה חוזרת · ${sourceLabel(e.data?.source)}`;
       const d = e.data || {};
       extra = [d.lead_type && TYPE[d.lead_type], d.event_date && fmtDate(d.event_date), d.message].filter(Boolean).join('\n');
     } else if (e.type === 'status_changed') {
       title = e.to_status === 'won' ? 'נסגר ✓' : `עבר ל"${STATUS[e.to_status] || e.to_status}"`;
+    } else if (e.type === 'deal_updated') {
+      title = 'פרטי הסגירה עודכנו';
+      const d = e.data || {};
+      extra = [d.package, d.price != null && ils(d.price)].filter(Boolean).join(' · ');
     } else {
       title = e.type;
     }
@@ -916,9 +1025,17 @@
           Object.assign(l, next);
           picker.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.status === l.status)));
           marks.replaceChildren(...markList().filter(Boolean));
+          dealSlot.replaceChildren(dealSection(l, editDeal) || '');
           if (next.status === 'won') picker.querySelector('[data-status="won"]').classList.add('pulse');
-        }),
+        }, dealSaved),
       }, label)));
+    // After a save, reload so the timeline shows it too; if that fails, show what the save returned.
+    function dealSaved(saved) {
+      api(`/api/leads/${l.id}`).then(({ lead }) => lead).catch(() => ({ ...l, ...saved, events: l.events }))
+        .then((lead) => { if (location.hash === `#/lead/${l.id}`) renderLead(lead); });
+    }
+    const editDeal = () => dealSheet(l, dealSaved);
+    const dealSlot = h('div', null, dealSection(l, editDeal));
     const markList = () => [prioMark(l),
       l.lead_score && h('span', { class: 'block-note nowrap' }, `Lead Score: ${SCORE[l.lead_score]}`),
       l.submission_count > 1 && h('span', { class: 'tag' }, `פנייה חוזרת ×${l.submission_count}`)];
@@ -930,26 +1047,32 @@
     if (l.closed_at) contact.push(['נסגר', fmtFull(l.closed_at)]);
 
     const fields = fieldRows(l);
-    view.replaceChildren(...[
-      backBtn(),
+    // Two columns on desktop (the request | contact and history); one stack on phones, in the same order.
+    const main = [
       h('div', { class: 'd-head' }, h('div', null,
         h('h1', null, l.name),
         h('p', { class: 'd-phone ltr' }, l.phone))),
       marks,
-      h('div', { class: 'd-actions' },
-        wa ? h('a', { class: 'btn btn-wa', href: wa, target: '_blank', rel: 'noopener' }, icon('wa'), 'WhatsApp') : h('span'),
-        tel ? h('a', { class: 'btn btn-primary', href: tel }, icon('call'), 'התקשר') : h('span')),
+      (wa || tel) && h('div', { class: 'd-actions' },
+        wa && h('a', { class: 'btn btn-wa', href: wa, target: '_blank', rel: 'noopener' }, icon('wa'), 'WhatsApp'),
+        tel && h('a', { class: 'btn btn-primary', href: tel }, icon('call'), 'התקשר')),
       picker,
+      dealSlot,
       l.possible_duplicate_of && h('p', { class: 'section block-note' }, 'ייתכן שזה לקוח קיים · ',
         h('button', { type: 'button', class: 'link-btn', onclick: () => { location.hash = `#/lead/${l.possible_duplicate_of}`; } }, 'לליד הקודם')),
       fields.length && h('section', { class: 'section' }, h('h2', null, 'הפנייה'), dl(fields)),
       l.metadata?.judith_summary && h('section', { class: 'section' }, h('h2', null, 'סיכום השיחה עם יהודית'), h('p', { class: 'message' }, l.metadata.judith_summary)),
       l.message && h('section', { class: 'section' }, h('h2', null, 'הודעה'), h('p', { class: 'message' }, l.message)),
+    ];
+    const side = [
       h('section', { class: 'section' }, h('h2', null, 'פרטים'), dl(contact)),
       h('section', { class: 'section' }, h('h2', null, 'פעילות'),
         h('ul', { class: 'timeline' }, [...(l.events || [])].reverse().map(eventItem))),
       h('button', { type: 'button', class: 'btn btn-danger btn-block d-danger', onclick: (e) => deleteLead(l, e.currentTarget) }, 'מחיקת ליד'),
-    ].filter(Boolean));
+    ];
+    view.replaceChildren(backBtn(), h('div', { class: 'd-grid' },
+      h('div', { class: 'd-main' }, main.filter(Boolean)),
+      h('div', { class: 'd-side' }, side)));
   }
 
   async function deleteLead(l, btn) {
@@ -972,6 +1095,86 @@
     if (history.length > 1 && state.cameFrom) history.back(); else location.hash = '#/leads';
   } }, '→ חזרה');
 
+  // ══════════════════ New lead (typed in by hand) ══════════════════
+
+  const FIELD_ERRORS = { name: 'נא להזין שם', phone: 'נא להזין מספר טלפון תקין', source: 'נא לבחור מקור' };
+
+  function renderNew() {
+    const view = $('#newView');
+    const submissionId = crypto.randomUUID();   // a double tap or a retry never adds the lead twice
+    const today = new Date().toLocaleDateString('en-CA');
+    const err = {};
+    const field = (label, control, { name, hint, full } = {}) => {
+      if (name) err[name] = h('span', { class: 'nf-error', role: 'alert' });
+      return h('label', { class: 'nf-field' + (full ? ' is-full' : '') }, h('span', { class: 'nf-label' }, label), control, hint && h('span', { class: 'nf-hint' }, hint), name && err[name]);
+    };
+    const options = (map, empty) => [empty != null && h('option', { value: '' }, empty), ...Object.entries(map).map(([k, v]) => h('option', { value: k }, v))];
+
+    const name = h('input', { name: 'name', required: true, maxlength: 120, autocomplete: 'off', enterkeyhint: 'next' });
+    const phone = h('input', { name: 'phone', type: 'tel', inputmode: 'tel', dir: 'ltr', required: true, maxlength: 40, autocomplete: 'off', placeholder: '050-000-0000' });
+    const source = h('select', { name: 'source', required: true }, options(MANUAL_SOURCE));
+    const type = h('select', { name: 'lead_type' }, options(Object.fromEntries(Object.entries(TYPE).filter(([k]) => k !== 'unknown')), 'לא צוין'));
+    const date = h('input', { name: 'event_date', type: 'date', min: today });
+    const urgency = h('select', { name: 'urgency' }, options(URGENCY, 'לא צוין'));
+    const budget = h('input', { name: 'budget', type: 'number', inputmode: 'numeric', min: 0, max: 1000000, step: 1, dir: 'ltr' });
+    const email = h('input', { name: 'email', type: 'email', dir: 'ltr', maxlength: 254, autocomplete: 'off' });
+    const message = h('textarea', { name: 'message', rows: 4, maxlength: 4000 });
+    let status = 'new';
+    const picker = h('div', { class: 'status-picker', role: 'group', 'aria-label': 'סטטוס התחלתי' },
+      Object.entries(STATUS).map(([key, label]) => h('button', { type: 'button', 'data-status': key, 'aria-pressed': String(key === status),
+        onclick: () => { status = key; picker.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.status === status))); } }, label)));
+    const submit = h('button', { type: 'submit', class: 'btn btn-primary btn-block' }, 'שמירת הליד');
+
+    const form = h('form', { class: 'new-form', novalidate: true, onsubmit: (e) => { e.preventDefault(); save(); } },
+      field('שם *', name, { name: 'name' }),
+      field('טלפון *', phone, { name: 'phone' }),
+      field('מאיפה הגיע הליד? *', source, { name: 'source' }),
+      field('אימייל', email, { name: 'email' }),
+      h('div', { class: 'nf-row' }, field('שירות', type), field('תקציב (₪)', budget)),
+      h('div', { class: 'nf-row' }, field('תאריך האירוע', date), field('דחיפות', urgency)),
+      field('הערות', message, { hint: 'מה הלקוח ביקש, מתי לחזור אליו וכו׳', full: true }),
+      h('div', { class: 'nf-field is-full' }, h('span', { class: 'nf-label' }, 'סטטוס'), picker),
+      submit);
+    submit.classList.add('is-full');
+
+    async function save() {
+      Object.values(err).forEach((el) => { el.textContent = ''; });
+      const body = {
+        submission_id: submissionId, source: source.value, name: name.value, phone: phone.value, email: email.value,
+        lead_type: type.value, event_date: date.value, urgency: urgency.value, budget: budget.value, message: message.value, status,
+      };
+      const local = {};
+      if (name.value.trim().length < 2) local.name = 'required';
+      if (phone.value.replace(/\D/g, '').length < 7) local.phone = 'required';
+      if (email.value.trim() && !email.checkValidity()) local.email = 'invalid';
+      if (Object.keys(local).length) return showErrors(local);
+      submit.disabled = true;
+      try {
+        const r = await api('/api/leads/manual', { method: 'POST', body });
+        state.leads = []; state.listStale = true; refreshDashLater(); refreshCounts();
+        if (r.result === 'repeat') toast(`כבר יש ליד פתוח למספר הזה — הפרטים נוספו אליו (פנייה ×${r.submission_count})`);
+        else toast('✓ הליד נוסף', { success: true });
+        location.replace(`#/lead/${r.lead_id}`);
+      } catch (ex) {
+        submit.disabled = false;
+        if (ex.status === 401) return;
+        if (ex.status === 400 && ex.body?.fields) return showErrors(ex.body.fields);
+        toast(ex.status ? 'השמירה נכשלה, נסו שוב' : 'אין חיבור — הליד לא נשמר');
+      }
+    }
+    function showErrors(fields) {
+      for (const [k, v] of Object.entries(fields)) if (err[k]) err[k].textContent = k === 'email' ? 'כתובת אימייל לא תקינה' : FIELD_ERRORS[k] || v;
+      const first = form.querySelector('.nf-error:not(:empty)');
+      if (first) first.closest('.nf-field').querySelector('input, select').focus();
+      else toast('השמירה נכשלה, בדקו את הפרטים');
+    }
+
+    view.replaceChildren(backBtn(), h('h1', { class: 'view-title' }, 'ליד חדש'),
+      h('p', { class: 'nf-intro' }, 'ליד שהגיע בטלפון, באינסטגרם, בהמלצה וכו׳. אם כבר יש ליד פתוח עם אותו מספר, הפרטים יתווספו אליו.'), form);
+    window.scrollTo(0, 0);
+    name.focus({ preventScroll: true });
+  }
+
   // ══════════════════ Routing ══════════════════
 
   function currentRoute() {
@@ -979,6 +1182,7 @@
     if (m) return { view: 'detailView', id: m[1], tab: 'leads' };
     if (location.hash === '#/leads') return { view: 'leadsView', tab: 'leads' };
     if (location.hash === '#/insights') return { view: 'insightsView', tab: 'insights' };
+    if (location.hash === '#/new') return { view: 'newView', tab: 'leads' };
     return { view: 'homeView', tab: 'home' };
   }
 
@@ -994,6 +1198,7 @@
     if (r.view !== lastView && r.view !== 'detailView' && lastView !== 'detailView') window.scrollTo(0, 0);
     lastView = r.view;
     if (r.view === 'detailView') return openLead(r.id);
+    if (r.view === 'newView') return renderNew();
     if (r.view === 'leadsView') { syncChips(); if (state.listStale || !state.leads.length) loadList(); return; }
     loadDash();
   }
@@ -1002,6 +1207,7 @@
   function refreshCurrent() {
     const r = currentRoute();
     if (r.view === 'detailView') return openLead(r.id);
+    if (r.view === 'newView') return;   // never wipe a half-filled form
     state.listStale = true;
     if (r.view === 'leadsView') { refreshDashLater(); return loadList(); }
     return loadDash({ force: true });
@@ -1146,6 +1352,7 @@
       if (!$('#sheet').hidden) closeSheet(); else closeMenu();
     });
     $('#menuLogout').addEventListener('click', logout);
+    $('#menuNew').addEventListener('click', () => { closeMenu(); location.hash = '#/new'; });
     $('#menuRefresh').addEventListener('click', () => { closeMenu(); refreshCurrent(); });
     $('#menuPush').addEventListener('click', enablePush);
     $('#menuInstall').addEventListener('click', async () => {
@@ -1187,7 +1394,7 @@
     window.addEventListener('online', () => { setOffline(false); state.authed ? refreshCurrent() : boot(); });
     window.addEventListener('offline', () => setOffline(true));
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && state.authed && currentRoute().view !== 'detailView') refreshCurrent();
+      if (document.visibilityState === 'visible' && state.authed && !['detailView', 'newView'].includes(currentRoute().view)) refreshCurrent();
     });
     if (!navigator.onLine) setOffline(true);
     setupPullToRefresh();
@@ -1198,7 +1405,7 @@
         if (e.data?.type === 'open' && e.data.url) {
           const hash = new URL(e.data.url, location.origin).hash;
           if (hash) location.hash = hash;
-        } else if (e.data?.type === 'lead' && state.authed && currentRoute().view !== 'detailView') {
+        } else if (e.data?.type === 'lead' && state.authed && !['detailView', 'newView'].includes(currentRoute().view)) {
           refreshCurrent();
         }
       });

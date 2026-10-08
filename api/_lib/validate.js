@@ -4,7 +4,7 @@
 // dropped (and listed in metadata.dropped_fields) rather than rejecting the
 // whole inquiry: losing a lead over a malformed date is worse than losing the date.
 
-import { SOURCES, LEAD_TYPES, URGENCIES } from './catalog.js';
+import { SOURCES, LEAD_TYPES, URGENCIES, PAYMENT_METHODS } from './catalog.js';
 import { normalizePhone } from './phone.js';
 
 // C0/C1 control chars, zero-width chars and bidi overrides (but not \n / \t).
@@ -42,7 +42,7 @@ function cleanDate(value, now) {
 /**
  * @returns {{ ok: true, lead, submissionId, spam, judithHandoff }} or {{ ok: false, errors }}
  */
-export function validateLead(body, { now = new Date(), userAgent = null } = {}) {
+export function validateLead(body, { now = new Date(), userAgent = null, sources = SOURCES } = {}) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return { ok: false, errors: { body: 'expected a JSON object' } };
   }
@@ -54,7 +54,7 @@ export function validateLead(body, { now = new Date(), userAgent = null } = {}) 
     return value;
   };
 
-  const source = typeof body.source === 'string' && SOURCES.has(body.source) ? body.source : null;
+  const source = typeof body.source === 'string' && sources.has(body.source) ? body.source : null;
   if (!source) errors.source = 'unknown source';
 
   const name = cleanText(body.name, 120);
@@ -120,4 +120,47 @@ export function validateLead(body, { now = new Date(), userAgent = null } = {}) 
   const spam = Boolean(body.botcheck) && body.botcheck !== 'false';
 
   return { ok: true, lead, submissionId, spam, judithHandoff };
+}
+
+const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/**
+ * What a closed lead booked (LeadLive → פרטי הסגירה). Staff typed it, so a bad
+ * field is an error to fix, not something to drop. Empty fields are left out.
+ * @returns {{ ok: true, deal }} or {{ ok: false, errors }}
+ */
+export function validateDeal(body, { now = new Date() } = {}) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { ok: false, errors: { deal: 'expected a JSON object' } };
+  }
+  const errors = {};
+  const deal = {};
+  const empty = (v) => v == null || v === '';
+  const set = (key, value, valid) => {
+    if (empty(body[key])) return;
+    if (valid) deal[key] = value; else errors[key] = 'invalid';
+  };
+
+  const text = (key, max, opts) => { const v = cleanText(body[key], max, opts); if (v) deal[key] = v; };
+  text('package', 300);
+  text('notes', 4000, { multiline: true });
+
+  set('lead_type', body.lead_type, LEAD_TYPES.has(body.lead_type));
+  set('payment_method', body.payment_method, PAYMENT_METHODS.has(body.payment_method));
+  set('start_time', body.start_time, TIME.test(String(body.start_time)));
+  set('end_time', body.end_time, TIME.test(String(body.end_time)));
+
+  if (!empty(body.event_date)) {
+    const v = String(body.event_date);
+    const t = /^\d{4}-\d{2}-\d{2}$/.test(v) ? Date.parse(v + 'T00:00:00Z') : NaN;
+    const days = (t - now.getTime()) / 86400000;
+    set('event_date', v, !Number.isNaN(t) && new Date(t).toISOString().slice(0, 10) === v && days >= -365 * 2 && days <= 365 * 5);
+  }
+  for (const [key, max] of [['guests', 50], ['price', 1_000_000], ['deposit', 1_000_000]]) {
+    const n = cleanInt(body[key], 0, max);
+    set(key, n, n != null);
+  }
+  if (deal.price != null && deal.deposit != null && deal.deposit > deal.price) errors.deposit = 'more than price';
+
+  return Object.keys(errors).length ? { ok: false, errors } : { ok: true, deal };
 }

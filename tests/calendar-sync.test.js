@@ -88,6 +88,18 @@ test('the event: all day on the date, the details and a LeadLive link', () => {
   assert.ok(!/null|undefined/.test(e.description));
 });
 
+test('a booked deal: its hours, price and balance lead the description', () => {
+  const deal = { package: 'התארגנות + 4 מלוות', start_time: '09:00', end_time: '13:00', guests: 5, price: 3500, deposit: 1000, payment_method: 'bit', notes: 'להכין פרחים' };
+  const e = eventFor(lead({ status: 'won', deal }));
+  assert.equal(e.summary, 'התארגנות כלה · דנה כהן · 09:00');
+  assert.match(e.description, /^נסגר: התארגנות \+ 4 מלוות\nשעות: 09:00–13:00\nמשתתפים: 5\n/);
+  assert.match(e.description, /מקדמה: ₪1,000 · יתרה: ₪2,500/);
+  assert.match(e.description, /תשלום: ביט/);
+  assert.match(e.description, /הערות סגירה: להכין פרחים/);
+  // A deal kept on a reopened lead isn't a booking.
+  assert.ok(!/נסגר:/.test(eventFor(lead({ status: 'in_progress', deal })).description));
+});
+
 test('new lead → interested; won → bridal; reopened → back to interested', async () => {
   assert.deepEqual(await sync(lead()), { action: 'created', calendar: 'interested' });
   assert.deepEqual(google.where(), ['interested']);

@@ -47,6 +47,7 @@
         <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
       </button>
       <div id="menu" class="menu" role="menu" hidden>
+        <button type="button" role="menuitem" id="menuNew">הוספת ליד ידנית</button>
         <button type="button" role="menuitem" id="menuInstall" hidden>התקנת האפליקציה</button>
         <button type="button" role="menuitem" id="menuPush">הפעל התראות</button>
         <button type="button" role="menuitem" id="menuRefresh">רענון</button>
@@ -65,7 +66,10 @@
   <main id="homeView" class="view view-home" hidden></main>
 
   <main id="leadsView" class="view view-leads" hidden>
-    <h1 class="view-title">לידים</h1>
+    <div class="view-head">
+      <h1 class="view-title">לידים</h1>
+      <a href="#/new" class="btn btn-ghost btn-sm">+ ליד חדש</a>
+    </div>
     <div class="list-tools">
       <div class="search">
         <label class="sr-only" for="search">חיפוש</label>
@@ -78,6 +82,15 @@
         <option value="website_form">טופס באתר</option>
         <option value="lead_page">דף ליד</option>
         <option value="judith_ai">יהודית AI</option>
+        <optgroup label="הוזנו ידנית">
+          <option value="phone">שיחת טלפון</option>
+          <option value="whatsapp">וואטסאפ</option>
+          <option value="instagram">אינסטגרם</option>
+          <option value="facebook">פייסבוק</option>
+          <option value="referral">המלצה</option>
+          <option value="walk_in">הגיעו לסטודיו</option>
+          <option value="manual">אחר</option>
+        </optgroup>
       </select>
     </div>
     <div class="chips" id="quickChips" role="group" aria-label="סינון מהיר">
@@ -97,6 +110,8 @@
   <main id="insightsView" class="view view-insights" hidden></main>
 
   <main id="detailView" class="view view-detail" hidden></main>
+
+  <main id="newView" class="view view-new" hidden></main>
 
   <nav class="tabbar" aria-label="ניווט ראשי">
     <a href="#/" data-tab="home">
