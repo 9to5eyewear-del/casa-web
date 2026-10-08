@@ -317,11 +317,11 @@ body::before {
 .field-label .req { color: var(--error); margin-right: 2px; }
 
 input[type="text"],
+input[type="search"],
 input[type="tel"],
 input[type="email"],
 input[type="date"],
 input[type="number"],
-select,
 textarea {
   display: block;
   width: 100%;
@@ -339,7 +339,7 @@ textarea {
   appearance: none;
 }
 input[type="date"] { color-scheme: light; }
-input:focus, select:focus, textarea:focus {
+input:focus, textarea:focus {
   border-color: var(--border-focus);
   box-shadow: 0 0 0 3px rgba(201,169,110,0.14);
 }
@@ -446,6 +446,8 @@ textarea { resize: none; min-height: 100px; line-height: 1.6; }
   animation: fadeUp 0.35s ease both;
 }
 .conditional-block.show { display: block; }
+/* The city search list opens over what follows (the "המשך" button). */
+#sub-bride { position: relative; z-index: 3; }
 .cond-label {
   font-size: 0.78rem;
   font-weight: 600;

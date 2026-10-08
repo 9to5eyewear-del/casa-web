@@ -4,16 +4,17 @@
 
 import { REGION_PLACES, OUTSIDE_PLACES } from './service-areas.data.js';
 
-// `label` on the forms, `name` in LeadLive.
+// The form asks only for the locality; its region is looked up here and
+// stored on the lead. `name` is what LeadLive shows.
 export const REGIONS = [
-  { id: 'sharon', label: 'בשרון', name: 'השרון' },
-  { id: 'shfela', label: 'בשפלה', name: 'השפלה' },
-  { id: 'south', label: 'בדרום', name: 'הדרום' },
-  { id: 'north', label: 'בצפון', name: 'הצפון' },
-  { id: 'center', label: 'במרכז', name: 'המרכז' },
-  { id: 'jerusalem', label: 'ירושלים והסביבה', name: 'ירושלים והסביבה' },
-  { id: 'emek_hefer', label: 'עמק חפר', name: 'עמק חפר' },
-  { id: 'hadera', label: 'חדרה והסביבה', name: 'חדרה והסביבה' },
+  { id: 'sharon', name: 'השרון' },
+  { id: 'shfela', name: 'השפלה' },
+  { id: 'south', name: 'הדרום' },
+  { id: 'north', name: 'הצפון' },
+  { id: 'center', name: 'המרכז' },
+  { id: 'jerusalem', name: 'ירושלים והסביבה' },
+  { id: 'emek_hefer', name: 'עמק חפר' },
+  { id: 'hadera', name: 'חדרה והסביבה' },
 ];
 export const REGION_IDS = new Set(REGIONS.map((r) => r.id));
 export const REGION_NAMES = Object.fromEntries(REGIONS.map((r) => [r.id, r.name]));
@@ -82,9 +83,9 @@ export function findPlace(text) {
 }
 
 /**
- * Where a typed location stands against the chosen region:
+ * Where a typed location stands (regionId optional: kept when it holds the locality):
  *   in_region     the locality is in that region
- *   other_region  it's in another service region (`region` = that one)
+ *   other_region  it's in a service region, `region` = its (first) one
  *   outside       a known locality outside every service region (e.g. אשקלון)
  *   unknown       not a locality we know — treated as outside the service areas
  */
@@ -98,18 +99,23 @@ export function checkLocation(text, regionId) {
 
 export const isOutOfArea = (status) => status === 'outside' || status === 'unknown';
 
-/** Autocomplete: the region's localities matching what was typed, best first. */
-export function suggest(text, regionId, limit = 8) {
+/**
+ * Quick search over every locality: best match first; at the same match,
+ * service localities before those outside (`outside: true`, shown on the form
+ * as "לא מומלץ לשירות"). The regions stay behind the scenes.
+ */
+export function suggest(text, limit = 8) {
   const key = placeKey(text);
-  const names = REGION_PLACES[regionId];
-  if (!key || !names) return [];
+  if (!key) return [];
   const ranked = [];
-  for (const name of names) {
-    const k = placeKey(name);
+  for (const p of PLACES.values()) {
+    const k = placeKey(p.name);
     const at = k.indexOf(key);
     if (at < 0) continue;
-    const wordStart = at === 0 || placeKey(name, { spaces: true }).split(' ').some((w) => w.startsWith(key));
-    ranked.push([at === 0 ? 0 : wordStart ? 1 : 2, k.length, name]);
+    const wordStart = at === 0 || placeKey(p.name, { spaces: true }).split(' ').some((w) => w.startsWith(key));
+    const outside = !p.regions.length;
+    ranked.push([at === 0 ? 0 : wordStart ? 1 : 2, outside ? 1 : 0, k.length, { name: p.name, outside }]);
   }
-  return ranked.sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, limit).map((r) => r[2]);
+  ranked.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]);
+  return ranked.slice(0, limit).map((r) => r[3]);
 }

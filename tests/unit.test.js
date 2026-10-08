@@ -201,9 +201,12 @@ test('service areas: localities by region, spelling-insensitive, Ashkelon outsid
   assert.deepEqual(at('אשדוד', 'south'), ['in_region', 'אשדוד', 'south']);
   assert.deepEqual(at('בלה בלה', 'sharon'), ['unknown', null, null]);
   assert.ok(isOutOfArea('outside') && isOutOfArea('unknown') && !isOutOfArea('other_region'));
-  // Autocomplete only offers the chosen region.
-  assert.ok(suggest('כפר', 'sharon').includes('כפר סבא'));
-  assert.deepEqual(suggest('אשק', 'south'), []);
+  // Quick search over every city: outside ones are offered too, marked, after service ones.
+  assert.deepEqual(suggest('כפר ס', 3), [{ name: 'כפר סבא', outside: false }, { name: 'כפר סאלד', outside: false }, { name: 'כפר סירקין', outside: false }]);
+  assert.deepEqual(suggest('אשק'), [{ name: 'אשקלון', outside: true }]);
+  const beer = suggest('באר', 20).map((p) => p.outside);
+  assert.ok(beer.includes(true) && beer.indexOf(true) > beer.lastIndexOf(false));
+  assert.deepEqual(at('נתניה', null), ['other_region', 'נתניה', 'sharon']);              // no region sent: looked up
   assert.equal(prepLocationText({ prep_location: 'אשקלון', prep_region: 'south', out_of_area: true }), 'אשקלון (הדרום) · ⚠️ מחוץ לאזור שירות');
   assert.equal(prepLocationText({ prep_location: null }), null);
 });
