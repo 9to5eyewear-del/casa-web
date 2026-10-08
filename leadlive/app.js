@@ -1065,6 +1065,8 @@
     const contact = [['טלפון', l.phone, 'ltr']];
     if (l.email) contact.push(['אימייל', h('a', { href: `mailto:${l.email}` }, l.email), 'ltr']);
     contact.push(['מקור', sourceLabel(l.source)], ['התקבל', fmtFull(l.created_at)]);
+    // Sent from the English site (js/i18n.js → metadata.lang): answer her in English.
+    if (l.metadata?.lang === 'en') contact.push(['שפת הפנייה', 'אנגלית — לענות באנגלית']);
     if (l.closed_at) contact.push(['נסגר', fmtFull(l.closed_at)]);
 
     const fields = fieldRows(l);

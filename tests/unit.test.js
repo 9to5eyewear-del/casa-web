@@ -212,9 +212,38 @@ test('service areas: drive time from Ein Vered decides the zone; every locality 
   assert.deepEqual([3, 22, 88, 131].map(minutesText), ['כמה דקות', 'כ-20 דקות', 'כ-90 דקות', 'כ-2 שעות ו-10 דקות']);
   // Quick search: closer recommended places first at the same match; far ones are offered too.
   const nt = suggest('נת', 5);
-  assert.deepEqual(nt[0], { name: 'נתניה', minutes: checkLocation('נתניה').minutes, zone: 'recommended' });
+  assert.deepEqual(nt[0], { name: 'נתניה', en: 'Netanya', minutes: checkLocation('נתניה').minutes, zone: 'recommended' });
+  // English names (OpenStreetMap, with the CBS spelling as a second name): q/k, w/v and doubled letters don't matter.
+  assert.deepEqual(['Netanya', 'kiryat ono', 'Ashqelon', 'Kefar Vitkin', 'herzl 5, netanya'].map((t) => checkLocation(t).place?.name),
+    ['נתניה', 'קרית אונו', 'אשקלון', 'כפר ויתקין', 'נתניה']);
+  assert.equal(suggest('netan', 1)[0].en, 'Netanya');
+  assert.deepEqual([22, 131].map((m) => minutesText(m, 'en')), ['about 20 min', 'about 2 h 10 min']);
   assert.deepEqual(suggest('אשק').map((p) => [p.name, p.zone]), [['אשקלון', 'special']]);
   assert.equal(prepLocationText({ prep_location: 'אשקלון', drive_minutes: 88, service_zone: 'special' }),
     'אשקלון · כ-90 דקות מעין ורד · מחוץ לאזור המומלץ – נבדוק אפשרות מיוחדת');
   assert.equal(prepLocationText({ prep_location: null }), null);
+});
+
+test('i18n: every Hebrew string on the site has its English (run scripts/i18n.mjs --translate to add)', async () => {
+  const { missing, loadDict } = await import('../scripts/i18n.mjs');
+  assert.deepEqual(missing(), []);
+  const dict = loadDict();
+  // Placeholders survive translation.
+  for (const [he, en] of Object.entries(dict)) {
+    const ph = (s) => (s.match(/\{\d+\}/g) || []).sort().join();
+    assert.equal(ph(en), ph(he), he);
+  }
+});
+
+test('service map: every locality has a point, and the zone sits around the studio', async () => {
+  const { PLACES } = await import('../js/service-areas.data.js');
+  const { VIEW, LAND, ZONE, ORIGIN_XY, XY } = await import('../js/service-map.data.js');
+  const missing = PLACES.map(([name]) => name).filter((n) => !XY[n]);
+  assert.deepEqual(missing, []);
+  for (const [x, y] of Object.values(XY)) assert.ok(x >= 0 && x <= VIEW[0] && y >= 0 && y <= VIEW[1]);
+  assert.ok(LAND.length > 1000 && ZONE.startsWith('M'));
+  const nums = ZONE.match(/-?\d+(\.\d+)?/g).map(Number);
+  const xs = nums.filter((_, i) => i % 2 === 0), ys = nums.filter((_, i) => i % 2 === 1);
+  assert.ok(Math.min(...xs) < ORIGIN_XY[0] && ORIGIN_XY[0] < Math.max(...xs));
+  assert.ok(Math.min(...ys) < ORIGIN_XY[1] && ORIGIN_XY[1] < Math.max(...ys));
 });

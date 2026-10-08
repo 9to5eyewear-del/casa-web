@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html dir="rtl" lang="he"><head>
 <meta charset="utf-8"/>
+<script src="/js/i18n.js"></script>
 <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
 <title>Casa Mancini | התארגנות כלה ולוקיישן להפקות</title>
 <meta name="description" content="קאזה מנצ׳יני – בית טוסקני פרטי להתארגנות כלה ולהפקות צילום, עם אור טבעי, אמנות, פרטיות וגינה קסומה."/>
@@ -202,6 +203,7 @@
       .hdr-icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: #2f3430; border-radius: 999px; transition: background .2s; }
       .hdr-icon:active { background: rgba(98,94,81,.1); }
       .hdr-icon svg { width: 22px; height: 22px; }
+      .lang-btn { font-size: .78rem; font-weight: 600; letter-spacing: .06em; color: #2f3430; }
       @media (max-width: 359px) { .hdr-icon { width: 36px; } }
       .site-header .logo { height: 2.3rem; width: auto; transition: height .4s cubic-bezier(0.16,1,0.3,1); }
       .site-header .nav-links { transition: margin .4s ease; }
@@ -610,6 +612,7 @@
       <picture><source type="image/webp" srcset="img/logo-320.webp"/><img src="img/logo-320.png" alt="Casa Mancini" width="320" height="141" class="logo object-contain" fetchpriority="high"/></picture>
     </a>
     <div class="md:hidden justify-self-end flex items-center">
+      <button type="button" class="hdr-icon lang-btn" data-lang-toggle>EN</button>
       <button type="button" class="hdr-icon" data-music-toggle aria-label="השתקת המוזיקה" aria-pressed="false">
         <svg class="music-on" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05A4.47 4.47 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06A9 9 0 0 0 14 3.23z"/></svg>
         <svg class="music-off hidden" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.8 8.8 0 0 0 21 12a9 9 0 0 0-7-8.77v2.06A7 7 0 0 1 19 12zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a9 9 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z"/></svg>
@@ -628,6 +631,7 @@
     <a href="https://www.instagram.com/casamancini/" target="_blank" rel="noopener noreferrer" class="p-1.5 hover:opacity-70 transition-opacity" aria-label="אינסטגרם (נפתח בחלון חדש)">
       <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" aria-hidden="true"><defs><radialGradient id="igGradNav" cx="30%" cy="107%" r="150%"><stop offset="0" stop-color="#fdf497"/><stop offset=".05" stop-color="#fdf497"/><stop offset=".45" stop-color="#fd5949"/><stop offset=".6" stop-color="#d6249f"/><stop offset=".9" stop-color="#285AEB"/></radialGradient></defs><path fill="url(#igGradNav)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
     </a>
+    <button type="button" class="lang-btn px-2 py-1 text-stone-600 hover:text-primary transition-colors" data-lang-toggle>EN</button>
   </div>
 </nav>
 </header>
@@ -828,7 +832,7 @@
         <p class="text-primary text-lg md:text-xl font-light mb-4">להתחיל את היום במקום שמרגיש נכון.</p>
         <p class="text-on-surface-variant font-light mb-8 leading-[1.9]">בקאזה מנצ׳יני יצרנו חוויית התארגנות שמאפשרת לך להתחיל את יום החתונה בשקט, בפרטיות וביופי.</p>
         <div class="mt-auto flex flex-wrap items-center gap-x-4 gap-y-3">
-          <button type="button" class="btn-primary" data-open-modal="modalBridal" aria-haspopup="dialog">לכל הפרטים <span class="material-symbols-outlined text-lg" aria-hidden="true">arrow_back</span></button>
+          <button type="button" class="btn-primary" data-open-modal="modalBridal" aria-haspopup="dialog">לכל הפרטים <span class="material-symbols-outlined text-lg dir-flip" aria-hidden="true">arrow_back</span></button>
           <a href="#contact" data-service="bridal" class="btn-ghost">לתיאום התארגנות</a>
         </div>
       </article>
@@ -845,7 +849,7 @@
         <p class="text-primary text-lg md:text-xl font-light mb-4">מקום עם אופי. לכל פריים.</p>
         <p class="text-on-surface-variant font-light mb-8 leading-[1.9]">קאזה מנצ׳יני מציעה לוקיישן עשיר ומגוון להפקות אופנה, קמפיינים, תוכן מסחרי, צילום מוצר והפקות קריאייטיב.</p>
         <div class="mt-auto flex flex-wrap items-center gap-x-4 gap-y-3">
-          <button type="button" class="btn-primary" data-open-modal="modalProduction" aria-haspopup="dialog">לכל הפרטים <span class="material-symbols-outlined text-lg" aria-hidden="true">arrow_back</span></button>
+          <button type="button" class="btn-primary" data-open-modal="modalProduction" aria-haspopup="dialog">לכל הפרטים <span class="material-symbols-outlined text-lg dir-flip" aria-hidden="true">arrow_back</span></button>
           <a href="#contact" data-service="production" class="btn-ghost">לקבלת הצעה להפקה</a>
         </div>
       </article>
@@ -1541,7 +1545,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
     const d = document.createElement('button');
     d.type = 'button';
     d.className = 'why-dot' + (i === 0 ? ' active' : '');
-    d.setAttribute('aria-label', 'תמונה ' + (i + 1));
+    d.setAttribute('aria-label', `תמונה ${i + 1}`);
     d.addEventListener('click', () => { goGallery(i); restartGTimer(); });
     dotsWrap.appendChild(d);
   });
@@ -2144,6 +2148,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
       `תאריך: ${d.date ? fmtDate(d.date) : '—'}`,
       d.service !== 'bride' && `תקציב: ${d.budget == null ? 'לא צוין' : `₪${d.budget.toLocaleString('he-IL')}`}`,
       d.notes && `הערות: ${d.notes}`,
+      document.documentElement.lang === 'en' && 'שפת הפנייה: אנגלית',
     ].filter(Boolean).join('\n');
   }
 

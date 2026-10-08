@@ -14,6 +14,7 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const JUDITH_TOKEN = /^[A-Za-z0-9_-]{20,64}$/;
 const METADATA_KEYS = ['page', 'referrer', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+const LANGS = new Set(['he', 'en']);
 
 export function cleanText(value, max, { multiline = false } = {}) {
   if (value == null || typeof value === 'object') return null;
@@ -103,6 +104,7 @@ export function validateLead(body, { now = new Date(), userAgent = null, sources
       if (v) metadata[key] = v;
     }
   }
+  if (body.metadata && LANGS.has(body.metadata.lang)) metadata.lang = body.metadata.lang;
   const ua = cleanText(userAgent, 300);
   if (ua) metadata.user_agent = ua;
   if (!phoneNormalized) metadata.phone_unrecognized = true;

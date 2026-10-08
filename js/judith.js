@@ -121,7 +121,7 @@
     const resetBtn = el('button', { type: 'button', class: 'jd-icon', 'aria-label': 'שיחה חדשה', title: 'שיחה חדשה' });
     resetBtn.innerHTML = ICONS.reset;
     resetBtn.addEventListener('click', reset);
-    const closeBtn = el('button', { type: 'button', class: 'jd-icon', 'aria-label': 'סגירת השיחה', title: 'סגירה' });
+    const closeBtn = el('button', { type: 'button', class: 'jd-icon jd-close', 'aria-label': 'סגירת השיחה', title: 'סגירה' });
     closeBtn.innerHTML = ICONS.close;
     closeBtn.addEventListener('click', close);
     head.append(resetBtn, closeBtn);
@@ -168,7 +168,10 @@
   // ── Rendering ──
   function bubble(item) {
     const frag = document.createDocumentFragment();
-    frag.appendChild(el('div', { class: `jd-msg ${item.role === 'user' ? 'from-user' : 'from-judith'}` }, item.text));
+    const msg = el('div', { class: `jd-msg ${item.role === 'user' ? 'from-user' : 'from-judith'}` }, item.text);
+    // The conversation itself is never machine-swapped (js/i18n.js); only our own fixed lines are.
+    if (item.text !== GREETING && item.text !== FALLBACK) msg.setAttribute('data-no-i18n', '');
+    frag.appendChild(msg);
     if (item.handoff_url) {
       const wrap = el('div', { class: 'jd-cta-wrap' });
       const a = el('a', { class: 'jd-cta', href: safeLeadUrl(item.handoff_url) }, 'להשארת פרטים ←');
@@ -205,7 +208,8 @@
       const chips = el('div', { class: 'jd-chips', role: 'group', 'aria-label': 'הצעות לפתיחה' });
       QUICK.forEach((q) => {
         const c = el('button', { type: 'button', class: 'jd-chip' }, q);
-        c.addEventListener('click', () => send(q));
+        // What she sees (English on the English site), so Judith answers in that language.
+        c.addEventListener('click', () => send(c.textContent));
         chips.appendChild(c);
       });
       log.appendChild(chips);
@@ -296,7 +300,7 @@
     scrollDown();
     // On phones, let the visitor read first; the keyboard opens on tap.
     if (window.matchMedia('(min-width: 768px)').matches) setTimeout(() => input.focus(), 50);
-    else panel.querySelector('.jd-icon[aria-label="סגירת השיחה"]').focus({ preventScroll: true });
+    else panel.querySelector('.jd-close').focus({ preventScroll: true });
   }
 
   function close() {

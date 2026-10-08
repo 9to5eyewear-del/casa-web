@@ -9,11 +9,12 @@ export const ORIGIN = 'עין ורד';
 
 // By driving time from Ein Vered. Anything but 'recommended' is a lead to
 // check availability and pricing for (out_of_area).
+// `en` is for the English site; LeadLive and the emails use the Hebrew.
 export const ZONES = {
-  recommended: { label: 'אזור שירות מומלץ', max: 75 },
-  special: { label: 'מחוץ לאזור המומלץ – נבדוק אפשרות מיוחדת', max: 105 },
-  remote: { label: 'מיקום מרוחק – נבדוק זמינות ותמחור חריג', max: Infinity },
-  unknown: { label: 'מיקום לא זוהה – נבדוק זמינות ותמחור' },
+  recommended: { label: 'אזור שירות מומלץ', en: 'Recommended service area', max: 75 },
+  special: { label: 'מחוץ לאזור המומלץ – נבדוק אפשרות מיוחדת', en: "Outside our recommended area – we'll look into a special option", max: 105 },
+  remote: { label: 'מיקום מרוחק – נבדוק זמינות ותמחור חריג', en: "Remote location – we'll check availability and special pricing", max: Infinity },
+  unknown: { label: 'מיקום לא זוהה – נבדוק זמינות ותמחור', en: "Location not recognized – we'll check availability and pricing" },
 };
 export const ZONE_IDS = new Set(Object.keys(ZONES));
 
@@ -24,14 +25,15 @@ export function zoneFor(minutes) {
 
 export const needsCheck = (zone) => zone !== 'recommended';
 
-/** "כ-45 דקות" — rounded to 5 minutes, it's an estimate. */
-export function minutesText(minutes) {
+/** "כ-45 דקות" / "about 45 min" — rounded to 5 minutes, it's an estimate. */
+export function minutesText(minutes, lang = 'he') {
   if (minutes == null) return null;
-  if (minutes < 8) return 'כמה דקות';
+  const en = lang === 'en';
+  if (minutes < 8) return en ? 'a few minutes' : 'כמה דקות';
   const m = Math.round(minutes / 5) * 5;
-  if (m < 120) return `כ-${m} דקות`;
+  if (m < 120) return en ? `about ${m} min` : `כ-${m} דקות`;
   const h = Math.floor(m / 60), rest = m % 60;
-  return `כ-${h} שעות${rest ? ` ו-${rest} דקות` : ''}`;
+  return en ? `about ${h} h${rest ? ` ${rest} min` : ''}` : `כ-${h} שעות${rest ? ` ו-${rest} דקות` : ''}`;
 }
 
 /** "אשקלון · כ-90 דקות מעין ורד · מחוץ לאזור המומלץ…" — for notifications, the calendar, emails. */
@@ -53,27 +55,34 @@ const ALIASES = {
 
 const FINALS = { 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' };
 
-/** Spelling-insensitive key: no niqqud/punctuation, no final letters, וו→ו, יי→י (קרית = קריית). */
+/**
+ * Spelling-insensitive key. Hebrew: no niqqud/punctuation, no final letters,
+ * וו→ו, יי→י (קרית = קריית). English: lower case, q→k, w→v, no doubled
+ * letters (Qiryat = Kiryat, Ashqelon = Ashkelon).
+ */
 export function placeKey(text, { spaces = false } = {}) {
   return String(text ?? '')
     .normalize('NFC')
-    .replace(/[֑-ׇ]/g, '')
+    .replace(/[\u0591-\u05C7]/g, '')
     .replace(/[ךםןףץ]/g, (c) => FINALS[c])
-    .replace(/[^א-תa-z0-9]+/gi, spaces ? ' ' : '')
+    .replace(/[^\u05D0-\u05EAa-z0-9]+/gi, spaces ? ' ' : '')
     .replace(/וו/g, 'ו').replace(/יי/g, 'י')
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/q/g, 'k').replace(/w/g, 'v').replace(/([a-z])\1+/g, '$1');
 }
 
-// { name, minutes, estimated, zone }
-const PLACES = ROWS.map(([name, minutes, estimated]) => ({ name, minutes, estimated: Boolean(estimated), zone: zoneFor(minutes) }));
+// { name (Hebrew, stored on the lead), en (shown on the English site), names (all searchable), minutes, estimated, zone }
+const PLACES = ROWS.map(([name, en, minutes, estimated, alt]) => ({
+  name, en: en || name, names: [name, en, alt].filter(Boolean), minutes, estimated: Boolean(estimated), zone: zoneFor(minutes),
+}));
 const BY_NAME = new Map(PLACES.map((p) => [p.name, p]));
 
 const BY_KEY = new Map();
-for (const p of PLACES) if (!BY_KEY.has(placeKey(p.name))) BY_KEY.set(placeKey(p.name), p);
+for (const p of PLACES) for (const n of p.names) if (!BY_KEY.has(placeKey(n))) BY_KEY.set(placeKey(n), p);
 for (const [alias, name] of Object.entries(ALIASES)) if (BY_NAME.has(name)) BY_KEY.set(placeKey(alias), BY_NAME.get(name));
 // For finding a locality inside a longer address ("הרצל 5, נתניה"), longest names first.
-const BY_PHRASE = [...PLACES.map((p) => [p.name, p]), ...Object.entries(ALIASES).map(([a, n]) => [a, BY_NAME.get(n)])]
+const BY_PHRASE = [...PLACES.flatMap((p) => p.names.map((n) => [n, p])), ...Object.entries(ALIASES).map(([a, n]) => [a, BY_NAME.get(n)])]
   .filter(([, p]) => p)
   .map(([n, p]) => [` ${placeKey(n, { spaces: true })} `, p])
   .sort((a, b) => b[0].length - a[0].length);
@@ -106,12 +115,16 @@ export function suggest(text, limit = 8) {
   if (!key) return [];
   const ranked = [];
   for (const p of PLACES) {
-    const k = placeKey(p.name);
-    const at = k.indexOf(key);
-    if (at < 0) continue;
-    const wordStart = at === 0 || placeKey(p.name, { spaces: true }).split(' ').some((w) => w.startsWith(key));
-    ranked.push([at === 0 ? 0 : wordStart ? 1 : 2, needsCheck(p.zone) ? 1 : 0, p.minutes ?? 999, p]);
+    // The best match among its names (Hebrew, English, CBS spelling).
+    let best = 9;
+    for (const n of p.names) {
+      const k = placeKey(n);
+      const at = k.indexOf(key);
+      if (at < 0) continue;
+      best = Math.min(best, at === 0 ? 0 : placeKey(n, { spaces: true }).split(' ').some((w) => w.startsWith(key)) ? 1 : 2);
+    }
+    if (best < 9) ranked.push([best, needsCheck(p.zone) ? 1 : 0, p.minutes ?? 999, p]);
   }
   ranked.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]);
-  return ranked.slice(0, limit).map(([, , , p]) => ({ name: p.name, minutes: p.minutes, zone: p.zone }));
+  return ranked.slice(0, limit).map(([, , , p]) => ({ name: p.name, en: p.en, minutes: p.minutes, zone: p.zone }));
 }

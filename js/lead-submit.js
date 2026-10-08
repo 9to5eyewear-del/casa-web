@@ -39,6 +39,8 @@
   function tracking() {
     const params = new URLSearchParams(location.search);
     const meta = { page: location.pathname };
+    // The site's language when she sent it (js/i18n.js): the team answers in English when it's 'en'.
+    if (document.documentElement.lang === 'en') meta.lang = 'en';
     if (document.referrer) meta.referrer = document.referrer;
     UTM.forEach((k) => { const v = params.get(k); if (v) meta[k] = v; });
     return meta;

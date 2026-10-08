@@ -408,7 +408,11 @@ test('knowledge is grounded in the live site: key facts appear in index.html / l
 });
 
 test('no secret or system prompt in anything the browser loads', () => {
-  const pub = ['index.html', 'lead.html', ...readdirSync(new URL('../js/', import.meta.url)).map((f) => `js/${f}`)];
+  const js = readdirSync(new URL('../js/', import.meta.url), { recursive: true, withFileTypes: true })
+    .filter((d) => d.isFile())
+    .map((d) => `${d.parentPath.slice(d.parentPath.indexOf('/js') + 1)}/${d.name}`.replace(/\/+/g, '/'));
+  const pub = ['index.html', 'lead.html', 'policy.html', 'accessibility.html', ...js];
+  assert.ok(pub.includes('js/i18n/en.json') && pub.includes('js/i18n.js'), pub.join());
   for (const f of pub) {
     const src = readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
     assert.doesNotMatch(src, /sk-ant-|ANTHROPIC_API_KEY|api\.anthropic\.com/, f);
