@@ -130,6 +130,7 @@ export function createAvailabilityHandler(getConfig, { fetchImpl = fetch, now = 
       const cal = cfg.calendars[slot] && data.calendars[cfg.calendars[slot]];
       // notFound means the calendar isn't shared with the service account (or a wrong ID).
       if (cal?.errors?.length) log.error('calendar_check_failed', { kind: 'calendar', slot, message: `calendar ${cal.errors[0].reason}`, date });
+      else if (!cal) log.error('calendar_check_failed', { kind: 'calendar', slot, message: cfg.calendars[slot] ? 'calendar missing from the answer' : 'no calendar ID set', date });
       open[slot] = !cal || cal.errors?.length ? null : cal.busy.length === 0;
     }
     return open;
