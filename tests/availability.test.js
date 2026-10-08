@@ -139,3 +139,11 @@ test('config reads both calendar IDs and the pasted key file', () => {
   assert.equal(calendarConfig({ GOOGLE_CALENDAR_BRIDAL: BRIDAL }, log), null);
   assert.equal(calendarConfig({ ...env, GOOGLE_SERVICE_ACCOUNT_JSON: '{nope' }, log), null);
 });
+
+test('a wrong key is reported without quoting it in the logs', () => {
+  const secret = 'AIzaSyFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE';
+  assert.equal(calendarConfig({ GOOGLE_CALENDAR_BRIDAL: BRIDAL, GOOGLE_SERVICE_ACCOUNT_JSON: secret }, log), null);
+  const entry = log.entries.find((e) => e.event === 'calendar_bad_key');
+  assert.match(entry.message, /API key/);
+  assert.ok(!JSON.stringify(log.entries).includes('AIza'));
+});

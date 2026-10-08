@@ -49,7 +49,11 @@ export function calendarConfig(env = process.env, log = defaultLog) {
     if (!key.client_email || !key.private_key) throw new Error('missing client_email or private_key');
     return { calendars, clientEmail: key.client_email, privateKey: key.private_key };
   } catch (err) {
-    log.error('calendar_bad_key', { message: err.message });
+    // Never err.message from JSON.parse: it quotes the start of the secret.
+    const message = err instanceof SyntaxError
+      ? (raw.startsWith('AIza') ? 'an API key, not a service account JSON key file' : 'not valid JSON')
+      : err.message;
+    log.error('calendar_bad_key', { message });
     return null;
   }
 }
