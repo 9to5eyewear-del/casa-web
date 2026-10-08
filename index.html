@@ -500,6 +500,7 @@
       .field-input[aria-invalid="true"] { border-color: #9e422c; }
       .field-error { color: #9e422c; font-size: .8rem; margin-top: .35rem; min-height: 1em; }
       .field-hint { color: #78716c; font-size: .8rem; margin-top: .4rem; line-height: 1.5; }
+      .field-hint.is-free { color: #2d6a4f; }
       .svc-chip { position: relative; display: flex; align-items: center; justify-content: center; min-height: 56px; padding: .75rem 1rem; border: 1px solid rgba(98,94,81,0.25); cursor: pointer; text-align: center; font-size: .95rem; transition: all .25s; border-radius: 2px; }
       .svc-chip input { position: absolute; opacity: 0; pointer-events: none; }
       .svc-chip:hover { border-color: rgba(98,94,81,0.55); }
@@ -1911,6 +1912,11 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
   // CTAs elsewhere on the page use the older service keys.
   const CTA_SERVICE = { bridal: 'bride', production: 'production' };
   const s = { step: 1, service: '', sub: '', companions: 0, urgency: '', budgetSkipped: false };
+  // The picked date's slots in the bookings calendars (see checkAvailability).
+  const DATE_TAKEN = 'התאריך הזה כבר תפוס אצלנו. אפשר לבחור תאריך אחר, או לסמן ״גמיש״ ונחזור אלייך עם התאריכים הפנויים.';
+  const DATE_HINT = $('h-date').textContent;
+  let availability = { date: '', slots: null };
+  const slotOpen = () => availability.slots?.[s.service === 'bride' ? 'bridal' : 'production'] ?? null;
   // Bridal prep has no budget question; it's only for productions / shoots.
   const steps = () => (s.service === 'bride' ? [1, 2, 3, 4, 6] : [1, 2, 3, 4, 5, 6]);
   const stepAfter = (n) => steps()[steps().indexOf(n) + 1];
@@ -1940,6 +1946,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
     renderProgress();
     $('wzBack').hidden = n === 1;
     personalise();
+    if (n === 4) refreshAvailability();
     // Keep the progress bar + question in view, below the fixed header.
     if (form.getBoundingClientRect().top < 110) form.scrollIntoView({ behavior: reducedMQ.matches ? 'auto' : 'smooth', block: 'start' });
     // On touch screens focus the heading, so the keyboard doesn't pop up on its own.
@@ -1988,6 +1995,7 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
         const d = $('f-date').value;
         if (!d && !s.urgency) return setError('f-date', 'נא לבחור תאריך או טווח משוער');
         if (d && d < today) return setError('f-date', 'נא לבחור תאריך עתידי');
+        if (d && availability.date === d && slotOpen() === false) return setError('f-date', DATE_TAKEN);
         return setError('f-date', '');
       }
       default: return true;
@@ -2060,15 +2068,50 @@ const reducedMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
       s.urgency = t.dataset.urgency;
       $('f-date').value = '';
       setError('f-date', '');
+      showAvailability(null);
     }
   });
   $('wzBack').addEventListener('click', () => show(stepBefore(s.step)));
   $('f-date').addEventListener('input', () => {
-    if (!$('f-date').value) return;
+    if (!$('f-date').value) return showAvailability(null);
     s.urgency = '';
     form.querySelectorAll('[data-urgency]').forEach((c) => c.setAttribute('aria-pressed', 'false'));
     setError('f-date', '');
+    if ($('f-date').value >= today) checkAvailability($('f-date').value);
   });
+
+  // ── Availability (Google Calendar, via /api/availability) ──
+  // A day holds one bridal prep and one shoot/production; the answer has both
+  // and the chosen service decides which counts. A taken slot is flagged right
+  // away; if the check fails the form carries on as before.
+  async function checkAvailability(date) {
+    availability = { date, slots: null };
+    showAvailability('checking');
+    let slots = null;
+    try {
+      const r = await fetch(`/api/availability?date=${encodeURIComponent(date)}`, { headers: { Accept: 'application/json' } });
+      if (r.ok) slots = await r.json();
+    } catch {}
+    if (availability.date !== date) return;   // a newer date was picked meanwhile
+    availability.slots = slots;
+    refreshAvailability();
+  }
+  // Also on returning to the date step, in case the service changed.
+  function refreshAvailability() {
+    const date = $('f-date').value;
+    if (!date || availability.date !== date || !availability.slots) return;
+    const open = slotOpen();
+    showAvailability(open === true ? 'free' : open === false ? 'busy' : null);
+  }
+  function showAvailability(state) {
+    const hint = $('h-date');
+    hint.textContent = state === 'checking' ? 'בודקים זמינות…' : state === 'free' ? '✓ התאריך פנוי' : DATE_HINT;
+    hint.classList.toggle('is-free', state === 'free');
+    hint.hidden = state === 'busy';
+    const shown = $('e-date').textContent;
+    if (state === 'busy') setError('f-date', DATE_TAKEN);
+    else if (shown === DATE_TAKEN) setError('f-date', '');
+  }
   $('f-budget').addEventListener('input', () => { s.budgetSkipped = false; updateBudget(); });
   $('f-message').addEventListener('input', () => { $('wzCount').textContent = $('f-message').value.length; });
   // Enter moves to the next step (the notes box keeps its new lines).
