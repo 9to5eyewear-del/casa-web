@@ -50,6 +50,7 @@ function fakeCalendar() {
   // Where the lead's event is now, live (not cancelled) only.
   fn.where = (id = eventIdFor(LEAD_ID)) => Object.keys(CAL).filter((k) => cals[CAL[k]].get(id)?.status === 'confirmed');
   fn.event = (role, id = eventIdFor(LEAD_ID)) => cals[CAL[role]].get(id);
+  fn.put = (role, ev) => cals[CAL[role]].set(ev.id, { ...ev, status: 'confirmed' });
   fn.calls = calls;
   return fn;
 }
@@ -152,6 +153,36 @@ test('a failure is logged, never thrown', async () => {
   assert.ok(!JSON.stringify(log.entries).includes('054-678-7179'));   // no lead details in the logs
 });
 
+test('a copy left in a second calendar (two syncs racing) is cleaned up', async () => {
+  await sync(lead());
+  await sync(lead({ status: 'won' }));                          // → bridal
+  // What two syncs racing can leave behind: a second copy in interested.
+  google.put('interested', { id: eventIdFor(LEAD_ID), ...eventFor(lead()) });
+  assert.deepEqual(google.where().sort(), ['bridal', 'interested']);
+  assert.deepEqual(await sync(lead({ status: 'won' })), { action: 'updated', calendar: 'bridal' });
+  assert.deepEqual(google.where(), ['bridal']);
+});
+
+test('a deleted lead ({ id } only) loses its event', async () => {
+  await sync(lead({ status: 'won', lead_type: 'production' }));
+  assert.deepEqual(await sync({ id: LEAD_ID }), { action: 'removed', from: 'production' });
+  assert.deepEqual(google.where(), []);
+});
+
+test('syncs of one lead run one after another, each with the latest state', async () => {
+  let state = lead();
+  const db = { getLead: async () => ({ ...state }) };
+  const log = silentLog();
+  const first = syncLeadCalendar(sync, db, LEAD_ID, log);
+  state = lead({ status: 'won' });
+  const second = syncLeadCalendar(sync, db, LEAD_ID, log);
+  state = lead({ status: 'in_progress' });
+  const third = syncLeadCalendar(sync, db, LEAD_ID, log);
+  await Promise.all([first, second, third]);
+  assert.deepEqual(google.where(), ['interested']);
+  assert.ok(!log.entries.some((e) => e.event === 'calendar_sync_failed'));
+});
+
 // ── Through the lead API ──
 
 test('the form and LeadLive drive it: new lead → interested, נסגר → bridal, לא רלוונטי → gone', async () => {
@@ -186,6 +217,15 @@ test('the form and LeadLive drive it: new lead → interested, נסגר → brid
   await patch('won');
   assert.deepEqual(where(), ['bridal']);
   await patch('lost');
+  assert.deepEqual(where(), []);
+  await patch('won');
+  assert.deepEqual(where(), ['bridal']);
+
+  // Deleting the lead in LeadLive deletes its event.
+  const del = mockRes();
+  await leadApi(mockReq({ method: 'DELETE', query: { id }, headers: { authorization: 'Bearer good' } }), del);
+  assert.equal(del.statusCode, 200);
+  await settle();
   assert.deepEqual(where(), []);
   assert.ok(!log.entries.some((e) => e.event === 'calendar_sync_failed'));
 });

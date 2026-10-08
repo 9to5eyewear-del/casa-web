@@ -201,6 +201,7 @@ export function createManualLeadHandler(getDeps, { log = defaultLog, now = () =>
         if (status !== 'new') await deps.db.setStatus(out.lead_id, status, user);
       }
       log.info('lead_manual_saved', { lead_id: out.lead_id, result: out.result, source: lead.source, by: user.email, phone_tail: phoneTail(lead.phone) });
+      if (deps.calendarSync && out.lead_id) deps.waitUntil(deps.calendarSync(out.lead_id, log));
       return send(res, 201, { ok: true, result: out.result, lead_id: out.lead_id, submission_count: out.submission_count ?? null });
     } catch (err) {
       log.error('lead_manual_error', { error: String(err && err.message || err) });
@@ -235,6 +236,8 @@ export function createLeadHandler(getDeps, { log = defaultLog } = {}) {
         const out = await deps.db.deleteLead(id);
         if (!out) return send(res, 404, { error: 'not_found' });
         log.info('lead_deleted', { lead_id: id, by: user.id });
+        // Its event goes too: the lead is gone, so the sync finds nothing to keep.
+        if (deps.calendarSync) deps.waitUntil(deps.calendarSync(id, log));
         return send(res, 200, out);
       }
 
@@ -253,7 +256,7 @@ export function createLeadHandler(getDeps, { log = defaultLog } = {}) {
         if (!updated) return send(res, 404, { error: 'not_found' });
         log.info('lead_deal_saved', { lead_id: id, by: user.email, price: v.deal.price ?? null });
         // The booked date / service may have moved the calendar event.
-        if (deps.calendarSync) deps.waitUntil(deps.calendarSync(updated, log));
+        if (deps.calendarSync) deps.waitUntil(deps.calendarSync(id, log));
         return send(res, 200, { lead: withPriority(updated, new Date()) });
       }
       if (keys.length !== 1 || keys[0] !== 'status' || !STATUSES.has(body.status)) {
@@ -265,7 +268,7 @@ export function createLeadHandler(getDeps, { log = defaultLog } = {}) {
       const lead = withPriority(updated, new Date());
       log.info('lead_status_changed', { lead_id: id, status: body.status, by: user.email });
       // Won → the bookings calendar, lost → off the calendar (calendar-sync.js).
-      if (deps.calendarSync) deps.waitUntil(deps.calendarSync(updated, log));
+      if (deps.calendarSync) deps.waitUntil(deps.calendarSync(id, log));
       return send(res, 200, { lead });
     } catch (err) {
       log.error('lead_api_error', { method: req.method, error: String(err && err.message || err) });

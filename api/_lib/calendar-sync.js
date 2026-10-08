@@ -92,34 +92,44 @@ export function createCalendarSync(cfg, { fetchImpl = fetch, now = () => Date.no
   // Google's error text names the calendar or the problem, never the lead's details.
   const fail = (what, r) => Object.assign(new Error(`${what} ${r.status} ${r.data?.error?.message || ''}`.trim()), { kind: 'google' });
 
-  // The lead's event in any of the calendars, deleted ones included.
-  async function find(id, order) {
+  // Every calendar holding the lead's event; deleted copies are kept (live: false).
+  async function findAll(id, order) {
+    const copies = [];
     for (const role of order) {
       const r = await call('GET', role, `/${id}`);
-      if (r.ok) return { role, event: r.data };
-      if (r.status !== 404 && r.status !== 410) throw fail('get', r);
+      if (r.ok) copies.push({ role, live: r.data?.status !== 'cancelled' });
+      else if (r.status !== 404 && r.status !== 410) throw fail('get', r);
     }
-    return null;
+    return copies;
+  }
+  async function remove(id, role) {
+    const r = await call('DELETE', role, `/${id}`);
+    if (!r.ok && r.status !== 404 && r.status !== 410) throw fail('delete', r);
   }
 
-  /** Puts the lead's event where its status says → { action, calendar?, from? }. */
+  /** Puts the lead's event where its status says → { action, calendar?, from? }.
+   * A lead that no longer exists is passed as { id } and loses its event. */
   return async function syncLead(lead) {
     const id = eventIdFor(lead.id);
     const target = targetFor(lead);
     if (target && !cfg.calendars[target]) return { action: 'skipped', reason: `no ${target} calendar` };
     const seen = new Set();
     const order = [target, ...ROLES].filter((role) => role && cfg.calendars[role] && !seen.has(cfg.calendars[role]) && seen.add(cfg.calendars[role]));
-    const found = await find(id, order);
+    const copies = await findAll(id, order);
+    const live = copies.filter((c) => c.live);
 
     if (!target) {
-      if (!found || found.event?.status === 'cancelled') return { action: 'none' };
-      const r = await call('DELETE', found.role, `/${id}`);
-      if (!r.ok && r.status !== 404 && r.status !== 410) throw fail('delete', r);
-      return { action: 'removed', from: found.role };
+      for (const c of live) await remove(id, c.role);
+      return live.length ? { action: 'removed', from: live.map((c) => c.role).join(',') } : { action: 'none' };
     }
 
+    // Keep the copy already in the target calendar, else a live one, else a
+    // deleted one; any other live copy (left by two syncs racing) goes.
+    const keep = copies.find((c) => c.role === target) || live[0] || copies[0];
+    for (const c of live) if (c !== keep) await remove(id, c.role);
+
     const body = eventFor(lead);
-    if (!found) {
+    if (!keep) {
       const r = await call('POST', target, '', { body: { id, ...body } });
       if (r.ok) return { action: 'created', calendar: target };
       // 409: Google still remembers a deleted event with this ID; bring it back.
@@ -130,25 +140,35 @@ export function createCalendarSync(cfg, { fetchImpl = fetch, now = () => Date.no
     }
 
     // Update first (also brings back a deleted event), then move if needed.
-    const p = await call('PATCH', found.role, `/${id}`, { body: { ...body, status: 'confirmed' } });
+    const p = await call('PATCH', keep.role, `/${id}`, { body: { ...body, status: 'confirmed' } });
     if (!p.ok) throw fail('update', p);
-    if (cfg.calendars[found.role] === cfg.calendars[target]) return { action: 'updated', calendar: target };
-    const m = await call('POST', found.role, `/${id}/move`, { params: { destination: cfg.calendars[target] } });
+    if (keep.role === target) return { action: 'updated', calendar: target };
+    const m = await call('POST', keep.role, `/${id}/move`, { params: { destination: cfg.calendars[target] } });
     if (!m.ok) throw fail('move', m);
-    return { action: 'moved', from: found.role, calendar: target };
+    return { action: 'moved', from: keep.role, calendar: target };
   };
 }
 
-/** Syncs a lead (or a lead ID, loaded first) without throwing; callers hand it to waitUntil. */
-export async function syncLeadCalendar(syncLead, db, leadOrId, log = defaultLog) {
-  if (!leadOrId) return;
+// One sync at a time per lead (per function instance): a status changed twice
+// in a row must not have its two syncs racing each other.
+const running = new Map();
+
+/** Syncs a lead without throwing; callers hand the promise to waitUntil. Pass
+ * the lead's ID to sync its state at that moment (a deleted lead's event is
+ * removed), or a lead object as is. */
+export function syncLeadCalendar(syncLead, db, leadOrId, log = defaultLog) {
+  if (!leadOrId) return Promise.resolve();
   const leadId = typeof leadOrId === 'string' ? leadOrId : leadOrId.id;
-  try {
-    const lead = typeof leadOrId === 'string' ? await db.getLead(leadOrId) : leadOrId;
-    if (!lead) return;
-    const out = await syncLead(lead);
-    log.info('calendar_synced', { lead_id: leadId, ...out });
-  } catch (err) {
-    log.error('calendar_sync_failed', { lead_id: leadId, kind: err.kind || 'network', error: String(err && err.message || err) });
-  }
+  const next = (running.get(leadId) || Promise.resolve()).then(async () => {
+    try {
+      const lead = typeof leadOrId === 'string' ? (await db.getLead(leadOrId)) || { id: leadId } : leadOrId;
+      const out = await syncLead(lead);
+      log.info('calendar_synced', { lead_id: leadId, ...out });
+    } catch (err) {
+      log.error('calendar_sync_failed', { lead_id: leadId, kind: err.kind || 'network', error: String(err && err.message || err) });
+    }
+  });
+  running.set(leadId, next);
+  next.then(() => { if (running.get(leadId) === next) running.delete(leadId); });
+  return next;
 }
