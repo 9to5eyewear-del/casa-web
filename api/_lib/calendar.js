@@ -47,6 +47,14 @@ export function calendarConfig(env = process.env, log = defaultLog) {
     interested: (env.GOOGLE_CALENDAR_INTERESTED || '').trim() || null,
   };
   // Pasting through TextEdit or Notes turns the key file's quotes curly.
+  // The interested calendar must be its own: an inquiry written into a
+  // bookings calendar would block that date for everyone.
+  for (const slot of SLOTS) {
+    if (calendars.interested && calendars.interested === calendars[slot]) {
+      log.error('calendar_ids_shared', { message: `GOOGLE_CALENDAR_INTERESTED is the same calendar as the ${slot} one; leads won't be written to it` });
+      calendars.interested = null;
+    }
+  }
   const raw = (env.GOOGLE_SERVICE_ACCOUNT_JSON || '').replace(/^\uFEFF/, '').replace(/[\u201C\u201D\u201E\u201F]/g, '"').trim();
   if (!raw || !Object.values(calendars).some(Boolean)) return null;
   try {

@@ -143,6 +143,13 @@ test('config reads both calendar IDs and the pasted key file', () => {
   assert.equal(calendarConfig({ ...env, GOOGLE_SERVICE_ACCOUNT_JSON: '{nope' }, log), null);
 });
 
+test('an interested calendar that is really a bookings calendar is refused', () => {
+  const key = JSON.stringify({ client_email: CFG.clientEmail, private_key: PEM });
+  const cfg = calendarConfig({ GOOGLE_CALENDAR_BRIDAL: BRIDAL, GOOGLE_CALENDAR_PRODUCTION: PROD, GOOGLE_CALENDAR_INTERESTED: ` ${PROD} `, GOOGLE_SERVICE_ACCOUNT_JSON: key }, log);
+  assert.deepEqual(cfg.calendars, { bridal: BRIDAL, production: PROD, interested: null });
+  assert.match(log.entries.find((e) => e.event === 'calendar_ids_shared').message, /production/);
+});
+
 test('a key file pasted with curly quotes still works', () => {
   const key = JSON.stringify({ client_email: CFG.clientEmail, private_key: PEM }).replace(/"/g, (q, i) => (i % 2 ? '\u201C' : '\u201D'));
   assert.deepEqual(calendarConfig({ GOOGLE_CALENDAR_BRIDAL: BRIDAL, GOOGLE_CALENDAR_PRODUCTION: PROD, GOOGLE_SERVICE_ACCOUNT_JSON: `\uFEFF${key}\n` }, log), CFG);
